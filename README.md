@@ -1,6 +1,11 @@
 # ReplicateBE.jl
 Mixed model solution for replicate designed bioequivalence study.
 
+Install
+```
+using Pkg; Pkg.clone("https://github.com/PharmCat/ReplicateBE.jl.git")
+```
+
 Using:
 ```
 be = ReplicateBE.rbe(df, var = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence);

@@ -1,5 +1,6 @@
 
-- v0.1.1 
+- v0.1.1
+    * change keyword var -> dvar
     * Step 0 variance calculaton
     * Split REML β dependent and REML2 β independent
     * Hessian matrix now come from ForwardDiff

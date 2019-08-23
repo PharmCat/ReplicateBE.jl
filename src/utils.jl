@@ -11,7 +11,7 @@ function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::B
 end
 function calcci(x::Float64, se::Float64, df::Float64, alpha::Float64, expci::Bool)::Tuple{Float64, Float64}
     q = quantile(TDist(df), 1.0-alpha/2)
-    if expci
+    if !expci
         return x-q*se, x+q*se
     else
         return exp(x-q*se), exp(x+q*se)

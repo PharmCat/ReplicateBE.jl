@@ -19,7 +19,7 @@ end
     df = CSV.read(IOBuffer(be1)) |> DataFrame
     df[:, :var] = log.(df[:, :var])
     be = ReplicateBE.rbe(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence);
-    ci = confint(be, 0.1, inv=true)
+    ci = confint(be, 0.1, expci = true, inv = true)
     @test be.reml  ≈  660.0465401 atol=1E-6
     @test ci[5][1] ≈    0.7792800 atol=1E-6
     @test ci[5][2] ≈    0.9810167 atol=1E-6

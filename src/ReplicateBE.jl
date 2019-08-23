@@ -5,10 +5,11 @@
 
 module ReplicateBE
 
-using DataFrames, Distributions, StatsModels, ForwardDiff, LinearAlgebra, Optim
+using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlgebra, Optim
 
-    export rbe
+    export rbe, show, confint
     import Base.show
+    import StatsBase.confint
     import Statistics.var
 
 struct RBE
@@ -30,6 +31,7 @@ struct RBE
 end
 
 include("show.jl")
+include("utils.jl")
 
 """
     Mixed model fitting function

@@ -9,12 +9,12 @@ function Base.show(io::IO, obj::RBE)
     pm = Array{Any,2}(undef, lines+2, 5)
     pm[1,1] = "Level"; pm[1,2] = "Value"; pm[1,3] = "SE"; pm[1,4] = "DF"; pm[1,5] = "F";
     pm[2,1] = "Intercept"; pm[2,2] = obj.β[1]; pm[2,3] = "-"; pm[2,4] = "-"; pm[2,5] = "-";
-    it      = 1
+    it      = 2
     pmr     = 3
     for f in obj.factors
         for l in obj.model.contrasts[f].termnames
             pm[pmr,1] = string(f)*": "*string(l);
-            pm[pmr,2] = obj.β[it+1];
+            pm[pmr,2] = obj.β[it];
             pm[pmr,3] = obj.se[it];
             pm[pmr,4] = obj.DF[it];
             pm[pmr,5] = obj.F[it];

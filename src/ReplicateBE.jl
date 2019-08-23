@@ -163,9 +163,11 @@ function rmatvec(σ₁, σ₂, Zvec)
     return Ra
 end
 function vmatvec(Zvec, G, Rvec)
-    Va = Array{Array{Float64,2}, 1}(undef, 0)
+    n  = length(Zvec)
+    Va = Array{Array{Float64,2}, 1}(undef, n)
     for i = 1:length(Zvec)
-        push!(Va, cov(G, Rvec[i], Zvec[i]))
+        Va[i] = cov(G, Rvec[i], Zvec[i])
+        #push!(Va, cov(G, Rvec[i], Zvec[i]))
     end
     return Va
 end
@@ -176,6 +178,7 @@ function cmat(Xv, Zv, θ)
     Rv  = rmatvec(θ[1], θ[2], Zv)
     Vv  = vmatvec(Zv, G, Rv)
     iVv = inv.(Vv)
+
     for i=1:length(Xv)
         C = C + Xv[i]'*iVv[i]*Xv[i]
     end
@@ -244,6 +247,7 @@ function lcgf(L, Xv, Zv, θ)
     p   = size(Xv[1])[2]
     C   = zeros(p,p)
     G   = gmat(θ[3], θ[4], θ[5])
+
     for i=1:length(Xv)
         R   = rmat([θ[1], θ[2]], Zv[i])
         iVv = inv(cov(G, R, Zv[i]))
@@ -253,18 +257,18 @@ function lcgf(L, Xv, Zv, θ)
 end
 function ctrst(p, Xv, Zv, θ, β, A)
     C     = cmat(Xv, Zv, θ)
-    se    = Array{Float64, 1}(undef, 0)
-    F     = Array{Float64, 1}(undef, 0)
-    df    = Array{Float64, 1}(undef, 0)
+    se    = Array{Float64, 1}(undef, p)
+    F     = Array{Float64, 1}(undef, p)
+    df    = Array{Float64, 1}(undef, p)
     for i = 2:p
         L    = zeros(p)
         L[i] = 1
         L    = L'
-        push!(se, sqrt((L*C*L')[1]))
-        push!(F, (L*β)'*inv(L*C*L')*(L*β))
+        se[i]   = sqrt((L*C*L')[1])
+        F[i]    = (L*β)'*inv(L*C*L')*(L*β)
         lclg(x) = lcgf(L, Xv, Zv, x)
         g       = ForwardDiff.gradient(lclg, θ)
-        push!(df, 2*((L*C*L')[1])^2/(g'*(A)*g))
+        df[i]   = 2*((L*C*L')[1])^2/(g'*(A)*g)
     end
     return se, F, df
 end
@@ -302,10 +306,18 @@ function reml2(yv, Zv, p, Xv, θvec)
         βm  += tm*yv[i]
     end
     β        = inv(θ2m)*βm
+
     for i = 1:n
         r    = yv[i]-Xv[i]*β
         θ3  += r'*iV*r
     end
+
+    #=
+    θ3 = @sync  @distributed  (+) for i = 1:n
+        r    = yv[i]-Xv[i]*β
+        r'*iV*r
+    end
+    =#
     θ2       = logdet(θ2m)
     return   -(θ1 + θ2 + θ3 + c)
 end

@@ -17,6 +17,7 @@ Using:
 ```
 using ReplicateBE
 be = ReplicateBE.rbe(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence);
+ci = confint(be, 0.1)
 ```
 Where:
 
@@ -57,6 +58,16 @@ struct RBE
     optim::Optim.MultivariateOptimizationResults
 end
 ```
+# Methods
+
+StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::Bool = false)
+
+* obj::RBE - bioequivalence struct;
+* alpha::Float64 - alpha;
+* expci::Bool - exp(ci)
+* inv::Bool - β = -β
+
+
 
 Author: Vladimir Arnautov aka PharmCat
 

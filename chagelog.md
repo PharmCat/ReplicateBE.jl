@@ -8,7 +8,8 @@
     * Optimization
     * Confidence intervals: confint(::RBE, ::Float64)
     * Show result
-    
+    * Bugfix
+
 
 
 - v0.1.0

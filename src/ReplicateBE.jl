@@ -279,9 +279,9 @@ function checkdata(X, Z, Xv, Zv, y)
     if length(Xv) != length(Zv) error("Length Xv != Zv !!!") end
     for i = 1:length(Xv)
         if size(Xv[i])[1]  != size(Zv[i])[1] error("Row num of subject $i Xv != Zv !!!") end
-        if size(Xv[i])[1]  != 4 error("Subject observation of subject $i != 4, other designs not implemented yet!!!") end
-        if sum(Zv[i][:,1]) != 2 error("Subject $i, formulation 1, not have 2 observation, other solutions not implemented yet!!!") end
-        if sum(Zv[i][:,2]) != 2 error("Subject $i, formulation 2, not have 2 observation, other solutions not implemented yet!!!") end
+        #if size(Xv[i])[1]  != 4 error("Subject observation of subject $i != 4, other designs not implemented yet!!!") end
+        #if sum(Zv[i][:,1]) != 2 error("Subject $i, formulation 1, not have 2 observation, other solutions not implemented yet!!!") end
+        #if sum(Zv[i][:,2]) != 2 error("Subject $i, formulation 2, not have 2 observation, other solutions not implemented yet!!!") end
     end
 end
 
@@ -298,10 +298,13 @@ function reml2(yv, Zv, p, Xv, θvec)
     iV   = nothing
     θ2m  = zeros(p,p)
     βm   = zeros(p)
+    iVv = Array{Array{Float64,2}, 1}(undef, n)
+
     for i = 1:n
         R   = rmat([θvec[1], θvec[2]], Zv[i])
         V   = cov(G, R, Zv[i])
         iV  = inv(V)
+        iVv[i] = iV
         θ1  += logdet(V)
         tm   = Xv[i]'*iV    #Temp matrix for Xv[i]'*iV*Xv[i] and Xv[i]'*iV*yv[i] calc
         θ2m += tm*Xv[i]
@@ -311,7 +314,7 @@ function reml2(yv, Zv, p, Xv, θvec)
 
     for i = 1:n
         r    = yv[i]-Xv[i]*β
-        θ3  += r'*iV*r
+        θ3  += r'*iVv[i]*r
     end
 
     #=

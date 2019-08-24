@@ -7,26 +7,33 @@ module ReplicateBE
 
 using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlgebra, Optim
 
-    export rbe, show, confint
+    export rbe, reml2, show, confint
     import Base.show
     import StatsBase.confint
     import Statistics.var
+
+LOG2PI = log(2π)
 
 struct RBE
     model::ModelFrame
     factors::Array{Symbol, 1}
     β::Array{Float64, 1}
+    θ0::Array{Float64, 1}
     θ::Array{Float64, 1}
     reml::Float64
     se::Array{Float64, 1}
-    F::Array{Float64, 1}
-    DF::Array{Float64, 1}
+    f::Array{Float64, 1}
+    df::Array{Float64, 1}
     R::Array{Matrix{Float64},1}
     V::Array{Matrix{Float64},1}
     G::Matrix{Float64}
     A::Matrix{Float64}
     H::Matrix{Float64}
+    Xv::Array{Matrix{Float64},1}
+    Zv::Array{Matrix{Float64},1}
+    yv::Array{Array{Float64, 1},1}
     detH::Float64
+    preoptim::Optim.MultivariateOptimizationResults
     optim::Optim.MultivariateOptimizationResults
 end
 
@@ -41,7 +48,7 @@ function rbe(df; dvar::Symbol,
     formulation::Symbol,
     period::Symbol,
     sequence::Symbol,
-    g_tol::Float64 = 1e-8, x_tol::Float64 = 0.0, f_tol::Float64 = 0.0)
+    g_tol::Float64 = 1e-8, x_tol::Float64 = 1e-8, f_tol::Float64 = 1e-8, iterations::Int = 100)
 
     categorical!(df, subject);
     categorical!(df, formulation);
@@ -65,17 +72,30 @@ function rbe(df; dvar::Symbol,
     θvec0 = [iv[3], iv[3], iv[1]-iv[3], iv[2]-iv[3], 0.001]
 
     remlf(x) = -reml2(yv, Zv, p, Xv, x)
-
-    O  = optimize(remlf, θvec0, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = true, extended_trace = true, show_trace = false)
+    method =LBFGS()
+    #method=ConjugateGradient()
+    #method = NelderMead()
+    limeps=eps()
+    #O  = optimize(remlf, θvec0, method=method,  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, iterations=iterations, allow_f_increases = true, store_trace = true, extended_trace = true, show_trace = false)
+    pO = optimize(remlf, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0, Fminbox(method), Optim.Options(g_tol = 1e-2))
+    θ  = Optim.minimizer(pO)
+    O  = optimize(remlf, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = true, extended_trace = true, show_trace = false)
     θ  = Optim.minimizer(O)
-    H  = Optim.trace(O)[end].metadata["h(x)"]
+    #=
+    if θ[5] > 1.0
+        θ[5] = 1.0
+        O  = optimize(remlf, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = true, extended_trace = true, show_trace = false)
+        θ  = Optim.minimizer(O)
+    end
+    =#
+    #H  = Optim.trace(O)[end].metadata["h(x)"]
     remlv = remlf(θ)
     G     = gmat(θ[3], θ[4], θ[5])
     Rv    = rmatvec(θ[1], θ[2], Zv)
     Vv    = vmatvec(Zv, G, Rv)
     iVv   = inv.(Vv)
     β     = βcoef(yv, X, Xv, iVv)
-
+    #
     if θ[5] > 1 θ[5] = 1 end
     remlf2(x) = -2*reml(yv, Zv, p, Xv, x, β)
     H         = ForwardDiff.hessian(remlf2, θ)
@@ -85,7 +105,7 @@ function rbe(df; dvar::Symbol,
 
     A         = 2*pinv(H)
     se, F, df = ctrst(p, Xv, Zv, θ, β, A)
-    return RBE(MF, [sequence, period, formulation], β, θ, remlv, se, F, df, Rv, Vv, G, A, H, dH, O)
+    return RBE(MF, [sequence, period, formulation], β, θvec0, θ, remlv, se, F, df, Rv, Vv, G, A, H, Xv, Zv, yv, dH, pO, O)
 end
 
 """
@@ -184,7 +204,7 @@ function cmat(Xv, Zv, θ)
     for i=1:length(Xv)
         C = C + Xv[i]'*iVv[i]*Xv[i]
     end
-    return pinv(C)
+    return inv(C)
 end
 function βcoef(yv, X, Xv, iVv)
     p = rank(X)
@@ -252,8 +272,8 @@ function lcgf(L, Xv, Zv, θ)
 
     for i=1:length(Xv)
         R   = rmat([θ[1], θ[2]], Zv[i])
-        iVv = inv(cov(G, R, Zv[i]))
-        C   = C + Xv[i]'*iVv*Xv[i]
+        iV  = inv(cov(G, R, Zv[i]))
+        C   = C + Xv[i]'*iV*Xv[i]
     end
     return (L*inv(C)*L')[1]
 end
@@ -290,8 +310,10 @@ end
 function reml2(yv, Zv, p, Xv, θvec)
     n = length(yv)
     N = sum(length.(yv))
+    #This solution with θvec[5] is not the best
+    #if θvec[5] > 1.0 θvec[5] = 1.0 end
     G = gmat(θvec[3], θvec[4], θvec[5])
-    c  = (N-p)*log(2π)
+    c  = (N-p)*LOG2PI #log(2π)
     θ1 = 0
     θ2 = 0
     θ3 = 0

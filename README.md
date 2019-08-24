@@ -33,8 +33,8 @@ Get results (as vectors):
 be.β            #For β
 be.se           #For SE
 be.reml         #REML value
-be.DF           #Degree of freedom
-be.F            #F Statistics
+be.df           #Degree of freedom
+be.f            #F Statistics
 ```
 
 Other:
@@ -44,17 +44,22 @@ struct RBE
     model::ModelFrame
     factors::Array{Symbol, 1}
     β::Array{Float64, 1}
+    θ0::Array{Float64, 1}
     θ::Array{Float64, 1}
     reml::Float64
     se::Array{Float64, 1}
-    F::Array{Float64, 1}
-    DF::Array{Float64, 1}
+    f::Array{Float64, 1}
+    df::Array{Float64, 1}
     R::Array{Matrix{Float64},1}
     V::Array{Matrix{Float64},1}
     G::Matrix{Float64}
     A::Matrix{Float64}
     H::Matrix{Float64}
+    Xv::Array{Matrix{Float64},1}
+    Zv::Array{Matrix{Float64},1}
+    yv::Array{Array{Float64, 1},1}
     detH::Float64
+    preoptim::Optim.MultivariateOptimizationResults
     optim::Optim.MultivariateOptimizationResults
 end
 ```

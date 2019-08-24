@@ -5,7 +5,7 @@ function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::B
     if inv ifv = -1 end
     a = Array{Tuple{Float64, Float64},1}(undef, length(obj.β)-1)
     for i = 2:length(obj.β)
-        a[i-1] = calcci(obj.β[i]*ifv, obj.se[i], obj.DF[i], alpha, expci)
+        a[i-1] = calcci(obj.β[i]*ifv, obj.se[i], obj.df[i], alpha, expci)
     end
     return Tuple(a)
 end
@@ -21,4 +21,7 @@ function Base.show(io::IO, obj::Tuple{Vararg{Tuple{Float64, Float64}}})
     for i in obj
         println(i)
     end
+end
+function reml2(obj::RBE, θ::Array{Float64, 1})
+    return -2*reml(obj.yv, obj.Zv, rank(ModelMatrix(obj.model).m), obj.Xv, θ, obj.β)
 end

@@ -16,8 +16,8 @@ function Base.show(io::IO, obj::RBE)
             pm[pmr,1] = string(f)*": "*string(l);
             pm[pmr,2] = obj.β[it];
             pm[pmr,3] = obj.se[it];
-            pm[pmr,4] = obj.DF[it];
-            pm[pmr,5] = obj.F[it];
+            pm[pmr,4] = obj.df[it];
+            pm[pmr,5] = obj.f[it];
             it  += 1
             pmr += 1
         end

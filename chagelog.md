@@ -1,4 +1,12 @@
 
+- v0.1.2
+
+    * change optimization algorithm
+    * reml2(::RBE, Array{::Float64,1}) function for -REML2 calculation
+    * Small optimization
+    * Changes in struct RBE
+
+
 - v0.1.1
     * change keyword var -> dvar
     * Step 0 variance calculation

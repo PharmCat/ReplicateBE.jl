@@ -15,12 +15,39 @@ include("testdata.jl")
     @test be.reml  ≈  10.065238638105903 atol=1E-5
 end
 
-@testset "  Bioequivalence 2x2x4 DS test " begin
-    df = CSV.read(IOBuffer(be1)) |> DataFrame
-    df[:, :var] = log.(df[:, :var])
-    be = ReplicateBE.rbe(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence);
+@testset "  #4 QA 1 Bioequivalence 2x2x4, UnB, NC Dataset " begin
+    #REML 530.14451303
+    #SE 0.04650
+    #DF 208
+    df = CSV.read(IOBuffer(be4)) |> DataFrame
+    be = ReplicateBE.rbe(df, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence);
     ci = ReplicateBE.confint(be, 0.1, expci = true, inv = true)
-    @test be.reml  ≈  660.0465401 atol=1E-5
-    @test ci[5][1] ≈    0.7792777889433989 atol=1E-5
-    @test ci[5][2] ≈    0.9810195569153635 atol=1E-5
+    @test be.reml  ≈  530.1445137281626 atol=1E-5
+    @test ci[5][1] ≈    1.0710413558879295 atol=1E-5
+    @test ci[5][2] ≈    1.2489423703460276 atol=1E-5
+end
+
+#Patterson SD, Jones B. Viewpoint: observations on scaled average bioequivalence. Pharm Stat. 2012; 11(1): 1–7. doi:10.1002/pst.498
+@testset "  #5 Pub Bioequivalence Dataset " begin
+    #REML 321.44995530 - SAS STOP!
+    df = CSV.read(IOBuffer(be5)) |> DataFrame
+    be = ReplicateBE.rbe(df, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence);
+    ci = ReplicateBE.confint(be, 0.1, expci = true, inv = true)
+    @test be.reml  ≈  314.2217688405106 atol=1E-5
+    @test ci[5][1] ≈    1.1875472284034538 atol=1E-5
+    @test ci[5][2] ≈    1.5854215760408064 atol=1E-5
+    #119-159%
+end
+
+#Shumaker RC, Metzler CM. The Phenytoin Trial is a Case Study of ‘Individual’ Bioequivalence. Drug Inf J. 1998; 32(4): 1063–72
+@testset "  #6 Pub Bioequivalence TTRR/RRTT Dataset " begin
+    #REML 329.25749378
+    #SE 0.04153
+    #DF 62
+    df = CSV.read(IOBuffer(be6)) |> DataFrame
+    be = ReplicateBE.rbe(df, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence);
+    ci = ReplicateBE.confint(be, 0.1, expci = true, inv = true)
+    @test be.reml  ≈  329.25749377843033 atol=1E-5
+    @test ci[5][1] ≈    0.8754960202413755 atol=1E-5
+    @test ci[5][2] ≈    1.0042930817939983 atol=1E-5
 end

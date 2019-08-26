@@ -38,7 +38,7 @@ end
 function reml2(obj::RBE, θ::Array{Float64, 1})
     return -2*reml(obj.yv, obj.Zv, rank(ModelMatrix(obj.model).m), obj.Xv, θ, obj.β)
 end
-function contrast(obj::RBE, L::Matrix)
+function contrast(obj::RBE, L::Matrix{T}) where T <: Real
     lcl  = L*obj.C*L'
     lclr = rank(lcl)
     return (L*obj.β)'*inv(lcl)*(L*obj.β)/lclr

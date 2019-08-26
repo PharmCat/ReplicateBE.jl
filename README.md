@@ -67,6 +67,7 @@ struct RBE
     optim::Optim.MultivariateOptimizationResults
 end
 ```
+
 # Methods
 
 ```

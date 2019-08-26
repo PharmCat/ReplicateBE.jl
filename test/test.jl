@@ -44,10 +44,12 @@ end
     #REML 329.25749378
     #SE 0.04153
     #DF 62
+    #F 2.40
     df = CSV.read(IOBuffer(be6)) |> DataFrame
     be = ReplicateBE.rbe(df, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence);
     ci = ReplicateBE.confint(be, 0.1, expci = true, inv = true)
     @test be.reml  ≈  329.25749377843033 atol=1E-5
+    @test be.f[6]  ≈  2.399661661708039 atol=1E-5
     @test ci[5][1] ≈    0.8754960202413755 atol=1E-5
     @test ci[5][2] ≈    1.0042930817939983 atol=1E-5
 end

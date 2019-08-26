@@ -50,11 +50,15 @@ struct RBE
     se::Array{Float64, 1}
     f::Array{Float64, 1}
     df::Array{Float64, 1}
+    df2::Float64
     R::Array{Matrix{Float64},1}
     V::Array{Matrix{Float64},1}
     G::Matrix{Float64}
-    A::Matrix{Float64}
+    C::Matrix{Float64}
+    A::Matrix{Float64}              #asymptotic variance-covariance matrix ofb θ
     H::Matrix{Float64}
+    X::Matrix
+    Z::Matrix
     Xv::Array{Matrix{Float64},1}
     Zv::Array{Matrix{Float64},1}
     yv::Array{Array{Float64, 1},1}
@@ -65,14 +69,47 @@ end
 ```
 # Methods
 
+```
 StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::Bool = false)
+```
 
 * obj::RBE - bioequivalence struct;
 * alpha::Float64 - alpha;
 * expci::Bool - exp(ci)
 * inv::Bool - β = -β
 
+```
+reml2(obj::RBE, θ::Array{Float64, 1})
+```
 
+Return -2REML for vector θ.
+
+```
+contrast(obj::RBE, L::Matrix{T}) where T <: Real
+```
+
+Return F for L vector.
+
+```
+lsm(obj::RBE, L::Matrix{T}) where T <: Real
+```
+
+Return mean & se for L vector.
+
+```
+emm(obj::RBE, fm, lm)
+```
+
+Return marginal means.
+
+fm - factor map;
+lm - level map.
+
+```
+lmean(obj::RBE)
+```
+
+Return L vector for general mean.
 
 Author: Vladimir Arnautov aka PharmCat
 

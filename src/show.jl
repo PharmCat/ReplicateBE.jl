@@ -1,5 +1,6 @@
 function Base.show(io::IO, obj::RBE)
-    println(io, "Mixed model solution for bioequivalence study")
+    println(io, "Bioequivalence Linear Mixed Effect Model")
+    println(io, "")
     println(io, "REML: ", obj.reml)
     println(io, "")
     lines = 0

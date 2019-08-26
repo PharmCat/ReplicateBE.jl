@@ -3,8 +3,11 @@
 
     * change optimization algorithm
     * reml2(::RBE, Array{::Float64,1}) function for -REML2 calculation
-    * Small optimization
+    * contrast, lsm, emm, lmean utils
+    * DF2
+    * Optimizations
     * Changes in struct RBE
+    * Code comments
 
 
 - v0.1.1

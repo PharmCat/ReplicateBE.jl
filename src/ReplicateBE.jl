@@ -7,7 +7,7 @@ module ReplicateBE
 
 using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlgebra, Optim
 
-    export rbe, reml2, show, confint
+    export RBE, rbe, reml2, show, confint, contrast, lsm, emm, lmean
     import Base.show
     import StatsBase.confint
     import Statistics.var
@@ -24,11 +24,15 @@ struct RBE
     se::Array{Float64, 1}
     f::Array{Float64, 1}
     df::Array{Float64, 1}
+    df2::Float64
     R::Array{Matrix{Float64},1}
     V::Array{Matrix{Float64},1}
     G::Matrix{Float64}
-    A::Matrix{Float64}
+    C::Matrix{Float64}
+    A::Matrix{Float64}              #asymptotic variance-covariance matrix ofb θ
     H::Matrix{Float64}
+    X::Matrix
+    Z::Matrix
     Xv::Array{Matrix{Float64},1}
     Zv::Array{Matrix{Float64},1}
     yv::Array{Array{Float64, 1},1}
@@ -65,7 +69,8 @@ function rbe(df; dvar::Symbol,
     Xv, Zv, yv = sortsubjects(df, subject, X, Z, y)
     n  = length(Xv)
     N  = sum(length.(yv))
-
+    pn = length(MF.contrasts[period].levels)
+    sn = length(MF.contrasts[sequence].levels)
 
     if size(Z)[2] != 2 error("Size random effect matrix != 2. Not implemented yet!") end
     checkdata(X, Z, Xv, Zv, y)
@@ -84,20 +89,14 @@ function rbe(df; dvar::Symbol,
     matvecz!(Rv, Zv)
     matvecz!(Vv, Zv)
     matvecz!(iVv, Zv)
-    #=
-    G     = gmat(θvec0[3], θvec0[4], θvec0[5])
-    Rv    = rmatvec(θvec0[1], θvec0[2], Zv)
-    Vv    = vmatvec(Zv, G, Rv)
-    iVv   = inv.(Vv)
-    =#
 
     remlf(x) = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β)
-    #remlf(x) = -reml2(yv, Zv, p, Xv, x)
+
     method =LBFGS()
     #method=ConjugateGradient()
     #method = NelderMead()
     limeps=eps()
-    #O  = optimize(remlf, θvec0, method=method,  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, iterations=iterations, allow_f_increases = true, store_trace = true, extended_trace = true, show_trace = false)
+
     pO = optimize(remlf, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0, Fminbox(method), Optim.Options(g_tol = 1e-2))
     θ  = Optim.minimizer(pO)
     remlf(x) = -reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, x, β)
@@ -121,9 +120,10 @@ function rbe(df; dvar::Symbol,
     H[5,:] .= 0
     H[:,5] .= 0
 
-    A         = 2*pinv(H)
-    se, F, df = ctrst(p, Xv, Zv, iVv, θ, β, A)
-    return RBE(MF, [sequence, period, formulation], β, θvec0, θ, remlv, se, F, df, Rv, Vv, G, A, H, Xv, Zv, yv, dH, pO, O)
+    A            = 2*pinv(H)
+    se, F, df, C = ctrst(p, Xv, Zv, iVv, θ, β, A)
+    df2          = N / pn - sn
+    return RBE(MF, [sequence, period, formulation], β, θvec0, θ, remlv, se, F, df, df2, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
 end
 
 """
@@ -189,13 +189,16 @@ end
 """
     Return variance-covariance matrix V
 """
-@inline function cov(G, R, Z)
+@inline function vmat(G, R, Z)
     V  = Z*G*Z' + R
 end
-@inline function cov!(V::Matrix{Float64}, G::Matrix{Float64}, R::Matrix{Float64}, Z::Matrix{Float64})
+@inline function vmat!(V::Matrix{Float64}, G::Matrix{Float64}, R::Matrix{Float64}, Z::Matrix{Float64})
     copyto!(V, Z*G*Z' + R)
     return
 end
+"""
+    Return set of R matrices
+"""
 function rmatvec(σ₁, σ₂, Zvec)
     n  = length(Zvec)
     Ra = Array{Array{Float64,2}, 1}(undef, n)
@@ -204,15 +207,20 @@ function rmatvec(σ₁, σ₂, Zvec)
     end
     return Ra
 end
+"""
+    Return set of V matrices
+"""
 function vmatvec(Zvec, G, Rvec)
     n  = length(Zvec)
     Va = Array{Array{Float64,2}, 1}(undef, n)
     for i = 1:length(Zvec)
-        Va[i] = cov(G, Rvec[i], Zvec[i])
-        #push!(Va, cov(G, Rvec[i], Zvec[i]))
+        Va[i] = vmat(G, Rvec[i], Zvec[i])
     end
     return Va
 end
+"""
+    Return set of zero feeled matrices
+"""
 function matvecz!(M, Zv)
     n  = length(Zv)
     for i = 1:n
@@ -220,15 +228,13 @@ function matvecz!(M, Zv)
     end
     return
 end
+"""
+    Return C matrix
+    var(β) p×p variance-covariance matrix
+"""
 function cmat(Xv, Zv, iVv, θ)::Array{Float64, 2}
     p = size(Xv[1])[2]
     C = zeros(p,p)
-    #=
-    G   = gmat(θ[3], θ[4], θ[5])
-    Rv  = rmatvec(θ[1], θ[2], Zv)
-    Vv  = vmatvec(Zv, G, Rv)
-    iVv = inv.(Vv)
-    =#
     for i=1:length(Xv)
         C = C + Xv[i]'*iVv[i]*Xv[i]
     end
@@ -255,32 +261,10 @@ function βcoef!(p::Int, n::Int, yv::Array{Array{Float64, 1}, 1}, Xv::Array{Arra
     copyto!(β, inv(A)*β0)
     return
 end
-#=
-function reml(yv, Zv, X, Xv, θvec)
-    n = length(yv)
-    N = sum(length.(yv))
-    G = gmat(θvec[3], θvec[4], θvec[5])
-    p = rank(X)
-    c  = (N-p)/2*log(2π)
-    θ1 = 0
-    θ2 = 0
-    θ3 = 0
-    θ2m  = zeros(p,p)
-    Rv   = rmatvec(θvec[1], θvec[2], Zv)
-    Vv   = vmatvec(Zv, G, Rv)
-    iVv  = inv.(Vv)
-    β    = βcoef(yv, X, Xv, iVv)
-    for i = 1:n
-        θ1  += log(det(Vv[i]))
-        θ2m += Xv[i]'*iVv[i]*Xv[i]
-        r    = yv[i]-Xv[i]*β
-        θ3  += r'*iVv[i]*r
-    end
-    θ2       = log(det(θ2m))
-    #println("θ₁: ", θ1, " θ₂: ",  θ2,  " θ₃: ", θ3)
-    return   -(θ1/2 + θ2/2 + θ3/2 + c)
-end
-=#
+#println("θ₁: ", θ1, " θ₂: ",  θ2,  " θ₃: ", θ3)
+"""
+    REML function for ForwardDiff
+"""
 function reml(yv, Zv, p, Xv, θvec, β)
     n = length(yv)
     N = sum(length.(yv))
@@ -293,7 +277,7 @@ function reml(yv, Zv, p, Xv, θvec, β)
     θ2m  = zeros(p,p)
     for i = 1:n
         R   = rmat([θvec[1], θvec[2]], Zv[i])
-        V   = cov(G, R, Zv[i])
+        V   = vmat(G, R, Zv[i])
         iV  = inv(V)
         θ1  += logdet(V)
         θ2m += Xv[i]'*iV *Xv[i]
@@ -309,11 +293,17 @@ function lcgf(L, Xv, Zv, θ)
     G   = gmat(θ[3], θ[4], θ[5])
     for i=1:length(Xv)
         R   = rmat([θ[1], θ[2]], Zv[i])
-        iV  = inv(cov(G, R, Zv[i]))
+        iV  = inv(vmat(G, R, Zv[i]))
         C   = C + Xv[i]'*iV*Xv[i]
     end
     return (L*inv(C)*L')[1]
 end
+"""
+    Secondary param estimation:
+    SE
+    F
+    DF
+"""
 function ctrst(p, Xv, Zv, iVv, θ, β, A)
     C     = cmat(Xv, Zv, iVv, θ)
     se    = Array{Float64, 1}(undef, p)
@@ -323,15 +313,18 @@ function ctrst(p, Xv, Zv, iVv, θ, β, A)
         L    = zeros(p)
         L[i] = 1
         L    = L'
-        se[i]   = sqrt((L*C*L')[1])
-        F[i]    = (L*β)'*inv(L*C*L')*(L*β)
+        lcl  = L*C*L'
+        lclr = rank(lcl)
+        se[i]   = sqrt((lcl)[1])
+        #F[i]    = (L*β)'*inv(L*C*L')*(L*β)
+        F[i]    = (L*β)'*inv(lcl)*(L*β)/lclr
         lclg(x) = lcgf(L, Xv, Zv, x)
         g       = ForwardDiff.gradient(lclg, θ)
-        df[i]   = 2*((L*C*L')[1])^2/(g'*(A)*g)
+        df[i]   = 2*((lcl)[1])^2/(g'*(A)*g)
     end
-    return se, F, df
+    return se, F, df, C
 end
-
+#-------------------------------------------------------------------------------
 function checkdata(X, Z, Xv, Zv, y)
     if length(Xv) != length(Zv) error("Length Xv != Zv !!!") end
     for i = 1:length(Xv)
@@ -344,11 +337,12 @@ end
 
 
 #-------------------------------------------------------------------------------
+"""
+    Optim reml with β
+"""
 function reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, θvec, β)
     n = length(yv)
     N = sum(length.(yv))
-    #This solution with θvec[5] is not the best
-    #if θvec[5] > 1.0 θvec[5] = 1.0 end
     gmat!(G, θvec[3], θvec[4], θvec[5])
     c  = (N-p)*LOG2PI #log(2π)
     θ1 = 0
@@ -357,10 +351,9 @@ function reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, θvec, β)
     iV   = nothing
     θ2m  = zeros(p,p)
     βm   = zeros(p)
-    #iVv = Array{Array{Float64,2}, 1}(undef, n)
     for i = 1:n
         rmat!(Rv[i], [θvec[1], θvec[2]], Zv[i])
-        cov!(Vv[i], G, Rv[i], Zv[i])
+        vmat!(Vv[i], G, Rv[i], Zv[i])
         copyto!(iVv[i], inv(Vv[i]))
         θ1  += logdet(Vv[i])
         tm   = Xv[i]'*iVv[i]    #Temp matrix for Xv[i]'*iV*Xv[i] and Xv[i]'*iV*yv[i] calc
@@ -375,6 +368,9 @@ function reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, θvec, β)
     θ2       = logdet(θ2m)
     return   -(θ1 + θ2 + θ3 + c)
 end
+"""
+    Optim reml without β
+"""
 function reml2!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2}, Rv::T, Vv::T, iVv::T, θvec::Array{Float64, 1}, β::Array{Float64, 1})::Float64 where T <: Array{Array{Float64, 2}, 1} where S <: Array{Array{Float64, 1}, 1}
 
     gmat!(G, θvec[3], θvec[4], θvec[5])
@@ -385,7 +381,7 @@ function reml2!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2
     θ2m  = zeros(p,p)
     for i = 1:n
         rmat!(Rv[i], [θvec[1], θvec[2]], Zv[i])
-        cov!(Vv[i], G, Rv[i], Zv[i])
+        vmat!(Vv[i], G, Rv[i], Zv[i])
         copyto!(iVv[i], inv(Vv[i]))
         θ1  += logdet(Vv[i])
         θ2m += Xv[i]'*iVv[i]*Xv[i]
@@ -395,6 +391,12 @@ function reml2!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2
     θ2       = logdet(θ2m)
     return   -(θ1 + θ2 + θ3 + c)
 end
+
+#-------------------------------------------------------------------------------
+
+"""
+    Initial variance computation
+"""
 function initvar(df, dv, fac, sbj)
     u  = unique(df[:, sbj])
     f  = unique(df[:, fac])

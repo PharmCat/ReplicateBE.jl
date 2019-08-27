@@ -7,7 +7,7 @@ using Test, DataFrames, CSV
 
 include("testdata.jl")
 
-@testset "  Basic mixed model test       " begin
+@testset "  Basic mixed model test                        " begin
     df = CSV.read(IOBuffer(minibe)) |> DataFrame
     be = ReplicateBE.rbe(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence);
     @test be.β[6]  ≈  -0.0791666 atol=1E-5
@@ -28,7 +28,7 @@ end
 end
 
 #Patterson SD, Jones B. Viewpoint: observations on scaled average bioequivalence. Pharm Stat. 2012; 11(1): 1–7. doi:10.1002/pst.498
-@testset "  #5 Pub Bioequivalence Dataset " begin
+@testset "  #5 Pub Bioequivalence Dataset                 " begin
     #REML 321.44995530 - SAS STOP!
     df = CSV.read(IOBuffer(be5)) |> DataFrame
     be = ReplicateBE.rbe(df, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence);
@@ -40,7 +40,7 @@ end
 end
 
 #Shumaker RC, Metzler CM. The Phenytoin Trial is a Case Study of ‘Individual’ Bioequivalence. Drug Inf J. 1998; 32(4): 1063–72
-@testset "  #6 Pub Bioequivalence TTRR/RRTT Dataset " begin
+@testset "  #6 Pub Bioequivalence TTRR/RRTT Dataset       " begin
     #REML 329.25749378
     #SE 0.04153
     #DF 62

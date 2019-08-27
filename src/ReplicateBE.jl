@@ -17,6 +17,7 @@ LOG2PI = log(2π)
 
 struct RBE
     model::ModelFrame               #Model frame
+    rmodel::ModelFrame              #Random effect model
     factors::Array{Symbol, 1}       #Factor list
     β::Array{Float64, 1}            #β coefficients (fixed effect)
     θ0::Array{Float64, 1}           #Initial variance paramethers
@@ -80,8 +81,9 @@ function rbe(df; dvar::Symbol,
     Xf = @eval(@formula($dvar ~ $sequence + $period + $formulation))
     Zf = @eval(@formula($dvar ~ 0 + $formulation))
     MF = ModelFrame(Xf, df)
+    RMF = ModelFrame(Zf, df, contrasts = Dict(formulation => StatsModels.FullDummyCoding()))
     X  = ModelMatrix(MF).m
-    Z  = ModelMatrix(ModelFrame(Zf, df, contrasts = Dict(formulation => StatsModels.FullDummyCoding()))).m
+    Z  = ModelMatrix(RMF).m
     p  = rank(X)
     y  = df[:, dvar]                                                            #Dependent variable
 
@@ -144,7 +146,7 @@ function rbe(df; dvar::Symbol,
     A            = 2*pinv(H)
     se, F, df, C = ctrst(p, Xv, Zv, iVv, θ, β, A)
     df2          = N / pn - sn
-    return RBE(MF, [sequence, period, formulation], β, θvec0, θ, remlv, se, F, df, df2, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
+    return RBE(MF, RMF, [sequence, period, formulation], β, θvec0, θ, remlv, se, F, df, df2, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
 end #END OF rbe()
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
@@ -291,7 +293,7 @@ function ctrst(p, Xv, Zv, iVv, θ, β, A)
     se    = Array{Float64, 1}(undef, p)
     F     = Array{Float64, 1}(undef, p)
     df    = Array{Float64, 1}(undef, p)
-    for i = 2:p
+    for i = 1:p
         L    = zeros(p)
         L[i] = 1
         L    = L'

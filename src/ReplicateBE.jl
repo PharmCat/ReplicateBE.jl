@@ -16,30 +16,30 @@ LOG2PI = log(2π)
 
 
 struct RBE
-    model::ModelFrame
-    factors::Array{Symbol, 1}
-    β::Array{Float64, 1}
-    θ0::Array{Float64, 1}
-    θ::Array{Float64, 1}
-    reml::Float64
-    se::Array{Float64, 1}
-    f::Array{Float64, 1}
-    df::Array{Float64, 1}
-    df2::Float64
-    R::Array{Matrix{Float64},1}
-    V::Array{Matrix{Float64},1}
-    G::Matrix{Float64}
-    C::Matrix{Float64}
+    model::ModelFrame               #Model frame
+    factors::Array{Symbol, 1}       #Factor list
+    β::Array{Float64, 1}            #β coefficients (fixed effect)
+    θ0::Array{Float64, 1}           #Initial variance paramethers
+    θ::Array{Float64, 1}            #Final variance paramethers
+    reml::Float64                   #-2REML
+    se::Array{Float64, 1}           #SE for each β level
+    f::Array{Float64, 1}            #F for each β level
+    df::Array{Float64, 1}           #DF (degree of freedom) for each β level (Satterthwaite)
+    df2::Float64                    #DF N / pn - sn
+    R::Array{Matrix{Float64},1}     #R matrices for each subject
+    V::Array{Matrix{Float64},1}     #V matrices for each subject
+    G::Matrix{Float64}              #G matrix
+    C::Matrix{Float64}              #C var(β) p×p variance-covariance matrix
     A::Matrix{Float64}              #asymptotic variance-covariance matrix ofb θ
-    H::Matrix{Float64}
-    X::Matrix
-    Z::Matrix
-    Xv::Array{Matrix{Float64},1}
-    Zv::Array{Matrix{Float64},1}
-    yv::Array{Array{Float64, 1},1}
-    detH::Float64
-    preoptim::Optim.MultivariateOptimizationResults
-    optim::Optim.MultivariateOptimizationResults
+    H::Matrix{Float64}              #Hessian matrix
+    X::Matrix                       #Matrix for fixed effects
+    Z::Matrix                       #Matrix for random effects
+    Xv::Array{Matrix{Float64},1}    #X matrices for each subject
+    Zv::Array{Matrix{Float64},1}    #Z matrices for each subject
+    yv::Array{Array{Float64, 1},1}  #responce vectors for each subject
+    detH::Float64                   #Hessian determinant
+    preoptim::Optim.MultivariateOptimizationResults        #Pre-optimization result object
+    optim::Optim.MultivariateOptimizationResults           #Optimization result object
 end
 
 #=
@@ -60,7 +60,7 @@ include("show.jl")
 include("utils.jl")
 include("memalloc.jl")
 include("deprecated.jl")
-
+#-------------------------------------------------------------------------------
 """
     Mixed model fitting function
 """
@@ -69,7 +69,8 @@ function rbe(df; dvar::Symbol,
     formulation::Symbol,
     period::Symbol,
     sequence::Symbol,
-    g_tol::Float64 = 1e-8, x_tol::Float64 = 1e-8, f_tol::Float64 = 1e-8, iterations::Int = 100)
+    g_tol::Float64 = 1e-8, x_tol::Float64 = 1e-8, f_tol::Float64 = 1e-8, iterations::Int = 100,
+    store_trace = false, extended_trace = false, show_trace = false)
 
     categorical!(df, subject);
     categorical!(df, formulation);
@@ -82,7 +83,9 @@ function rbe(df; dvar::Symbol,
     X  = ModelMatrix(MF).m
     Z  = ModelMatrix(ModelFrame(Zf, df, contrasts = Dict(formulation => StatsModels.FullDummyCoding()))).m
     p  = rank(X)
-    y  = df[:, dvar]
+    y  = df[:, dvar]                                                            #Dependent variable
+
+    #Make pre located arrays with matrices for each subject
     Xv, Zv, yv = sortsubjects(df, subject, X, Z, y)
     n  = length(Xv)
     N  = sum(length.(yv))
@@ -91,18 +94,19 @@ function rbe(df; dvar::Symbol,
 
     #Memory pre-allocation arrays for matrix computations
     memc, memc2, memc3, memc4 = memcalloc(p, 2, yv)
-
-
-    if size(Z)[2] != 2 error("Size random effect matrix != 2. Not implemented yet!") end
+    #Check data
     checkdata(X, Z, Xv, Zv, y)
 
+    #Calculate initial fixed parameters
     qro   = qr(X)
     β     = inv(qro.R)*qro.Q'*y
 
+    #Calculate initial variance
     iv = initvar(df, dvar, formulation, subject)
     if iv[1] < iv[3] || iv[2] < iv[3] iv[1] = iv[2] = 2*iv[3] end
     θvec0 = [iv[3], iv[3], iv[1]-iv[3], iv[2]-iv[3], 0.001]
 
+    #Prelocatiom for G, R, V, V⁻¹ matrices
     G     = zeros(2, 2)
     Rv    = Array{Array{Float64,2}, 1}(undef, n)
     Vv    = Array{Array{Float64,2}, 1}(undef, n)
@@ -111,42 +115,39 @@ function rbe(df; dvar::Symbol,
     matvecz!(Vv, Zv)
     matvecz!(iVv, Zv)
 
+    #First step optimization (pre-optimization)
     remlf(x) = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
-
     method =LBFGS()
     #method=ConjugateGradient()
     #method = NelderMead()
     limeps=eps()
-
     pO = optimize(remlf, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0, Fminbox(method), Optim.Options(g_tol = 1e-2))
     θ  = Optim.minimizer(pO)
+
+    #Final optimization
     remlfb(x) = -reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
     #O  = optimize(remlf, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, callback = βcoef!(p, n, yv, Xv, iVv, β), allow_f_increases = true, store_trace = true, extended_trace = true, show_trace = false)
-    O  = optimize(remlfb, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = true, extended_trace = true, show_trace = false)
+    O  = optimize(remlfb, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
     θ  = Optim.minimizer(O)
 
     #H  = Optim.trace(O)[end].metadata["h(x)"]
     remlv = remlf(θ)
-    #G     = gmat(θ[3], θ[4], θ[5])
-    #Rv    = rmatvec(θ[1], θ[2], Zv)
-    #Vv    = vmatvec(Zv, G, Rv)
-    #iVv   = inv.(Vv)
-    #βcoef!(p, n, yv, Xv, iVv, β)
-    #β     = βcoef(yv, X, Xv, iVv)
-    #
+
     if θ[5] > 1 θ[5] = 1 end
+    #Get Hessian matrix (H) with ForwardDiff
     remlf2(x) = -2*reml(yv, Zv, p, Xv, x, β)
     H         = ForwardDiff.hessian(remlf2, θ)
     dH        = det(H)
     H[5,:] .= 0
     H[:,5] .= 0
-
+    #Secondary parameters calculation
     A            = 2*pinv(H)
     se, F, df, C = ctrst(p, Xv, Zv, iVv, θ, β, A)
     df2          = N / pn - sn
     return RBE(MF, [sequence, period, formulation], β, θvec0, θ, remlv, se, F, df, df2, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
-end
-
+end #END OF rbe()
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 """
     Make X, Z mtrices and vector y for each subject;
 """
@@ -233,24 +234,13 @@ end
     Return C matrix
     var(β) p×p variance-covariance matrix
 """
-function cmat(Xv, Zv, iVv, θ)::Array{Float64, 2}
+@inline function cmat(Xv, Zv, iVv, θ)::Array{Float64, 2}
     p = size(Xv[1])[2]
     C = zeros(p,p)
     for i=1:length(Xv)
         C .+= Xv[i]'*iVv[i]*Xv[i]
     end
     return inv(C)
-end
-function βcoef(yv, X, Xv, iVv)
-    p = rank(X)
-    n = length(yv)
-    A = zeros(p,p)
-    β = zeros(p)
-    for i = 1:n
-        A = A + (Xv[i]'*iVv[i]*Xv[i])
-        β = β .+ Xv[i]'*iVv[i]*yv[i]
-    end
-    return inv(A)*β
 end
 #println("θ₁: ", θ1, " θ₂: ",  θ2,  " θ₃: ", θ3)
 """
@@ -294,6 +284,7 @@ end
     SE
     F
     DF
+    C
 """
 function ctrst(p, Xv, Zv, iVv, θ, β, A)
     C     = cmat(Xv, Zv, iVv, θ)
@@ -307,8 +298,7 @@ function ctrst(p, Xv, Zv, iVv, θ, β, A)
         lcl  = L*C*L'
         lclr = rank(lcl)
         se[i]   = sqrt((lcl)[1])
-        #F[i]    = (L*β)'*inv(L*C*L')*(L*β)
-        F[i]    = (L*β)'*inv(lcl)*(L*β)/lclr
+        F[i]    = (L*β)'*inv(lcl)*(L*β)/lclr           #F[i]    = (L*β)'*inv(L*C*L')*(L*β)
         lclg(x) = lcgf(L, Xv, Zv, x)
         g       = ForwardDiff.gradient(lclg, θ)
         df[i]   = 2*((lcl)[1])^2/(g'*(A)*g)
@@ -316,20 +306,43 @@ function ctrst(p, Xv, Zv, iVv, θ, β, A)
     return se, F, df, C
 end
 #-------------------------------------------------------------------------------
-function checkdata(X, Z, Xv, Zv, y)
-    if length(Xv) != length(Zv) error("Length Xv != Zv !!!") end
-    for i = 1:length(Xv)
-        if size(Xv[i])[1]  != size(Zv[i])[1] error("Row num of subject $i Xv != Zv !!!") end
-        #if size(Xv[i])[1]  != 4 error("Subject observation of subject $i != 4, other designs not implemented yet!!!") end
-        #if sum(Zv[i][:,1]) != 2 error("Subject $i, formulation 1, not have 2 observation, other solutions not implemented yet!!!") end
-        #if sum(Zv[i][:,2]) != 2 error("Subject $i, formulation 2, not have 2 observation, other solutions not implemented yet!!!") end
-    end
-end
-
-
+#             REML FOR OPT ALGORITHM
 #-------------------------------------------------------------------------------
 """
+    Optim reml without β
+    For Pre-opt
+"""
+function reml2!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2}, Rv::T, Vv::T, iVv::T, θvec::Array{Float64, 1}, β::Array{Float64, 1}, memc, memc2, memc3, memc4)::Float64 where T <: Array{Array{Float64, 2}, 1} where S <: Array{Array{Float64, 1}, 1}
+
+    gmat!(G, θvec[3], θvec[4], θvec[5])
+    c  = (N-p)*LOG2PI
+    θ1 = 0
+    #θ2 = 0
+    θ3 = 0
+    fill!(memc4, 0)
+    #θ2m  = zeros(p,p)
+    for i = 1:n
+        rmat!(Rv[i], [θvec[1], θvec[2]], Zv[i])
+        vmat!(Vv[i], G, Rv[i], Zv[i], memc)
+        copyto!(iVv[i], inv(Vv[i]))
+        θ1  += logdet(Vv[i])
+
+        mul!(memc2[size(Xv[i])[1]], Xv[i]', iVv[i])
+        memc4 .+= memc2[size(Xv[i])[1]]*Xv[i]
+        #θ2m .+= Xv[i]'*iVv[i]*Xv[i]
+
+        copyto!(memc3[length(yv[i])], yv[i])
+        memc3[length(yv[i])] .-= Xv[i]*β
+        θ3  += memc3[length(yv[i])]'*iVv[i]*memc3[length(yv[i])]
+        #r    = yv[i]-Xv[i]*β
+        #θ3  .+= r'*iVv[i]*r
+    end
+    #θ2       = logdet(θ2m)
+    return   -(θ1 + logdet(memc4) + θ3 + c)
+end
+"""
     Optim reml with β
+    For final opt
 """
 function reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, θvec, β, memc, memc2, memc3, memc4)
     n = length(yv)
@@ -373,40 +386,7 @@ function reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, θvec, β, memc, memc2, memc3, m
     #θ2       = logdet(θ2m)
     return   -(θ1 + logdet(memc4) + θ3 + c)
 end
-"""
-    Optim reml without β
-"""
-function reml2!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2}, Rv::T, Vv::T, iVv::T, θvec::Array{Float64, 1}, β::Array{Float64, 1}, memc, memc2, memc3, memc4)::Float64 where T <: Array{Array{Float64, 2}, 1} where S <: Array{Array{Float64, 1}, 1}
-
-    gmat!(G, θvec[3], θvec[4], θvec[5])
-    c  = (N-p)*LOG2PI
-    θ1 = 0
-    #θ2 = 0
-    θ3 = 0
-    fill!(memc4, 0)
-    #θ2m  = zeros(p,p)
-    for i = 1:n
-        rmat!(Rv[i], [θvec[1], θvec[2]], Zv[i])
-        vmat!(Vv[i], G, Rv[i], Zv[i], memc)
-        copyto!(iVv[i], inv(Vv[i]))
-        θ1  += logdet(Vv[i])
-
-        mul!(memc2[size(Xv[i])[1]], Xv[i]', iVv[i])
-        memc4 .+= memc2[size(Xv[i])[1]]*Xv[i]
-        #θ2m .+= Xv[i]'*iVv[i]*Xv[i]
-
-        copyto!(memc3[length(yv[i])], yv[i])
-        memc3[length(yv[i])] .-= Xv[i]*β
-        θ3  += memc3[length(yv[i])]'*iVv[i]*memc3[length(yv[i])]
-        #r    = yv[i]-Xv[i]*β
-        #θ3  .+= r'*iVv[i]*r
-    end
-    #θ2       = logdet(θ2m)
-    return   -(θ1 + logdet(memc4) + θ3 + c)
-end
-
 #-------------------------------------------------------------------------------
-
 """
     Initial variance computation
 """
@@ -434,5 +414,5 @@ function initvar(df, dv, fac, sbj)
     push!(fv, mean(sv))
     return fv
 end
-
+#-------------------------------------------------------------------------------
 end # module

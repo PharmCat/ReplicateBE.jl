@@ -14,6 +14,7 @@ using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlge
 
 LOG2PI = log(2π)
 
+
 struct RBE
     model::ModelFrame
     factors::Array{Symbol, 1}
@@ -72,6 +73,17 @@ function rbe(df; dvar::Symbol,
     pn = length(MF.contrasts[period].levels)
     sn = length(MF.contrasts[sequence].levels)
 
+    memc = Array{Array{Float64, 2}, 1}(undef, 4)
+    memc[1] = zeros(1,2)
+    memc[2] = zeros(2,2)
+    memc[3] = zeros(3,2)
+    memc[4] = zeros(4,2)
+    memc2 = Array{Array{Float64, 2}, 1}(undef, 4)
+    memc2[1] = zeros(p,1)
+    memc2[2] = zeros(p,2)
+    memc2[3] = zeros(p,3)
+    memc2[4] = zeros(p,4)
+
     if size(Z)[2] != 2 error("Size random effect matrix != 2. Not implemented yet!") end
     checkdata(X, Z, Xv, Zv, y)
 
@@ -90,7 +102,7 @@ function rbe(df; dvar::Symbol,
     matvecz!(Vv, Zv)
     matvecz!(iVv, Zv)
 
-    remlf(x) = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β)
+    remlf(x) = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β, memc)
 
     method =LBFGS()
     #method=ConjugateGradient()
@@ -99,7 +111,7 @@ function rbe(df; dvar::Symbol,
 
     pO = optimize(remlf, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0, Fminbox(method), Optim.Options(g_tol = 1e-2))
     θ  = Optim.minimizer(pO)
-    remlf(x) = -reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, x, β)
+    remlf(x) = -reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, x, β, memc, memc2)
     #O  = optimize(remlf, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, callback = βcoef!(p, n, yv, Xv, iVv, β), allow_f_increases = true, store_trace = true, extended_trace = true, show_trace = false)
     O  = optimize(remlf, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = true, extended_trace = true, show_trace = false)
     θ  = Optim.minimizer(O)
@@ -164,10 +176,9 @@ end
     if ρ > 1.0 ρ = 1.0 end
     if σ₁ < 0.0 σ₁ = 1.0e-6 end
     if σ₂ < 0.0 σ₂ = 1.0e-6 end
-    cov = sqrt(σ₁ * σ₂) * ρ
     G[1, 1] = σ₁
     G[2, 2] = σ₂
-    G[1, 2] = G[2, 1] = cov
+    G[1, 2] = G[2, 1] = sqrt(σ₁ * σ₂) * ρ
     return
 end
 
@@ -192,8 +203,11 @@ end
 @inline function vmat(G, R, Z)
     V  = Z*G*Z' + R
 end
-@inline function vmat!(V::Matrix{Float64}, G::Matrix{Float64}, R::Matrix{Float64}, Z::Matrix{Float64})
-    copyto!(V, Z*G*Z' + R)
+@inline function vmat!(V::Matrix{Float64}, G::Matrix{Float64}, R::Matrix{Float64}, Z::Matrix{Float64}, memc)
+    #copyto!(V, Z*G*Z')
+    mul!(memc[size(Z)[1]], Z, G)
+    mul!(V, memc[size(Z)[1]], Z')
+    V .+= R
     return
 end
 """
@@ -236,7 +250,7 @@ function cmat(Xv, Zv, iVv, θ)::Array{Float64, 2}
     p = size(Xv[1])[2]
     C = zeros(p,p)
     for i=1:length(Xv)
-        C = C + Xv[i]'*iVv[i]*Xv[i]
+        C .+= Xv[i]'*iVv[i]*Xv[i]
     end
     return inv(C)
 end
@@ -255,8 +269,8 @@ function βcoef!(p::Int, n::Int, yv::Array{Array{Float64, 1}, 1}, Xv::Array{Arra
     A = zeros(p,p)
     β0 = zeros(p)
     for i = 1:n
-        A = A + (Xv[i]'*iVv[i]*Xv[i])
-        β0 = β0 .+ Xv[i]'*iVv[i]*yv[i]
+        A  .+= Xv[i]'*iVv[i]*Xv[i]
+        β0 .+=  Xv[i]'*iVv[i]*yv[i]
     end
     copyto!(β, inv(A)*β0)
     return
@@ -280,7 +294,7 @@ function reml(yv, Zv, p, Xv, θvec, β)
         V   = vmat(G, R, Zv[i])
         iV  = inv(V)
         θ1  += logdet(V)
-        θ2m += Xv[i]'*iV *Xv[i]
+        θ2m += Xv[i]'*iV*Xv[i]
         r    = yv[i]-Xv[i]*β
         θ3  += r'*iV*r
     end
@@ -340,56 +354,59 @@ end
 """
     Optim reml with β
 """
-function reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, θvec, β)
+function reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, θvec, β, memc, memc2)
     n = length(yv)
     N = sum(length.(yv))
     gmat!(G, θvec[3], θvec[4], θvec[5])
     c  = (N-p)*LOG2PI #log(2π)
     θ1 = 0
-    θ2 = 0
+    #θ2 = 0
     θ3 = 0
     iV   = nothing
     θ2m  = zeros(p,p)
     βm   = zeros(p)
-    for i = 1:n
+    @inbounds for i = 1:n
         rmat!(Rv[i], [θvec[1], θvec[2]], Zv[i])
-        vmat!(Vv[i], G, Rv[i], Zv[i])
+        vmat!(Vv[i], G, Rv[i], Zv[i], memc)
         copyto!(iVv[i], inv(Vv[i]))
         θ1  += logdet(Vv[i])
-        tm   = Xv[i]'*iVv[i]    #Temp matrix for Xv[i]'*iV*Xv[i] and Xv[i]'*iV*yv[i] calc
-        θ2m += tm*Xv[i]
-        βm  += tm*yv[i]
+        mul!(memc2[size(Xv[i])[1]], Xv[i]', iVv[i])
+        θ2m .+= memc2[size(Xv[i])[1]]*Xv[i]
+        βm  .+= memc2[size(Xv[i])[1]]*yv[i]
+        #tm   = Xv[i]'*iVv[i]    #Temp matrix for Xv[i]'*iV*Xv[i] and Xv[i]'*iV*yv[i] calc
+        #θ2m .+= tm*Xv[i]
+        #βm  .+= tm*yv[i]
     end
-    copyto!(β, inv(θ2m)*βm)
+    mul!(β, inv(θ2m), βm)
     for i = 1:n
-        r    = yv[i]-Xv[i]*β
+        r    = yv[i] - Xv[i]*β
         θ3  += r'*iVv[i]*r
     end
-    θ2       = logdet(θ2m)
-    return   -(θ1 + θ2 + θ3 + c)
+    #θ2       = logdet(θ2m)
+    return   -(θ1 + logdet(θ2m) + θ3 + c)
 end
 """
     Optim reml without β
 """
-function reml2!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2}, Rv::T, Vv::T, iVv::T, θvec::Array{Float64, 1}, β::Array{Float64, 1})::Float64 where T <: Array{Array{Float64, 2}, 1} where S <: Array{Array{Float64, 1}, 1}
+function reml2!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2}, Rv::T, Vv::T, iVv::T, θvec::Array{Float64, 1}, β::Array{Float64, 1}, memc)::Float64 where T <: Array{Array{Float64, 2}, 1} where S <: Array{Array{Float64, 1}, 1}
 
     gmat!(G, θvec[3], θvec[4], θvec[5])
     c  = (N-p)*LOG2PI
     θ1 = 0
-    θ2 = 0
+    #θ2 = 0
     θ3 = 0
     θ2m  = zeros(p,p)
     for i = 1:n
         rmat!(Rv[i], [θvec[1], θvec[2]], Zv[i])
-        vmat!(Vv[i], G, Rv[i], Zv[i])
+        vmat!(Vv[i], G, Rv[i], Zv[i], memc)
         copyto!(iVv[i], inv(Vv[i]))
         θ1  += logdet(Vv[i])
-        θ2m += Xv[i]'*iVv[i]*Xv[i]
+        θ2m .+= Xv[i]'*iVv[i]*Xv[i]
         r    = yv[i]-Xv[i]*β
-        θ3  += r'*iVv[i]*r
+        θ3  .+= r'*iVv[i]*r
     end
-    θ2       = logdet(θ2m)
-    return   -(θ1 + θ2 + θ3 + c)
+    #θ2       = logdet(θ2m)
+    return   -(θ1 + logdet(θ2m) + θ3 + c)
 end
 
 #-------------------------------------------------------------------------------

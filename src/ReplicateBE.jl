@@ -42,6 +42,20 @@ struct RBE
     optim::Optim.MultivariateOptimizationResults
 end
 
+#=
+struct MemAlloc
+    ZG
+    β
+    θ2
+    r
+    tr
+    tX
+    tXiV
+    Xvβ
+    triVv
+end
+=#
+
 include("show.jl")
 include("utils.jl")
 include("memalloc.jl")
@@ -336,7 +350,7 @@ function reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, θvec, β, memc, memc2, memc3, m
         θ1  += logdet(Vv[i])
         mul!(memc2[size(Xv[i])[1]], Xv[i]', iVv[i])
         memc4 .+= memc2[size(Xv[i])[1]]*Xv[i]
-        βm  .+= memc2[size(Xv[i])[1]]*yv[i]
+        βm    .+= memc2[size(Xv[i])[1]]*yv[i]
 
         #ToDo
         #mul!(memcX[length(yv[i])], memc2[size(Xv[i])[1]], yv[i])

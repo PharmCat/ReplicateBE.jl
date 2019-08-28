@@ -106,7 +106,7 @@ function rbe(df; dvar::Symbol,
     #Calculate initial variance
     iv = initvar(df, dvar, formulation, subject)
     if iv[1] < iv[3] || iv[2] < iv[3] iv[1] = iv[2] = 2*iv[3] end
-    θvec0 = [iv[3], iv[3], iv[1]-iv[3], iv[2]-iv[3], 0.001]
+    θvec0 = [iv[3], iv[3], iv[1]-iv[3], iv[2]-iv[3], 0.501]
 
     #Prelocatiom for G, R, V, V⁻¹ matrices
     G     = zeros(2, 2)
@@ -179,6 +179,7 @@ end
 """
 @inline function gmat(σ₁, σ₂, ρ)
     if ρ > 1.0 ρ = 1.0 end
+    if ρ < 0.0 ρ = 0.0 end
     if σ₁ < 0.0 σ₁ = 1.0e-6 end
     if σ₂ < 0.0 σ₂ = 1.0e-6 end
     cov = sqrt(σ₁ * σ₂) * ρ
@@ -186,6 +187,7 @@ end
 end
 @inline function gmat!(G::Matrix{Float64}, σ₁::Float64, σ₂::Float64, ρ::Float64)
     if ρ > 1.0 ρ = 1.0 end
+    if ρ < 0.0 ρ = 0.0 end
     if σ₁ < 0.0 σ₁ = 1.0e-6 end
     if σ₂ < 0.0 σ₂ = 1.0e-6 end
     G[1, 1] = σ₁
@@ -304,6 +306,7 @@ function ctrst(p, Xv, Zv, iVv, θ, β, A)
         lclg(x) = lcgf(L, Xv, Zv, x)
         g       = ForwardDiff.gradient(lclg, θ)
         df[i]   = 2*((lcl)[1])^2/(g'*(A)*g)
+        #LinearAlgebra.eigen(L*C*L')
     end
     return se, F, df, C
 end

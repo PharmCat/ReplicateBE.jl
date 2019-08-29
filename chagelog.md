@@ -1,4 +1,7 @@
+- v0.1.3
 
+    * Performance optimization
+    
 - v0.1.2
 
     * change optimization algorithm

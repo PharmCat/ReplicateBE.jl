@@ -70,7 +70,7 @@ function rbe(df; dvar::Symbol,
     formulation::Symbol,
     period::Symbol,
     sequence::Symbol,
-    g_tol::Float64 = 1e-8, x_tol::Float64 = 1e-8, f_tol::Float64 = 1e-8, iterations::Int = 100,
+    g_tol::Float64 = 1e-8, x_tol::Float64 = 1e-12, f_tol::Float64 = 1e-12, iterations::Int = 100,
     store_trace = false, extended_trace = false, show_trace = false)
 
     categorical!(df, subject);
@@ -118,31 +118,33 @@ function rbe(df; dvar::Symbol,
     matvecz!(iVv, Zv)
 
     #First step optimization (pre-optimization)
-    td = OnceDifferentiable(x -> -2*reml(yv, Zv, p, Xv, x, β), θvec0; autodiff = :forward)
+    od = OnceDifferentiable(x -> -2*reml(yv, Zv, p, Xv, x, β), θvec0; autodiff = :forward)
     #remlf(x) = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
     method =LBFGS()
     #method=ConjugateGradient()
     #method = NelderMead()
 
     limeps=eps()
-    pO = optimize(td, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-2))
+    pO = optimize(od, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-2))
     #pO = optimize(remlf,  [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-2))
     θ  = Optim.minimizer(pO)
 
     #Final optimization
+    #Provide gradient function for Optim
+    g!(storage, θx) = copyto!(storage, ForwardDiff.gradient(x -> -2*reml(yv, Zv, p, Xv, x, β), θx))
+    #REML function for optimization
     remlfb(x) = -reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
-    #O  = optimize(remlf, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, callback = βcoef!(p, n, yv, Xv, iVv, β), allow_f_increases = true, store_trace = true, extended_trace = true, show_trace = false)
-    O  = optimize(remlfb, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
+    O  = optimize(remlfb, g!, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
     θ  = Optim.minimizer(O)
 
     #H  = Optim.trace(O)[end].metadata["h(x)"]
     #remlv = remlf(θ)
     remlv = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memc, memc2, memc3, memc4)
-
+    #θ[5] can not be more than 1.0
     if θ[5] > 1 θ[5] = 1 end
     #Get Hessian matrix (H) with ForwardDiff
-    remlf2(x) = -2*reml(yv, Zv, p, Xv, x, β)
-    H         = ForwardDiff.hessian(remlf2, θ)
+    #remlf2(x) = -2*reml(yv, Zv, p, Xv, x, β)
+    H         = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, x, β), θ)
     dH        = det(H)
     H[5,:] .= 0
     H[:,5] .= 0
@@ -220,6 +222,7 @@ end
 """
 @inline function vmat(G, R, Z)
     V  = Z*G*Z' + R
+    return V
 end
 @inline function vmat!(V::Matrix{Float64}, G::Matrix{Float64}, R::Matrix{Float64}, Z::Matrix{Float64}, memc)
     #copyto!(V, Z*G*Z')

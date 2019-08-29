@@ -22,9 +22,12 @@ end
     df = CSV.read(IOBuffer(be4)) |> DataFrame
     be = ReplicateBE.rbe(df, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence);
     ci = ReplicateBE.confint(be, 0.1, expci = true, inv = true)
-    @test be.reml  ≈  530.1445137281626 atol=1E-5
-    @test ci[5][1] ≈    1.0710413558879295 atol=1E-5
-    @test ci[5][2] ≈    1.2489423703460276 atol=1E-5
+    @test be.reml  ≈  530.1445137281626  atol=1E-5
+    @test be.se[6] ≈    0.04650123700721 atol=1E-5
+    @test be.f[6]  ≈    9.78552229238432 atol=1E-5
+    @test be.df[6] ≈  208.08115303672898 atol=1E-5
+    @test ci[5][1] ≈    1.07104135588792 atol=1E-5
+    @test ci[5][2] ≈    1.24894237034602 atol=1E-5
 end
 
 #Patterson SD, Jones B. Viewpoint: observations on scaled average bioequivalence. Pharm Stat. 2012; 11(1): 1–7. doi:10.1002/pst.498

@@ -121,7 +121,7 @@ function rbe(df; dvar::Symbol,
     od = OnceDifferentiable(x -> -2*reml(yv, Zv, p, Xv, x, β), θvec0; autodiff = :forward)
     #remlf(x) = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
     method =LBFGS()
-    #method=ConjugateGradient()
+    #method = ConjugateGradient()
     #method = NelderMead()
 
     limeps=eps()
@@ -134,7 +134,7 @@ function rbe(df; dvar::Symbol,
     g!(storage, θx) = copyto!(storage, ForwardDiff.gradient(x -> -2*reml(yv, Zv, p, Xv, x, β), θx))
     #REML function for optimization
     remlfb(x) = -reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
-    O  = optimize(remlfb, g!, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
+    O  = optimize(remlfb, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
     θ  = Optim.minimizer(O)
 
     #H  = Optim.trace(O)[end].metadata["h(x)"]

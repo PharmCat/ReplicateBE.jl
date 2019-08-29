@@ -1,13 +1,14 @@
 language: julia
+dist: trusty
 os:
   - linux
   - osx
-  
-dist: xenial
+  - windows
 
 julia:
   - 1.0
-  - 1.1
+  - 1.2
+  - 1.3
   - nightly
 
 branches:
@@ -16,6 +17,7 @@ branches:
 
 matrix:
   allow_failures:
+  - julia: 1.3
   - julia: nightly
 
 notifications:

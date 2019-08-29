@@ -118,12 +118,15 @@ function rbe(df; dvar::Symbol,
     matvecz!(iVv, Zv)
 
     #First step optimization (pre-optimization)
-    remlf(x) = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
+    td = OnceDifferentiable(x -> -2*reml(yv, Zv, p, Xv, x, β), θvec0; autodiff = :forward)
+    #remlf(x) = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
     method =LBFGS()
     #method=ConjugateGradient()
     #method = NelderMead()
+
     limeps=eps()
-    pO = optimize(remlf, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0, Fminbox(method), Optim.Options(g_tol = 1e-2))
+    pO = optimize(td, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-2))
+    #pO = optimize(remlf,  [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-2))
     θ  = Optim.minimizer(pO)
 
     #Final optimization
@@ -133,7 +136,8 @@ function rbe(df; dvar::Symbol,
     θ  = Optim.minimizer(O)
 
     #H  = Optim.trace(O)[end].metadata["h(x)"]
-    remlv = remlf(θ)
+    #remlv = remlf(θ)
+    remlv = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memc, memc2, memc3, memc4)
 
     if θ[5] > 1 θ[5] = 1 end
     #Get Hessian matrix (H) with ForwardDiff
@@ -318,7 +322,6 @@ end
     For Pre-opt
 """
 function reml2!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2}, Rv::T, Vv::T, iVv::T, θvec::Array{Float64, 1}, β::Array{Float64, 1}, memc, memc2, memc3, memc4)::Float64 where T <: Array{Array{Float64, 2}, 1} where S <: Array{Array{Float64, 1}, 1}
-
     gmat!(G, θvec[3], θvec[4], θvec[5])
     c  = (N-p)*LOG2PI
     θ1 = 0
@@ -331,11 +334,9 @@ function reml2!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2
         vmat!(Vv[i], G, Rv[i], Zv[i], memc)
         copyto!(iVv[i], inv(Vv[i]))
         θ1  += logdet(Vv[i])
-
         mul!(memc2[size(Xv[i])[1]], Xv[i]', iVv[i])
         memc4 .+= memc2[size(Xv[i])[1]]*Xv[i]
         #θ2m .+= Xv[i]'*iVv[i]*Xv[i]
-
         copyto!(memc3[length(yv[i])], yv[i])
         memc3[length(yv[i])] .-= Xv[i]*β
         θ3  += memc3[length(yv[i])]'*iVv[i]*memc3[length(yv[i])]
@@ -373,7 +374,6 @@ function reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, θvec, β, memc, memc2, memc3, m
         #ToDo
         #mul!(memcX[length(yv[i])], memc2[size(Xv[i])[1]], yv[i])
         #βm  .+= memcX[length(yv[i])]
-
         #tm   = Xv[i]'*iVv[i]    #Temp matrix for Xv[i]'*iV*Xv[i] and Xv[i]'*iV*yv[i] calc
         #θ2m .+= tm*Xv[i]
         #βm  .+= tm*yv[i]

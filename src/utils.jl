@@ -32,7 +32,7 @@ function calcci(x::Float64, se::Float64, df::Float64, alpha::Float64, expci::Boo
 end
 function Base.show(io::IO, obj::Tuple{Vararg{Tuple{Float64, Float64}}})
     for i in obj
-        println(i)
+        println(io, i)
     end
 end
 function reml2(obj::RBE, θ::Array{Float64, 1})

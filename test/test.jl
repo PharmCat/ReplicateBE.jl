@@ -13,6 +13,16 @@ include("testdata.jl")
     @test be.β[6]  ≈  -0.0791666 atol=1E-5
     @test be.se[6] ≈   0.09037378448083119 atol=1E-5
     @test be.reml  ≈  10.065238638105903 atol=1E-5
+    ci = ReplicateBE.confint(be, 0.1, expci = false, inv = false)
+    @test ci[5][1] ≈  -0.25791330363201714 atol=1E-5
+    @test ci[5][2] ≈   0.09957997029868393 atol=1E-5
+
+    io = IOBuffer();
+    Base.show(io, be)
+    @test io.size == 1518
+    io = IOBuffer();
+    Base.show(io, ci)
+    @test io.size == 213
 end
 
 @testset "  #4 QA 1 Bioequivalence 2x2x4, UnB, NC Dataset " begin

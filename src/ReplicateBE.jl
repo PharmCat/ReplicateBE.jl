@@ -274,8 +274,7 @@ function reml(yv, Zv, p, Xv, θvec, β)
         iV   = inv(V)
         θ1  += logdet(V)
         mul!(mem, Xv[i]'*iV, Xv[i])
-        θ2m += mem
-        #θ2m += Xv[i]'*iV*Xv[i]
+        θ2m += mem                                       #θ2m += Xv[i]'*iV*Xv[i]
         r    = yv[i]-Xv[i]*β
         θ3  += r'*iV*r
     end

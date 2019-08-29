@@ -258,26 +258,29 @@ end
     REML function for ForwardDiff
 """
 function reml(yv, Zv, p, Xv, θvec, β)
-    n = length(yv)
-    N = sum(length.(yv))
-    G = gmat(θvec[3], θvec[4], θvec[5])
-    c  = (N-p)/2*LOG2PI
-    θ1 = 0
-    θ2 = 0
-    θ3 = 0
-    iV   = nothing
-    θ2m  = zeros(p,p)
+    n     = length(yv)
+    N     = sum(length.(yv))
+    G     = gmat(θvec[3], θvec[4], θvec[5])
+    c     = (N-p)*LOG2PI
+    θ1    = 0
+    θ2    = 0
+    θ3    = 0
+    iV    = nothing
+    θ2m   = zeros(promote_type(Float64, eltype(θvec)), p, p)
+    mem   = zeros(promote_type(Float64, eltype(θvec)), p, p)
     for i = 1:n
-        R   = rmat([θvec[1], θvec[2]], Zv[i])
-        V   = vmat(G, R, Zv[i])
-        iV  = inv(V)
+        R    = rmat([θvec[1], θvec[2]], Zv[i])
+        V    = vmat(G, R, Zv[i])
+        iV   = inv(V)
         θ1  += logdet(V)
-        θ2m += Xv[i]'*iV*Xv[i]
+        mul!(mem, Xv[i]'*iV, Xv[i])
+        θ2m += mem
+        #θ2m += Xv[i]'*iV*Xv[i]
         r    = yv[i]-Xv[i]*β
         θ3  += r'*iV*r
     end
     θ2       = logdet(θ2m)
-    return   -(θ1/2 + θ2/2 + θ3/2 + c)
+    return   -(θ1 + θ2 + θ3 + c)/2
 end
 function lcgf(L, Xv, Zv, θ)
     p   = size(Xv[1])[2]

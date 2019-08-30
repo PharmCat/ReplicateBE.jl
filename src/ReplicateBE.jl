@@ -120,7 +120,7 @@ function rbe(df; dvar::Symbol,
     #First step optimization (pre-optimization)
     od = OnceDifferentiable(x -> -2*reml(yv, Zv, p, Xv, x, β), θvec0; autodiff = :forward)
     #remlf(x) = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
-    method =LBFGS()
+    method = LBFGS()
     #method = ConjugateGradient()
     #method = NelderMead()
 
@@ -131,27 +131,29 @@ function rbe(df; dvar::Symbol,
 
     #Final optimization
     #Provide gradient function for Optim
-    g!(storage, θx) = copyto!(storage, ForwardDiff.gradient(x -> -2*reml(yv, Zv, p, Xv, x, β), θx))
+    #Not used yet
+    #g!(storage, θx) = copyto!(storage, ForwardDiff.gradient(x -> -2*reml(yv, Zv, p, Xv, x, β), θx))
     #REML function for optimization
     remlfb(x) = -reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
     O  = optimize(remlfb, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
     θ  = Optim.minimizer(O)
 
-    #H  = Optim.trace(O)[end].metadata["h(x)"]
-    #remlv = remlf(θ)
+    #Get reml
     remlv = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memc, memc2, memc3, memc4)
+
     #θ[5] can not be more than 1.0
     if θ[5] > 1 θ[5] = 1 end
+
     #Get Hessian matrix (H) with ForwardDiff
-    #remlf2(x) = -2*reml(yv, Zv, p, Xv, x, β)
     H         = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, x, β), θ)
     dH        = det(H)
     H[5,:] .= 0
     H[:,5] .= 0
+
     #Secondary parameters calculation
     A            = 2*pinv(H)
     se, F, df, C = ctrst(p, Xv, Zv, iVv, θ, β, A)
-    df2          = N / pn - sn
+    df2          = N / pn - sn                                                  #!!!should be checked!!!
     return RBE(MF, RMF, [sequence, period, formulation], β, θvec0, θ, remlv, se, F, df, df2, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
 end #END OF rbe()
 #-------------------------------------------------------------------------------
@@ -258,39 +260,52 @@ end
     REML function for ForwardDiff
 """
 function reml(yv, Zv, p, Xv, θvec, β)
-    n     = length(yv)
-    N     = sum(length.(yv))
-    G     = gmat(θvec[3], θvec[4], θvec[5])
-    c     = (N-p)*LOG2PI
-    θ1    = 0
-    θ2    = 0
-    θ3    = 0
-    iV    = nothing
-    θ2m   = zeros(promote_type(Float64, eltype(θvec)), p, p)
-    mem   = zeros(promote_type(Float64, eltype(θvec)), p, p)
+    maxobs    = maximum(length.(yv))
+    #some memory optimizations to reduse allocations
+    mXviV     = Array{Array{eltype(θvec), 2}, 1}(undef, maxobs)
+    mXviVXv   = zeros(promote_type(Float64, eltype(θvec)), p, p)
+    for i = 1:maxobs
+        mXviV[i] =  zeros(promote_type(Float64, eltype(θvec)), p, i)
+    end
+    #---------------------------------------------------------------------------
+    n         = length(yv)
+    N         = sum(length.(yv))
+    G         = gmat(θvec[3], θvec[4], θvec[5])
+    c         = (N-p)*LOG2PI
+    θ1        = 0
+    θ2        = zeros(promote_type(Float64, eltype(θvec)), p, p)
+    θ3        = 0
+    iV        = nothing
+
     for i = 1:n
         R    = rmat([θvec[1], θvec[2]], Zv[i])
         V    = vmat(G, R, Zv[i])
         iV   = inv(V)
         θ1  += logdet(V)
-        mul!(mem, Xv[i]'*iV, Xv[i])
-        θ2m += mem                                       #θ2m += Xv[i]'*iV*Xv[i]
+        #-----------------------------------------------------------------------
+        #θ2 += Xv[i]'*iV*Xv[i]
+        mul!(mXviV[size(Xv[i])[1]], Xv[i]', iV)
+        mul!(mXviVXv, mXviV[size(Xv[i])[1]], Xv[i])
+        θ2  += mXviVXv
+        #-----------------------------------------------------------------------
         r    = yv[i]-Xv[i]*β
         θ3  += r'*iV*r
     end
-    θ2       = logdet(θ2m)
-    return   -(θ1 + θ2 + θ3 + c)/2
+    return   -(θ1 + logdet(θ2) + θ3 + c)/2
 end
-function lcgf(L, Xv, Zv, θ)
+"""
+    Satterthwaite DF gradient function
+"""
+function lclgf(L, Lt, Xv, Zv, θ)
     p   = size(Xv[1])[2]
-    C   = zeros(p,p)
     G   = gmat(θ[3], θ[4], θ[5])
+    C   = zeros(promote_type(Float64, eltype(θ)), p, p)
     for i=1:length(Xv)
         R   = rmat([θ[1], θ[2]], Zv[i])
         iV  = inv(vmat(G, R, Zv[i]))
-        C   = C + Xv[i]'*iV*Xv[i]
+        C  += Xv[i]'*iV*Xv[i]
     end
-    return (L*inv(C)*L')[1]
+    return (L*inv(C)*Lt)[1]
 end
 """
     Secondary param estimation:
@@ -305,14 +320,15 @@ function ctrst(p, Xv, Zv, iVv, θ, β, A)
     F     = Array{Float64, 1}(undef, p)
     df    = Array{Float64, 1}(undef, p)
     for i = 1:p
-        L    = zeros(p)
-        L[i] = 1
-        L    = L'
-        lcl  = L*C*L'
-        lclr = rank(lcl)
+        L    = zeros(1, p)
+        L[i]    = 1
+        Lt      = L'
+        lcl     = L*C*Lt                         #lcl     = L*C*L'
+        lclr    = rank(lcl)
         se[i]   = sqrt((lcl)[1])
-        F[i]    = (L*β)'*inv(lcl)*(L*β)/lclr           #F[i]    = (L*β)'*inv(L*C*L')*(L*β)
-        lclg(x) = lcgf(L, Xv, Zv, x)
+        Lβ      = L*β
+        F[i]    = Lβ'*inv(lcl)*Lβ/lclr           #F[i]    = (L*β)'*inv(L*C*L')*(L*β)
+        lclg(x) = lclgf(L, Lt, Xv, Zv, x)
         g       = ForwardDiff.gradient(lclg, θ)
         df[i]   = 2*((lcl)[1])^2/(g'*(A)*g)
         #LinearAlgebra.eigen(L*C*L')
@@ -388,10 +404,10 @@ function reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, θvec, β, memc, memc2, memc3, m
         copyto!(memc3[length(yv[i])], yv[i])
         memc3[length(yv[i])] .-= Xv[i]*β
         θ3  += memc3[length(yv[i])]'*iVv[i]*memc3[length(yv[i])]
-        #=
-        r    = yv[i] - Xv[i]*β
-        θ3  += r'*iVv[i]*r
-        =#
+        #Same:
+        #r    = yv[i] - Xv[i]*β
+        #θ3  += r'*iVv[i]*r
+
     end
     #θ2       = logdet(θ2m)
     return   -(θ1 + logdet(memc4) + θ3 + c)

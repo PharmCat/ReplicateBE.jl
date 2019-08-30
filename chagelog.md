@@ -1,7 +1,10 @@
 - v0.1.3
 
     * Performance optimization
-    
+    * Increase coverage
+    * Add test
+    * Code cosmetics
+
 - v0.1.2
 
     * change optimization algorithm

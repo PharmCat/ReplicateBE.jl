@@ -45,7 +45,7 @@ function contrast(obj::RBE, L::Matrix{T}) where T <: Real
 end
 function lsm(obj::RBE, L::Matrix{T}) where T <: Real
     lcl  = L*obj.C*L'
-    return L*obj.β, sqrt.((lcl))
+    return L*obj.β, sqrt.(lcl)
 end
 function emm(obj::RBE, fm, lm)
     La = lmean(obj::RBE)'

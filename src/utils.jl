@@ -32,7 +32,7 @@ function calcci(x::Float64, se::Float64, df::Float64, alpha::Float64, expci::Boo
 end
 function Base.show(io::IO, obj::Tuple{Vararg{Tuple{Float64, Float64}}})
     for i in obj
-        println(i)
+        println(io, i)
     end
 end
 function reml2(obj::RBE, θ::Array{Float64, 1})
@@ -45,7 +45,7 @@ function contrast(obj::RBE, L::Matrix{T}) where T <: Real
 end
 function lsm(obj::RBE, L::Matrix{T}) where T <: Real
     lcl  = L*obj.C*L'
-    return L*obj.β, sqrt.((lcl))
+    return L*obj.β, sqrt.(lcl)
 end
 function emm(obj::RBE, fm, lm)
     La = lmean(obj::RBE)'

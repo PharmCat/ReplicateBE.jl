@@ -70,7 +70,7 @@ function rbe(df; dvar::Symbol,
     formulation::Symbol,
     period::Symbol,
     sequence::Symbol,
-    g_tol::Float64 = 1e-8, x_tol::Float64 = 1e-12, f_tol::Float64 = 1e-12, iterations::Int = 100,
+    g_tol::Float64 = 1e-8, x_tol::Float64 = 0.0, f_tol::Float64 = 0.0, iterations::Int = 100,
     store_trace = false, extended_trace = false, show_trace = false)
 
     categorical!(df, subject);

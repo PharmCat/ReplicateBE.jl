@@ -66,3 +66,16 @@ end
     @test ci[5][1] ≈    0.8754960202413755 atol=1E-5
     @test ci[5][2] ≈    1.0042930817939983 atol=1E-5
 end
+
+@testset "  #  Utils test                                 " begin
+
+    df = CSV.read(IOBuffer(be6)) |> DataFrame
+    be = ReplicateBE.rbe(df, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
+    @test ReplicateBE.contrast(be, [0 0 0 0 0 1]) ≈ 2.399661660365819 atol=1E-5
+    lsmean = ReplicateBE.lsm(be, [0 0 0 0 0 1])
+    @test lsmean[1][1] ≈ 0.0643403 atol=1E-5
+    @test lsmean[2][1] ≈ 0.0415345 atol=1E-5
+    lsm = ReplicateBE.emm(be, [1 1 1 1 1 0], [0 0 0 0 0 0])
+    @test lsm[1][1]    ≈ 4.616254407007809     atol=1E-5
+    @test lsm[2][1]    ≈ 0.08217365963420642   atol=1E-5
+end

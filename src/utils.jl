@@ -54,13 +54,15 @@ function emm(obj::RBE, fm, lm)
     return lsm(obj, Matrix(L'))
 end
 function lmean(obj::RBE)
-    coef  = Array{Float64, 1}(undef, length(obj.factors))
+    #coef  = Array{Float64, 1}(undef, length(obj.factors))
     L    = zeros(length(obj.β))
     L[1] = 1.0
     it    = 2
     for f in obj.factors
-        for l in obj.model.contrasts[f].termnames
-            dev    = 1/length(obj.model.contrasts[f].levels)
+        term = findterm(obj.model, f)
+        len  = length(obj.model.f.rhs.terms[term].contrasts.termnames)
+        dev  = 1/length(obj.model.f.rhs.terms[term].contrasts.levels)
+        for i = 1:len
             L[it] = dev
             it  += 1
         end

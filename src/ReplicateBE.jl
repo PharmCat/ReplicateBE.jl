@@ -5,15 +5,15 @@
 
 module ReplicateBE
 
-using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlgebra, Optim
+using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlgebra, Optim, Memoize, TimerOutputs
 
     export RBE, rbe, reml2, show, confint, contrast, lsm, emm, lmean
     import Base.show
     import StatsBase.confint
     import Statistics.var
 
-LOG2PI = log(2π)
-
+const LOG2PI = log(2π)
+const MEMOPT = true
 
 struct RBE
     model::ModelFrame               #Model frame
@@ -57,6 +57,21 @@ struct MemAlloc
 end
 =#
 
+#Find by Symbol
+function findterm(MF::ModelFrame, symbol::Symbol)::Int
+    l = length(MF.f.rhs.terms)
+    for i = 1:l
+        if isa(MF.f.rhs.terms[i], InterceptTerm) continue end
+        if MF.f.rhs.terms[i].sym == symbol return i end
+    end
+    return 0
+end
+#Return length by Symbol
+function termmodellen(MF::ModelFrame, symbol::Symbol)::Int
+    id = findterm(MF, symbol)
+    return length(MF.f.rhs.terms[id].contrasts.termnames)
+end
+
 include("show.jl")
 include("utils.jl")
 include("memalloc.jl")
@@ -71,13 +86,15 @@ function rbe(df; dvar::Symbol,
     period::Symbol,
     sequence::Symbol,
     g_tol::Float64 = 1e-8, x_tol::Float64 = 0.0, f_tol::Float64 = 0.0, iterations::Int = 100,
-    store_trace = false, extended_trace = false, show_trace = false)
+    store_trace = false, extended_trace = false, show_trace = false, memopt = true)
+
+    to = TimerOutput()
 
     categorical!(df, subject);
     categorical!(df, formulation);
     categorical!(df, period);
     categorical!(df, sequence);
-    sort!(df, [subject, formulation, period])
+    @timeit to "sort" sort!(df, [subject, formulation, period])
     Xf = @eval(@formula($dvar ~ $sequence + $period + $formulation))
     Zf = @eval(@formula($dvar ~ 0 + $formulation))
     MF = ModelFrame(Xf, df)
@@ -88,20 +105,22 @@ function rbe(df; dvar::Symbol,
     y  = df[:, dvar]                                                            #Dependent variable
 
     #Make pre located arrays with matrices for each subject
-    Xv, Zv, yv = sortsubjects(df, subject, X, Z, y)
+    @timeit to "sortsubj" Xv, Zv, yv = sortsubjects(df, subject, X, Z, y)
     n  = length(Xv)
     N  = sum(length.(yv))
-    pn = length(MF.contrasts[period].levels)
-    sn = length(MF.contrasts[sequence].levels)
+    pn = termmodellen(MF, period)
+    sn = termmodellen(MF, sequence)
+    #pn = length(MF.contrasts[period].levels)
+    #sn = length(MF.contrasts[sequence].levels)
 
     #Memory pre-allocation arrays for matrix computations
     memc, memc2, memc3, memc4 = memcalloc(p, 2, yv)
     #Check data
-    checkdata(X, Z, Xv, Zv, y)
+    @timeit to "check" checkdata(X, Z, Xv, Zv, y)
 
     #Calculate initial fixed parameters
     qro   = qr(X)
-    β     = inv(qro.R)*qro.Q'*y
+    @timeit to "lm"  β     = inv(qro.R)*qro.Q'*y
 
     #Calculate initial variance
     iv = initvar(df, dvar, formulation, subject)
@@ -119,14 +138,15 @@ function rbe(df; dvar::Symbol,
 
     #First step optimization (pre-optimization)
     od = OnceDifferentiable(x -> -2*reml(yv, Zv, p, Xv, x, β), θvec0; autodiff = :forward)
-    #remlf(x) = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
+    #remlf(x)   = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
+    #remlf(x)  = -reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
     method = LBFGS()
     #method = ConjugateGradient()
     #method = NelderMead()
 
     limeps=eps()
-    pO = optimize(od, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-3))
-    #pO = optimize(remlf,  [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-2))
+    @timeit to "o1" pO = optimize(od, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-4))
+    #pO = optimize(remlf,  [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-3))
     θ  = Optim.minimizer(pO)
 
     #Final optimization
@@ -134,26 +154,28 @@ function rbe(df; dvar::Symbol,
     #Not used yet
     #g!(storage, θx) = copyto!(storage, ForwardDiff.gradient(x -> -2*reml(yv, Zv, p, Xv, x, β), θx))
     #REML function for optimization
-    remlfb(x) = -reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
-    O  = optimize(remlfb, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
+    remlfb(x) = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
+    @timeit to "o2" O  = optimize(remlfb, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
     θ  = Optim.minimizer(O)
 
     #Get reml
-    remlv = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memc, memc2, memc3, memc4)
+    remlv = -2*reml(yv, Zv, p, Xv, θ, β)
+    #remlv = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memc, memc2, memc3, memc4)
 
     #θ[5] can not be more than 1.0
     if θ[5] > 1 θ[5] = 1 end
 
     #Get Hessian matrix (H) with ForwardDiff
-    H         = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, x, β), θ)
+    @timeit to "H" H         = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, x, β), θ)
     dH        = det(H)
     H[5,:] .= 0
     H[:,5] .= 0
 
     #Secondary parameters calculation
     A            = 2*pinv(H)
-    se, F, df, C = ctrst(p, Xv, Zv, iVv, θ, β, A)
-    df2          = N / pn - sn                                                  #!!!should be checked!!!
+    @timeit to "etc" se, F, df, C = ctrst(p, Xv, Zv, iVv, θ, β, A)
+    df2          = N / pn - sn
+    #println(to)                               #!!!should be checked!!!
     return RBE(MF, RMF, [sequence, period, formulation], β, θvec0, θ, remlv, se, F, df, df2, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
 end #END OF rbe()
 #-------------------------------------------------------------------------------
@@ -163,11 +185,11 @@ end #END OF rbe()
 """
 function sortsubjects(df::DataFrame, sbj::Symbol, X::Matrix, Z::Matrix, y::Vector)
     u = unique(df[:, sbj])
-    Xa = Array{Array{Float64,2}, 1}(undef, 0)
-    Za = Array{Array{Float64,2}, 1}(undef, 0)
-    ya = Array{Array{Float64,1}, 1}(undef, 0)
-    for i in u
-        v = findall(x->x==i, df[:, sbj])
+    Xa = Array{Array{Float64,2}, 1}(undef, length(u))
+    Za = Array{Array{Float64,2}, 1}(undef, length(u))
+    ya = Array{Array{Float64,1}, 1}(undef, length(u))
+    for i = 1:length(u)
+        v = findall(x->x==u[i], df[:, sbj])
         Xs = Array{Float64, 1}(undef, 0)
         Zs = Array{Float64, 1}(undef, 0)
         ys = Array{Float64, 1}(undef, 0)
@@ -176,16 +198,22 @@ function sortsubjects(df::DataFrame, sbj::Symbol, X::Matrix, Z::Matrix, y::Vecto
             append!(Zs, Z[r, :])
             push!(ys, y[r])
         end
-        push!(Xa, Matrix(reshape(Xs, size(X)[2], :)'))
-        push!(Za, Matrix(reshape(Zs, size(Z)[2], :)'))
-        push!(ya, ys)
+        Xa[i] = Matrix(reshape(Xs, size(X)[2], :)')
+        Za[i] = Matrix(reshape(Zs, size(Z)[2], :)')
+        ya[i] = ys
+    end
+    for i = 1:length(u)
+        for c = 1:length(u)
+            if Za[i] == Za[c] && Za[i] !== Za[c] Za[i] = Za[c] end
+            if Xa[i] == Xa[c] && Xa[i] !== Xa[c] Xa[i] = Xa[c] end
+        end
     end
     return Xa, Za, ya
 end
 """
     G matrix
 """
-@inline function gmat(σ₁, σ₂, ρ)
+@inline function gmat(σ₁::S, σ₂::T, ρ::U)::Matrix where S <: Real where T <: Real where U <: Real
     if ρ > 1.0 ρ = 1.0 end
     if ρ < 0.0 ρ = 0.0 end
     if σ₁ < 0.0 σ₁ = 1.0e-6 end
@@ -207,7 +235,7 @@ end
 """
     R matrix (ForwardDiff+)
 """
-@inline function rmat(σ, Z)
+@inline function rmat(σ::Vector{S}, Z::Matrix{T})::Matrix where S <: Real where T <: Real
     if σ[1] < 0.0 σ[1] = 1.0e-6 end
     if σ[2] < 0.0 σ[2] = 1.0e-6 end
     return Matrix(Diagonal((Z*σ)[:,1]))
@@ -218,7 +246,18 @@ end
     copyto!(R, Matrix(Diagonal((Z*σ)[:,1])))
     return
 end
-
+@memoize function memrmat(σ::Vector, Z::Matrix)::Matrix
+    return rmat(σ, Z)
+end
+@memoize function memzgz(G::Matrix, Z::Matrix)::Matrix
+    return Z*G*Z'
+end
+@memoize function memvmat(ZGZ::Matrix, R::Matrix)::Matrix
+    return ZGZ + R
+end
+@memoize function meminv(m::Matrix)::Matrix
+    return inv(m)
+end
 """
     Return variance-covariance matrix V
 """
@@ -256,10 +295,12 @@ end
     return inv(C)
 end
 #println("θ₁: ", θ1, " θ₂: ",  θ2,  " θ₃: ", θ3)
+
+
 """
     REML function for ForwardDiff
 """
-function reml(yv, Zv, p, Xv, θvec, β)
+function reml(yv, Zv, p, Xv, θvec, β; memopt::Bool = true)
     maxobs    = maximum(length.(yv))
     #some memory optimizations to reduse allocations
     mXviV     = Array{Array{eltype(θvec), 2}, 1}(undef, maxobs)
@@ -276,11 +317,17 @@ function reml(yv, Zv, p, Xv, θvec, β)
     θ2        = zeros(promote_type(Float64, eltype(θvec)), p, p)
     θ3        = 0
     iV        = nothing
-
+    θr   = [θvec[1], θvec[2]]
     for i = 1:n
-        R    = rmat([θvec[1], θvec[2]], Zv[i])
-        V    = vmat(G, R, Zv[i])
-        iV   = inv(V)
+        if MEMOPT && memopt
+            R    = memrmat(θr, Zv[i])
+            V    = memvmat(memzgz(G, Zv[i]), R)
+            iV   = meminv(V)
+        else
+            R    = rmat(θr, Zv[i])
+            V    = vmat(G, R, Zv[i])
+            iV   = inv(V)
+        end
         θ1  += logdet(V)
         #-----------------------------------------------------------------------
         #θ2 += Xv[i]'*iV*Xv[i]
@@ -300,9 +347,11 @@ function lclgf(L, Lt, Xv, Zv, θ)
     p   = size(Xv[1])[2]
     G   = gmat(θ[3], θ[4], θ[5])
     C   = zeros(promote_type(Float64, eltype(θ)), p, p)
+    θr  = [θ[1], θ[2]]
     for i=1:length(Xv)
-        R   = rmat([θ[1], θ[2]], Zv[i])
-        iV  = inv(vmat(G, R, Zv[i]))
+        iV   = meminv(memvmat(memzgz(G, Zv[i]), memrmat(θr, Zv[i])))
+        #R   = rmat(θr, Zv[i])
+        #iV  = inv(vmat(G, R, Zv[i]))
         C  += Xv[i]'*iV*Xv[i]
     end
     return (L*inv(C)*Lt)[1]
@@ -350,8 +399,9 @@ function reml2!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2
     θ3 = 0
     fill!(memc4, 0)
     #θ2m  = zeros(p,p)
+    θr    = [θvec[1], θvec[2]]
     for i = 1:n
-        rmat!(Rv[i], [θvec[1], θvec[2]], Zv[i])
+        rmat!(Rv[i], θr, Zv[i])
         vmat!(Vv[i], G, Rv[i], Zv[i], memc)
         copyto!(iVv[i], inv(Vv[i]))
         θ1  += logdet(Vv[i])
@@ -367,29 +417,41 @@ function reml2!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2
     #θ2       = logdet(θ2m)
     return   -(θ1 + logdet(memc4) + θ3 + c)
 end
+
+
 """
     Optim reml with β
     For final opt
 """
-function reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, θvec, β, memc, memc2, memc3, memc4)
-    n = length(yv)
-    N = sum(length.(yv))
+function reml2b!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2}, Rv::T, Vv::T, iVv::T, θvec::Array{Float64, 1}, β::Array{Float64, 1}, memc, memc2, memc3, memc4)::Float64 where T <: Array{Array{Float64, 2}, 1} where S <: Array{Array{Float64, 1}, 1}
+
+    @memoize function lmemzgz(G, Z)
+        return Z*G*Z'
+    end
+
     gmat!(G, θvec[3], θvec[4], θvec[5])
     c  = (N-p)*LOG2PI #log(2π)
     θ1 = 0
-    #θ2 = 0
+    θ2  = zeros(p, p)
     θ3 = 0
     iV   = nothing
     fill!(memc4, 0)
     #θ2m  = zeros(p,p)
     βm   = zeros(p)
+    θr   = [θvec[1], θvec[2]]
     @inbounds for i = 1:n
-        rmat!(Rv[i], [θvec[1], θvec[2]], Zv[i])
-        vmat!(Vv[i], G, Rv[i], Zv[i], memc)
-        copyto!(iVv[i], inv(Vv[i]))
+        #rmat!(Rv[i], θr, Zv[i])
+        #vmat!(Vv[i], G, Rv[i], Zv[i], memc)
+        #copyto!(iVv[i], inv(Vv[i]))
+
+        Rv[i] = memrmat(θr, Zv[i])
+        zgz   = lmemzgz(G,  Zv[i])
+        Vv[i] = memvmat(zgz, Rv[i])
+        iVv[i]= meminv(Vv[i])
+
         θ1  += logdet(Vv[i])
         mul!(memc2[size(Xv[i])[1]], Xv[i]', iVv[i])
-        memc4 .+= memc2[size(Xv[i])[1]]*Xv[i]
+        θ2    .+= memc2[size(Xv[i])[1]]*Xv[i]
         βm    .+= memc2[size(Xv[i])[1]]*yv[i]
 
         #ToDo
@@ -399,7 +461,7 @@ function reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, θvec, β, memc, memc2, memc3, m
         #θ2m .+= tm*Xv[i]
         #βm  .+= tm*yv[i]
     end
-    mul!(β, inv(memc4), βm)
+    mul!(β, inv(θ2), βm)
     for i = 1:n
         copyto!(memc3[length(yv[i])], yv[i])
         memc3[length(yv[i])] .-= Xv[i]*β
@@ -410,7 +472,7 @@ function reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, θvec, β, memc, memc2, memc3, m
 
     end
     #θ2       = logdet(θ2m)
-    return   -(θ1 + logdet(memc4) + θ3 + c)
+    return   -(θ1 + logdet(θ2) + θ3 + c)
 end
 #-------------------------------------------------------------------------------
 """
@@ -440,5 +502,6 @@ function initvar(df, dv, fac, sbj)
     push!(fv, mean(sv))
     return fv
 end
+
 #-------------------------------------------------------------------------------
 end # module

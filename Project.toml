@@ -27,8 +27,9 @@ test = ["CategoricalArrays", "Parsers", "CSV", "Test"]
 
 [compat]
 julia = "1"
-DataFrames = "0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19"
-StatsModels = "0.6"
-Memoize = "0.3.0"
-CategoricalArrays = "0.5"
-CSV = "0.5"
+StatsBase = "≥0.22.0"
+CategoricalArrays = "≥0.5.4"
+DataFrames = "≥0.19"
+StatsModels = "≥0.6"
+Memoize = "≥0.3.0"
+CSV = "≥0.5"

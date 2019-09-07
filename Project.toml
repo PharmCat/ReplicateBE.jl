@@ -17,11 +17,10 @@ Memoize = "c03570c3-d221-55d1-a50c-7939bbd78826"
 TimerOutputs = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
 
 [extras]
-CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["CSV", "Test"]
+test = ["Test"]
 
 [compat]
 julia = "1"
@@ -29,4 +28,3 @@ StatsBase = "≥0.22.0"
 DataFrames = "≥0.19"
 StatsModels = "≥0.6"
 Memoize = "≥0.3.0"
-CSV = "≥0.5"

@@ -145,7 +145,7 @@ function rbe(df; dvar::Symbol,
     #method = NelderMead()
 
     limeps=eps()
-    @timeit to "o1" pO = optimize(od, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-4))
+    @timeit to "o1" pO = optimize(od, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-1))
     #pO = optimize(remlf,  [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-3))
     θ  = Optim.minimizer(pO)
 
@@ -154,13 +154,15 @@ function rbe(df; dvar::Symbol,
     #Not used yet
     #g!(storage, θx) = copyto!(storage, ForwardDiff.gradient(x -> -2*reml(yv, Zv, p, Xv, x, β), θx))
     #REML function for optimization
-    remlfb(x) = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
-    @timeit to "o2" O  = optimize(remlfb, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
+    td = TwiceDifferentiable(x -> -2*remlb(yv, Zv, p, Xv, x, β), θvec0; autodiff = :forward)
+    #remlfb(x) = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
+    #@timeit to "o2" O  = optimize(remlfb, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
+    @timeit to "o2" O  = optimize(td, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
     θ  = Optim.minimizer(O)
 
     #Get reml
-    remlv = -2*reml(yv, Zv, p, Xv, θ, β)
-    #remlv = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memc, memc2, memc3, memc4)
+    #remlv = -2*reml(yv, Zv, p, Xv, θ, β)
+    @timeit to "remlv"  remlv = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memc, memc2, memc3, memc4)
 
     #θ[5] can not be more than 1.0
     if θ[5] > 1 θ[5] = 1 end
@@ -340,6 +342,60 @@ function reml(yv, Zv, p, Xv, θvec, β; memopt::Bool = true)
     end
     return   -(θ1 + logdet(θ2) + θ3 + c)/2
 end
+
+function remlb(yv, Zv, p, Xv, θvec, β; memopt::Bool = true)
+    maxobs    = maximum(length.(yv))
+    #some memory optimizations to reduse allocations
+    mXviV     = Array{Array{eltype(θvec), 2}, 1}(undef, maxobs)
+    mXviVXv   = zeros(promote_type(Float64, eltype(θvec)), p, p)
+    for i = 1:maxobs
+        mXviV[i] =  zeros(promote_type(Float64, eltype(θvec)), p, i)
+    end
+    #---------------------------------------------------------------------------
+    n         = length(yv)
+    N         = sum(length.(yv))
+    G         = gmat(θvec[3], θvec[4], θvec[5])
+    iVv       = Array{Array{eltype(θvec), 2}, 1}(undef, n)
+    c         = (N-p)*LOG2PI
+    θ1        = 0
+    θ2        = zeros(promote_type(Float64, eltype(θvec)), p, p)
+    θ3        = 0
+    iV        = nothing
+    βm        = zeros(promote_type(Float64, eltype(θvec)), p)
+    βt        = zeros(promote_type(Float64, eltype(θvec)), p)
+    θr        = [θvec[1], θvec[2]]
+    for i = 1:n
+        if MEMOPT && memopt
+            R    = memrmat(θr, Zv[i])
+            V    = memvmat(memzgz(G, Zv[i]), R)
+            iVv[i]   = meminv(V)
+        else
+            R    = rmat(θr, Zv[i])
+            V    = vmat(G, R, Zv[i])
+            iVv[i]   = inv(V)
+        end
+        θ1  += logdet(V)
+        #-----------------------------------------------------------------------
+        #θ2 += Xv[i]'*iV*Xv[i]
+        mul!(mXviV[size(Xv[i])[1]], Xv[i]', iVv[i])
+        mul!(mXviVXv, mXviV[size(Xv[i])[1]], Xv[i])
+        θ2  += mXviVXv
+        βm  .+= mXviV[size(Xv[i])[1]]*yv[i]
+        #-----------------------------------------------------------------------
+        #tm   = Xv[i]'*iVv[i]    #Temp matrix for Xv[i]'*iV*Xv[i] and Xv[i]'*iV*yv[i] calc
+        #θ2m .+= tm*Xv[i]
+        #βm  .+= tm*yv[i]
+    end
+
+    mul!(βt, inv(θ2), βm)
+
+    for i = 1:n
+        r    = yv[i] - Xv[i]*βt
+        θ3  += r'*iVv[i]*r
+    end
+
+    return   -(θ1 + logdet(θ2) + θ3 + c)/2
+end
 """
     Satterthwaite DF gradient function
 """
@@ -388,46 +444,9 @@ end
 #             REML FOR OPT ALGORITHM
 #-------------------------------------------------------------------------------
 """
-    Optim reml without β
-    For Pre-opt
-"""
-function reml2!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2}, Rv::T, Vv::T, iVv::T, θvec::Array{Float64, 1}, β::Array{Float64, 1}, memc, memc2, memc3, memc4)::Float64 where T <: Array{Array{Float64, 2}, 1} where S <: Array{Array{Float64, 1}, 1}
-    gmat!(G, θvec[3], θvec[4], θvec[5])
-    c  = (N-p)*LOG2PI
-    θ1 = 0
-    #θ2 = 0
-    θ3 = 0
-    fill!(memc4, 0)
-    #θ2m  = zeros(p,p)
-    θr    = [θvec[1], θvec[2]]
-    for i = 1:n
-        rmat!(Rv[i], θr, Zv[i])
-        vmat!(Vv[i], G, Rv[i], Zv[i], memc)
-        copyto!(iVv[i], inv(Vv[i]))
-        θ1  += logdet(Vv[i])
-        mul!(memc2[size(Xv[i])[1]], Xv[i]', iVv[i])
-        memc4 .+= memc2[size(Xv[i])[1]]*Xv[i]
-        #θ2m .+= Xv[i]'*iVv[i]*Xv[i]
-        copyto!(memc3[length(yv[i])], yv[i])
-        memc3[length(yv[i])] .-= Xv[i]*β
-        θ3  += memc3[length(yv[i])]'*iVv[i]*memc3[length(yv[i])]
-        #r    = yv[i]-Xv[i]*β
-        #θ3  .+= r'*iVv[i]*r
-    end
-    #θ2       = logdet(θ2m)
-    return   -(θ1 + logdet(memc4) + θ3 + c)
-end
-
-
-"""
-    Optim reml with β
-    For final opt
+    REML with β final update
 """
 function reml2b!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2}, Rv::T, Vv::T, iVv::T, θvec::Array{Float64, 1}, β::Array{Float64, 1}, memc, memc2, memc3, memc4)::Float64 where T <: Array{Array{Float64, 2}, 1} where S <: Array{Array{Float64, 1}, 1}
-
-    @memoize function lmemzgz(G, Z)
-        return Z*G*Z'
-    end
 
     gmat!(G, θvec[3], θvec[4], θvec[5])
     c  = (N-p)*LOG2PI #log(2π)
@@ -440,14 +459,14 @@ function reml2b!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 
     βm   = zeros(p)
     θr   = [θvec[1], θvec[2]]
     @inbounds for i = 1:n
-        #rmat!(Rv[i], θr, Zv[i])
-        #vmat!(Vv[i], G, Rv[i], Zv[i], memc)
-        #copyto!(iVv[i], inv(Vv[i]))
+        rmat!(Rv[i], θr, Zv[i])
+        vmat!(Vv[i], G, Rv[i], Zv[i], memc)
+        copyto!(iVv[i], inv(Vv[i]))
 
-        Rv[i] = memrmat(θr, Zv[i])
-        zgz   = lmemzgz(G,  Zv[i])
-        Vv[i] = memvmat(zgz, Rv[i])
-        iVv[i]= meminv(Vv[i])
+        #Rv[i] = memrmat(θr, Zv[i])
+        #zgz   = lmemzgz(G,  Zv[i])
+        #Vv[i] = memvmat(zgz, Rv[i])
+        #iVv[i]= meminv(Vv[i])
 
         θ1  += logdet(Vv[i])
         mul!(memc2[size(Xv[i])[1]], Xv[i]', iVv[i])
@@ -469,7 +488,6 @@ function reml2b!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 
         #Same:
         #r    = yv[i] - Xv[i]*β
         #θ3  += r'*iVv[i]*r
-
     end
     #θ2       = logdet(θ2m)
     return   -(θ1 + logdet(θ2) + θ3 + c)

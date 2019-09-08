@@ -1,6 +1,7 @@
 - v0.1.3
 
     * Performance optimization
+    * Random DataSet function randrbeds()
     * Increase coverage
     * Add test
     * Code cosmetics

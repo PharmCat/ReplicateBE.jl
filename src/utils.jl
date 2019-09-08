@@ -1,5 +1,19 @@
-
-
+#Model Frame utils
+#Find by Symbol
+function findterm(MF::ModelFrame, symbol::Symbol)::Int
+    l = length(MF.f.rhs.terms)
+    for i = 1:l
+        if isa(MF.f.rhs.terms[i], InterceptTerm) continue end
+        if MF.f.rhs.terms[i].sym == symbol return i end
+    end
+    return 0
+end
+#Return length by Symbol
+function termmodellen(MF::ModelFrame, symbol::Symbol)::Int
+    id = findterm(MF, symbol)
+    return length(MF.f.rhs.terms[id].contrasts.termnames)
+end
+#Confidence interval
 function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::Bool = false, df = :sat)
     ifv = 1
     if inv ifv = -1 end
@@ -77,8 +91,5 @@ function checkdata(X, Z, Xv, Zv, y)
     if length(Xv) != length(Zv) error("Length Xv != Zv !!!") end
     for i = 1:length(Xv)
         if size(Xv[i])[1]  != size(Zv[i])[1] error("Row num of subject $i Xv != Zv !!!") end
-        #if size(Xv[i])[1]  != 4 error("Subject observation of subject $i != 4, other designs not implemented yet!!!") end
-        #if sum(Zv[i][:,1]) != 2 error("Subject $i, formulation 1, not have 2 observation, other solutions not implemented yet!!!") end
-        #if sum(Zv[i][:,2]) != 2 error("Subject $i, formulation 2, not have 2 observation, other solutions not implemented yet!!!") end
     end
 end

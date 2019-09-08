@@ -5,9 +5,9 @@
 
 module ReplicateBE
 
-using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlgebra, Optim, Memoize, TimerOutputs
+using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlgebra, Random, PDMats, Optim, Memoize, TimerOutputs
 
-    export RBE, rbe, reml2, show, confint, contrast, lsm, emm, lmean
+    export RBE, rbe, reml2, show, confint, contrast, lsm, emm, lmean, randrbeds
     import Base.show
     import StatsBase.confint
     import Statistics.var
@@ -57,23 +57,9 @@ struct MemAlloc
 end
 =#
 
-#Find by Symbol
-function findterm(MF::ModelFrame, symbol::Symbol)::Int
-    l = length(MF.f.rhs.terms)
-    for i = 1:l
-        if isa(MF.f.rhs.terms[i], InterceptTerm) continue end
-        if MF.f.rhs.terms[i].sym == symbol return i end
-    end
-    return 0
-end
-#Return length by Symbol
-function termmodellen(MF::ModelFrame, symbol::Symbol)::Int
-    id = findterm(MF, symbol)
-    return length(MF.f.rhs.terms[id].contrasts.termnames)
-end
-
 include("show.jl")
 include("utils.jl")
+include("randrbeds.jl")
 include("memalloc.jl")
 include("deprecated.jl")
 #-------------------------------------------------------------------------------
@@ -86,7 +72,8 @@ function rbe(df; dvar::Symbol,
     period::Symbol,
     sequence::Symbol,
     g_tol::Float64 = 1e-8, x_tol::Float64 = 0.0, f_tol::Float64 = 0.0, iterations::Int = 100,
-    store_trace = false, extended_trace = false, show_trace = false, memopt = true)
+    store_trace = false, extended_trace = false, show_trace = false,
+    memopt = true)
 
     to = TimerOutput()
 
@@ -137,7 +124,7 @@ function rbe(df; dvar::Symbol,
     matvecz!(iVv, Zv)
 
     #First step optimization (pre-optimization)
-    od = OnceDifferentiable(x -> -2*reml(yv, Zv, p, Xv, x, β), θvec0; autodiff = :forward)
+    od = OnceDifferentiable(x -> -2*reml(yv, Zv, p, Xv, x, β; memopt = memopt), θvec0; autodiff = :forward)
     #remlf(x)   = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
     #remlf(x)  = -reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
     method = LBFGS()
@@ -154,7 +141,7 @@ function rbe(df; dvar::Symbol,
     #Not used yet
     #g!(storage, θx) = copyto!(storage, ForwardDiff.gradient(x -> -2*reml(yv, Zv, p, Xv, x, β), θx))
     #REML function for optimization
-    td = TwiceDifferentiable(x -> -2*remlb(yv, Zv, p, Xv, x, β), θvec0; autodiff = :forward)
+    td = TwiceDifferentiable(x -> -2*remlb(yv, Zv, p, Xv, x, β; memopt = memopt), θvec0; autodiff = :forward)
     #remlfb(x) = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
     #@timeit to "o2" O  = optimize(remlfb, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
     @timeit to "o2" O  = optimize(td, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
@@ -175,7 +162,7 @@ function rbe(df; dvar::Symbol,
 
     #Secondary parameters calculation
     A            = 2*pinv(H)
-    @timeit to "etc" se, F, df, C = ctrst(p, Xv, Zv, iVv, θ, β, A)
+    @timeit to "etc" se, F, df, C = ctrst(p, Xv, Zv, iVv, θ, β, A; memopt = memopt)
     df2          = N / pn - sn
     #println(to)                               #!!!should be checked!!!
     return RBE(MF, RMF, [sequence, period, formulation], β, θvec0, θ, remlv, se, F, df, df2, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
@@ -248,16 +235,16 @@ end
     copyto!(R, Matrix(Diagonal((Z*σ)[:,1])))
     return
 end
-@memoize function memrmat(σ::Vector, Z::Matrix)::Matrix
+@memoize Dict function memrmat(σ::Vector, Z::Matrix)::Matrix
     return rmat(σ, Z)
 end
-@memoize function memzgz(G::Matrix, Z::Matrix)::Matrix
+@memoize Dict function memzgz(G::Matrix, Z::Matrix)::Matrix
     return Z*G*Z'
 end
-@memoize function memvmat(ZGZ::Matrix, R::Matrix)::Matrix
+@memoize Dict function memvmat(ZGZ::Matrix, R::Matrix)::Matrix
     return ZGZ + R
 end
-@memoize function meminv(m::Matrix)::Matrix
+@memoize Dict function meminv(m::Matrix)::Matrix
     return inv(m)
 end
 """
@@ -399,15 +386,18 @@ end
 """
     Satterthwaite DF gradient function
 """
-function lclgf(L, Lt, Xv, Zv, θ)
+function lclgf(L, Lt, Xv, Zv, θ; memopt::Bool = true)
     p   = size(Xv[1])[2]
     G   = gmat(θ[3], θ[4], θ[5])
     C   = zeros(promote_type(Float64, eltype(θ)), p, p)
     θr  = [θ[1], θ[2]]
     for i=1:length(Xv)
-        iV   = meminv(memvmat(memzgz(G, Zv[i]), memrmat(θr, Zv[i])))
-        #R   = rmat(θr, Zv[i])
-        #iV  = inv(vmat(G, R, Zv[i]))
+        if MEMOPT && memopt
+            iV   = meminv(memvmat(memzgz(G, Zv[i]), memrmat(θr, Zv[i])))
+        else
+            R   = rmat(θr, Zv[i])
+            iV  = inv(vmat(G, R, Zv[i]))
+        end
         C  += Xv[i]'*iV*Xv[i]
     end
     return (L*inv(C)*Lt)[1]
@@ -419,7 +409,7 @@ end
     DF
     C
 """
-function ctrst(p, Xv, Zv, iVv, θ, β, A)
+function ctrst(p, Xv, Zv, iVv, θ, β, A; memopt::Bool = true)
     C     = cmat(Xv, Zv, iVv, θ)
     se    = Array{Float64, 1}(undef, p)
     F     = Array{Float64, 1}(undef, p)
@@ -433,7 +423,7 @@ function ctrst(p, Xv, Zv, iVv, θ, β, A)
         se[i]   = sqrt((lcl)[1])
         Lβ      = L*β
         F[i]    = Lβ'*inv(lcl)*Lβ/lclr           #F[i]    = (L*β)'*inv(L*C*L')*(L*β)
-        lclg(x) = lclgf(L, Lt, Xv, Zv, x)
+        lclg(x) = lclgf(L, Lt, Xv, Zv, x; memopt = memopt)
         g       = ForwardDiff.gradient(lclg, θ)
         df[i]   = 2*((lcl)[1])^2/(g'*(A)*g)
         #LinearAlgebra.eigen(L*C*L')

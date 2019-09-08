@@ -84,3 +84,14 @@ end
     @test lsm[2][1]    ≈ 0.08217365963420642   atol=1E-5
     @test ReplicateBE.reml2(be, [0.1, 0.2, 0.3, 0.4, 1.0]) ≈ 357.238054967491   atol=1E-5
 end
+
+@testset "  #  Random DataSet test                        " begin
+    rds = ReplicateBE.randrbeds()
+    @test size(rds)[1] == 96
+    @test size(rds)[2] == 5
+    @test rds[1, :sequence] == "TRTR"
+    @test rds[1:4, :formulation] == ["T", "R", "T", "R"]
+    @test rds[93:96, :formulation] == ["R", "T", "R", "T"]
+    @test rds[5:8, :period] == ["1", "2", "3", "4"]
+
+end

@@ -235,22 +235,22 @@ end
     copyto!(R, Matrix(Diagonal((Z*σ)[:,1])))
     return
 end
-@memoize Dict function memrmat(σ::Vector, Z::Matrix)::Matrix
+@memoize function memrmat(σ::Vector, Z::Matrix)::Matrix
     return rmat(σ, Z)
 end
-@memoize Dict function memzgz(G::Matrix, Z::Matrix)::Matrix
+@memoize function memzgz(G::Matrix, Z::Matrix)::Matrix
     return Z*G*Z'
 end
-@memoize Dict function memvmat(ZGZ::Matrix, R::Matrix)::Matrix
+@memoize function memvmat(ZGZ::Matrix, R::Matrix)::Matrix
     return ZGZ + R
 end
-@memoize Dict function meminv(m::Matrix)::Matrix
+@memoize function meminv(m::Matrix)::Matrix
     return inv(m)
 end
 """
     Return variance-covariance matrix V
 """
-@inline function vmat(G, R, Z)
+@inline function vmat(G::Matrix{S}, R::Matrix{T}, Z::Matrix{U}) where S <: Real where T <: Real where U <: Real
     V  = Z*G*Z' + R
     return V
 end
@@ -275,7 +275,7 @@ end
     Return C matrix
     var(β) p×p variance-covariance matrix
 """
-@inline function cmat(Xv, Zv, iVv, θ)::Array{Float64, 2}
+@inline function cmat(Xv::Vector{Matrix{T}}, Zv::Vector, iVv::Vector, θ::Vector)::Array{Float64, 2} where T <: Real
     p = size(Xv[1])[2]
     C = zeros(p,p)
     for i=1:length(Xv)
@@ -289,7 +289,7 @@ end
 """
     REML function for ForwardDiff
 """
-function reml(yv, Zv, p, Xv, θvec, β; memopt::Bool = true)
+function reml(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vector; memopt::Bool = true)
     maxobs    = maximum(length.(yv))
     #some memory optimizations to reduse allocations
     mXviV     = Array{Array{eltype(θvec), 2}, 1}(undef, maxobs)

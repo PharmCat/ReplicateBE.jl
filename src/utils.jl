@@ -1,9 +1,15 @@
 #Model Frame utils
+function lvec(mm::ModelMatrix, fn::Int)
+    l = zeros(length(mm.assign))
+    for i = 1:length(l)
+        if mm.assign == fn l[i] = 1 end
+    end
+end
 #Find by Symbol
-function findterm(MF::ModelFrame, symbol::Symbol)::Int
+function findterm(MF::ModelFrame, symbol::Union{Symbol, AbstractTerm})::Int
     l = length(MF.f.rhs.terms)
     for i = 1:l
-        if isa(MF.f.rhs.terms[i], InterceptTerm) continue end
+        if isa(MF.f.rhs.terms[i], InterceptTerm) and symbol == InterceptTerm return i end
         if MF.f.rhs.terms[i].sym == symbol return i end
     end
     return 0

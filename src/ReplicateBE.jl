@@ -86,7 +86,8 @@ function rbe(df; dvar::Symbol,
     Zf = @eval(@formula($dvar ~ 0 + $formulation))
     MF = ModelFrame(Xf, df)
     RMF = ModelFrame(Zf, df, contrasts = Dict(formulation => StatsModels.FullDummyCoding()))
-    X  = ModelMatrix(MF).m
+    MM = ModelMatrix(MF)
+    X  = MM.m
     Z  = ModelMatrix(RMF).m
     p  = rank(X)
     y  = df[:, dvar]                                                            #Dependent variable

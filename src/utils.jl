@@ -9,7 +9,9 @@ end
 function findterm(MF::ModelFrame, symbol::Union{Symbol, AbstractTerm})::Int
     l = length(MF.f.rhs.terms)
     for i = 1:l
-        if isa(MF.f.rhs.terms[i], InterceptTerm) and symbol == InterceptTerm return i end
+        if isa(MF.f.rhs.terms[i], InterceptTerm)
+            if symbol == InterceptTerm return i else continue end 
+        end
         if MF.f.rhs.terms[i].sym == symbol return i end
     end
     return 0

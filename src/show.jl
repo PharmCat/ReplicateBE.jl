@@ -9,11 +9,11 @@ function Base.show(io::IO, obj::RBE)
     pm[1,1] = "Level"; pm[1,2] = "Value"; pm[1,3] = "SE"; pm[1,4] = "DF"; pm[1,5] = "F";
 
     for i = 1:length(coef)
-        pm[i+1,1] = coef[i]
-        pm[i+1,2] = obj.β[i];
-        pm[i+1,3] = obj.se[i];
-        pm[i+1,4] = obj.df[i];
-        pm[i+1,5] = obj.f[i];
+        pm[i+1,1] = obj.fixed.name[i]
+        pm[i+1,2] = obj.fixed.est[i];
+        pm[i+1,3] = obj.fixed.se[i];
+        pm[i+1,4] = obj.fixed.df[i];
+        pm[i+1,5] = obj.fixed.f[i];
     end
 
     #

@@ -1,4 +1,31 @@
 """
+    Secondary param estimation:
+    SE
+    F
+    DF
+    C
+"""
+function ctrst(p, Xv, Zv, iVv, θ, β, A, C; memopt::Bool = true)
+    se    = Array{Float64, 1}(undef, p)
+    F     = Array{Float64, 1}(undef, p)
+    df    = Array{Float64, 1}(undef, p)
+    for i = 1:p
+        L    = zeros(1, p)
+        L[i]    = 1
+        Lt      = L'
+        lcl     = L*C*Lt                         #lcl     = L*C*L'
+        lclr    = rank(lcl)
+        se[i]   = sqrt((lcl)[1])
+        Lβ      = L*β
+        F[i]    = Lβ'*inv(lcl)*Lβ/lclr           #F[i]    = (L*β)'*inv(L*C*L')*(L*β)
+        lclg(x) = lclgf(L, Lt, Xv, Zv, x; memopt = memopt)
+        g       = ForwardDiff.gradient(lclg, θ)
+        df[i]   = 2*((lcl)[1])^2/(g'*(A)*g)
+        #LinearAlgebra.eigen(L*C*L')
+    end
+    return se, F, df
+end
+"""
     Return set of R matrices
 """
 function rmatvec(σ₁, σ₂, Zvec)

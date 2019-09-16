@@ -11,8 +11,8 @@ include("testdata.jl")
     #df = CSV.read(IOBuffer(minibe)) |> DataFrame
     df[!,:var] = float.(df[!,:var])
     be = ReplicateBE.rbe(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
-    @test be.β[6]  ≈  -0.0791666 atol=1E-5
-    @test be.se[6] ≈   0.09037378448083119 atol=1E-5
+    @test be.fixed.est[6]  ≈  -0.0791666 atol=1E-5
+    @test be.fixed.se[6] ≈   0.09037378448083119 atol=1E-5
     @test be.reml  ≈  10.065238638105903 atol=1E-5
     ci = ReplicateBE.confint(be, 0.1, expci = false, inv = false)
     @test ci[5][1] ≈  -0.25791330363201714 atol=1E-5
@@ -35,9 +35,9 @@ end
     be = ReplicateBE.rbe(df4, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     ci = ReplicateBE.confint(be, 0.1, expci = true, inv = true)
     @test be.reml  ≈  530.1445137281626  atol=1E-5
-    @test be.se[6] ≈    0.04650123700721 atol=1E-5
-    @test be.f[6]  ≈    9.78552229238432 atol=1E-5
-    @test be.df[6] ≈  208.08115303672898 atol=1E-5
+    @test be.fixed.se[6] ≈    0.04650123700721 atol=1E-5
+    @test be.fixed.f[6]  ≈    9.78552229238432 atol=1E-5
+    @test be.fixed.df[6] ≈  208.08115303672898 atol=1E-5
     @test ci[5][1] ≈    1.07104135588792 atol=1E-5
     @test ci[5][2] ≈    1.24894237034602 atol=1E-5
 end
@@ -66,7 +66,7 @@ end
     be = ReplicateBE.rbe(df6, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     ci = ReplicateBE.confint(be, 0.1, expci = true, inv = true)
     @test be.reml  ≈  329.25749377843033 atol=1E-5
-    @test be.f[6]  ≈  2.399661661708039 atol=1E-5
+    @test be.fixed.f[6]  ≈  2.399661661708039 atol=1E-5
     @test ci[5][1] ≈    0.8754960202413755 atol=1E-5
     @test ci[5][2] ≈    1.0042930817939983 atol=1E-5
 end

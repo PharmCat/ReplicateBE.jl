@@ -1,3 +1,7 @@
+- v0.1.4
+    * StatsModels v0.6
+    
+
 - v0.1.3
 
     * Performance optimization

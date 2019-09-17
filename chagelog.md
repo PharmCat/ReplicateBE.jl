@@ -1,6 +1,7 @@
 - v0.1.4
     * StatsModels v0.6
     * change struct RBE
+    * p value
 
 - v0.1.3
 

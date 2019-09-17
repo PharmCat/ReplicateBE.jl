@@ -21,9 +21,10 @@ struct EffectTable
     se
     f
     df
+    t
     p
-    function EffectTable(name, est, se, f, df)
-        new(name, est, se, f, df, NaN)
+    function EffectTable(name, est, se, f, df, t, p)
+        new(name, est, se, f, df, t, p)
     end
 end
 
@@ -170,17 +171,18 @@ function rbe(df; dvar::Symbol,
 
     #Get Hessian matrix (H) with ForwardDiff
     @timeit to "H" H         = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, x, β), θ)
-    dH        = det(H)
-    H[5,:] .= 0
-    H[:,5] .= 0
-
+    dH          = det(H)
+    H[5,:]     .= 0
+    H[:,5]     .= 0
     #Secondary parameters calculation
-    A            = 2*pinv(H)
-    C            = cmat(Xv, Zv, iVv, θ)
-
-    se    = Array{Float64, 1}(undef, p)
-    F     = Array{Float64, 1}(undef, p)
-    df    = Array{Float64, 1}(undef, p)
+    A           = 2*pinv(H)
+    C           = cmat(Xv, Zv, iVv, θ)
+    se          = Array{Float64, 1}(undef, p)
+    F           = Array{Float64, 1}(undef, p)
+    df          = Array{Float64, 1}(undef, p)
+    t           = Array{Float64, 1}(undef, p)
+    pval        = Array{Float64, 1}(undef, p)
+    chisq1      = Chisq(1)
     for i = 1:p
         L    = zeros(1, p)
         L[i]    = 1
@@ -188,18 +190,20 @@ function rbe(df; dvar::Symbol,
         lcl     = L*C*Lt                         #lcl     = L*C*L'
         lclr    = rank(lcl)
         se[i]   = sqrt((lcl)[1])
-        Lβ      = L*β
-        F[i]    = Lβ'*inv(lcl)*Lβ/lclr           #F[i]    = (L*β)'*inv(L*C*L')*(L*β)
+        #Lβ      = L*β
+        F[i]    = β'*L'*inv(L*C*L')*L*β
+        #F[i]    = Lβ'*inv(lcl)*Lβ/lclr           #F[i]    = (L*β)'*inv(L*C*L')*(L*β)
         lclg(x) = lclgf(L, Lt, Xv, Zv, x; memopt = memopt)
         g       = ForwardDiff.gradient(lclg, θ)
         df[i]   = 2*((lcl)[1])^2/(g'*(A)*g)
+        t[i]    = ((L*β)/se[i])[1]
+        pval[i] = ccdf(chisq1, F[i])
         #LinearAlgebra.eigen(L*C*L')
     end
-    fixed = EffectTable(coefnames(MF), β, se, F, df)
-
+    fixed       = EffectTable(coefnames(MF), β, se, F, df, t, pval)
+    df2          = N / pn - sn                                                  #!!!should be checked!!!
     #@timeit to "etc" se, F, df = ctrst(p, Xv, Zv, iVv, θ, β, A, C; memopt = memopt)
-    df2          = N / pn - sn
-    #println(to)                               #!!!should be checked!!!
+    #println(to)
     return RBE(MF, RMF, [sequence, period, formulation], θvec0, θ, remlv, fixed, df2, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
 end #END OF rbe()
 #-------------------------------------------------------------------------------

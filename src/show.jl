@@ -1,8 +1,8 @@
 function Base.show(io::IO, obj::RBE)
     println(io, "Bioequivalence Linear Mixed Effect Model")
     println(io, "")
-    println(io, "REML: ", round(obj.reml, sigdigits=6))
-    println(io, "")
+    println(io, "      -2REML: $(round(obj.reml, sigdigits=6))    REML: $(round(-obj.reml/2, sigdigits=6))")
+    println(io, "Fixed effect:")
     coef  = coefnames(obj.model);
     rcoef = coefnames(obj.rmodel);
     pm = Array{Any,2}(undef, length(coef)+1, 5);
@@ -75,11 +75,9 @@ function Base.show(io::IO, obj::RBE)
     println(io,   "Cov:", "  ", round(sqrt(obj.θ[4]*obj.θ[3])*obj.θ[5], sigdigits=6))
     println(io, line)
     println(io, "Confidence intervals(90%):")
-    println(io, "")
     ci = confint(obj, 0.1, expci = true, inv = false)
     println(io, rcoef[1], " / ", rcoef[2])
     println(io, round(ci[end][1]*100, digits=4), " - ", round(ci[end][2]*100, digits=4), " (%)")
-    println(io, "")
     ci = confint(obj, 0.1, expci = true, inv = true)
     println(io, rcoef[2], " / ", rcoef[1])
     println(io, round(ci[end][1]*100, digits=4), " - ", round(ci[end][2]*100, digits=4), " (%)")
@@ -88,4 +86,8 @@ end
 
 function geocv(var)
     return sqrt(exp(var)-1.0)
+end
+
+function printmatrix(io::IO, matrix::Matrix)
+    #ToDo
 end

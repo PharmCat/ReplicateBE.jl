@@ -408,14 +408,11 @@ function remlb(yv, Zv, p, Xv, θvec, β; memopt::Bool = true)
         #θ2m .+= tm*Xv[i]
         #βm  .+= tm*yv[i]
     end
-
     mul!(βt, inv(θ2), βm)
-
     for i = 1:n
         r    = yv[i] - Xv[i]*βt
         θ3  += r'*iVv[i]*r
     end
-
     return   -(θ1 + logdet(θ2) + θ3 + c)/2
 end
 """
@@ -444,7 +441,6 @@ end
     REML with β final update
 """
 function reml2b!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2}, Rv::T, Vv::T, iVv::T, θvec::Array{Float64, 1}, β::Array{Float64, 1}, memc, memc2, memc3, memc4)::Float64 where T <: Array{Array{Float64, 2}, 1} where S <: Array{Array{Float64, 1}, 1}
-
     gmat!(G, θvec[3], θvec[4], θvec[5])
     c  = (N-p)*LOG2PI #log(2π)
     θ1 = 0
@@ -452,30 +448,16 @@ function reml2b!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 
     θ3 = 0
     iV   = nothing
     fill!(memc4, 0)
-    #θ2m  = zeros(p,p)
     βm   = zeros(p)
     θr   = [θvec[1], θvec[2]]
     @inbounds for i = 1:n
         rmat!(Rv[i], θr, Zv[i])
         vmat!(Vv[i], G, Rv[i], Zv[i], memc)
         copyto!(iVv[i], inv(Vv[i]))
-
-        #Rv[i] = memrmat(θr, Zv[i])
-        #zgz   = lmemzgz(G,  Zv[i])
-        #Vv[i] = memvmat(zgz, Rv[i])
-        #iVv[i]= meminv(Vv[i])
-
         θ1  += logdet(Vv[i])
         mul!(memc2[size(Xv[i])[1]], Xv[i]', iVv[i])
         θ2    .+= memc2[size(Xv[i])[1]]*Xv[i]
         βm    .+= memc2[size(Xv[i])[1]]*yv[i]
-
-        #ToDo
-        #mul!(memcX[length(yv[i])], memc2[size(Xv[i])[1]], yv[i])
-        #βm  .+= memcX[length(yv[i])]
-        #tm   = Xv[i]'*iVv[i]    #Temp matrix for Xv[i]'*iV*Xv[i] and Xv[i]'*iV*yv[i] calc
-        #θ2m .+= tm*Xv[i]
-        #βm  .+= tm*yv[i]
     end
     mul!(β, inv(θ2), βm)
     for i = 1:n
@@ -486,7 +468,6 @@ function reml2b!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 
         #r    = yv[i] - Xv[i]*β
         #θ3  += r'*iVv[i]*r
     end
-    #θ2       = logdet(θ2m)
     return   -(θ1 + logdet(θ2) + θ3 + c)
 end
 #-------------------------------------------------------------------------------

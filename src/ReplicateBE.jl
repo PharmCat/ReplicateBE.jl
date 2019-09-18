@@ -15,18 +15,8 @@ using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlge
 const LOG2PI = log(2π)
 const MEMOPT = true
 
-struct EffectTable
-    name
-    est
-    se
-    f
-    df
-    t
-    p
-    function EffectTable(name, est, se, f, df, t, p)
-        new(name, est, se, f, df, t, p)
-    end
-end
+
+include("effecttable.jl")
 
 struct RBE
     model::ModelFrame               #Model frame

@@ -117,3 +117,18 @@ function checkdata(X, Z, Xv, Zv, y)
         if size(Xv[i])[1]  != size(Zv[i])[1] error("Row num of subject $i Xv != Zv !!!") end
     end
 end
+
+#-------------------------------------------------------------------------------
+
+function addspace(s::String, n::Int)::String
+    for i = 1:n
+    s = s * Char(' ')
+    end
+    return s
+end
+
+#-------------------------------------------------------------------------------
+
+function geocv(var)
+    return sqrt(exp(var)-1.0)
+end

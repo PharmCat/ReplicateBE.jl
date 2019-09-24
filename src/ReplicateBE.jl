@@ -191,7 +191,7 @@ function rbe(df; dvar::Symbol,
         #LinearAlgebra.eigen(L*C*L')
     end
     fixed       = EffectTable(coefnames(MF), β, se, F, df, t, pval)
-    df2          = N / pn - sn                                                  #!!!should be checked!!!
+    df2          = n - sn                                                  #!!!should be checked!!!
     #@timeit to "etc" se, F, df = ctrst(p, Xv, Zv, iVv, θ, β, A, C; memopt = memopt)
     #println(to)
     return RBE(MF, RMF, [sequence, period, formulation], θvec0, θ, remlv, fixed, df2, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)

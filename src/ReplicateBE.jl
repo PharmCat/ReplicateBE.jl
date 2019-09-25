@@ -9,7 +9,7 @@ using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlge
 
     export RBE, rbe, reml2, show, confint, contrast, lsm, emm, lmean, randrbeds
     import Base.show
-    import StatsBase.confint
+    import StatsBase.confint, StatsBase.coef
     import Statistics.var
 
 const LOG2PI = log(2π)
@@ -29,6 +29,7 @@ struct RBE
     θ::Array{Float64, 1}            #Final variance paramethers
     reml::Float64                   #-2REML
     fixed::EffectTable
+    typeiii::EffectTable
     #se::Array{Float64, 1}           #SE for each β level
     #f::Array{Float64, 1}            #F for each β level
     #df::Array{Float64, 1}           #DF (degree of freedom) for each β level (Satterthwaite)
@@ -105,8 +106,8 @@ function rbe(df; dvar::Symbol,
     N  = sum(length.(yv))
     pn = termmodellen(MF, period)
     sn = termmodellen(MF, sequence)
-
-    #fn = termmodellen(MF, formulation)
+    fn = termmodellen(MF, formulation)
+    numdf = Dict(period => pn, sequence => sn, formulation => fn)
     sbf = Array{Int, 1}(undef, 0)
     fl  = MF.f.rhs.terms[findterm(MF, formulation)].contrasts.levels
     for i = 1:length(fl)
@@ -191,25 +192,52 @@ function rbe(df; dvar::Symbol,
     df          = Array{Float64, 1}(undef, p)
     t           = Array{Float64, 1}(undef, p)
     pval        = Array{Float64, 1}(undef, p)
-    chisq1      = Chisq(1)
+    #chisq1      = Chisq(1)    #??? F - distribution?
     for i = 1:p
-        L    = zeros(1, p)
+        L       = zeros(1, p)
         L[i]    = 1
         Lt      = L'
         lcl     = L*C*Lt                         #lcl     = L*C*L'
         lclr    = rank(lcl)
         se[i]   = sqrt((lcl)[1])
         #Lβ      = L*β
-        F[i]    = β'*L'*inv(L*C*L')*L*β
+        F[i]    = β'*L'*inv(lcl)*L*β/lclr
         #F[i]    = Lβ'*inv(lcl)*Lβ/lclr           #F[i]    = (L*β)'*inv(L*C*L')*(L*β)
         lclg(x) = lclgf(L, Lt, Xv, Zv, x; memopt = memopt)
         g       = ForwardDiff.gradient(lclg, θ)
         df[i]   = 2*((lcl)[1])^2/(g'*(A)*g)
         t[i]    = ((L*β)/se[i])[1]
-        pval[i] = ccdf(chisq1, F[i])
+        pval[i] = ccdf(TDist(df[i]), abs(t[i]))*2
+        #pval[i] = ccdf(FDist(1, df[i]), F[i])
         #LinearAlgebra.eigen(L*C*L')
     end
     fixed       = EffectTable(coefnames(MF), β, se, F, df, t, pval)
+
+    fac         = [sequence, period, formulation]
+    F           = Array{Float64, 1}(undef, length(fac))
+    df          = Array{Float64, 1}(undef, length(fac))
+    pval        = Array{Float64, 1}(undef, length(fac))
+    nan        = Array{Float64, 1}(undef, length(fac))
+    nan       .= NaN
+    for i = 1:length(fac)
+        L       = lmatrix(MF, fac[i])
+        Lt      = L'
+        lcl     = L*C*Lt
+        lclr    = rank(lcl)
+        #M       = L'*inv(L*L')*L
+        #t1      = tr(M*C)
+        #v1      = t1^2/tr(M*C*M*C)
+        #F[i]    = β'*M*β/t1
+        #df[i]   = 2*(t1)^2/(g'*(A)*g)
+        F[i]    = β'*L'*inv(lcl)*L*β/lclr
+
+        lclg(x) = lclgf(L, Lt, Xv, Zv, x; memopt = memopt)
+        g       = ForwardDiff.gradient(lclg, θ)
+        df[i]   = 2*((lcl)[1])^2/(g'*(A)*g)
+        pval[i] = ccdf(FDist(numdf[fac[i]], df[i]), F[i])
+    end
+
+    anova       = EffectTable(fac, nan, nan, F, df, nan, pval)
 
     design      = Design(N, n,
     termmodelleveln(MF, sequence),
@@ -219,8 +247,12 @@ function rbe(df; dvar::Symbol,
     p, zxr, n - termmodelleveln(MF, sequence), N - zxr, N - zxr + p)                                                  #!!!should be checked!!!
     #@timeit to "etc" se, F, df = ctrst(p, Xv, Zv, iVv, θ, β, A, C; memopt = memopt)
     #println(to)
-    return RBE(MF, RMF, design, [sequence, period, formulation], θvec0, θ, remlv, fixed, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
+    return RBE(MF, RMF, design, fac, θvec0, θ, remlv, fixed, anova, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
 end #END OF rbe()
+
+function StatsBase.coef(rbe::RBE)
+    return copy(rme.fixed.est)
+end
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 """

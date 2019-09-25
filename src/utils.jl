@@ -6,19 +6,33 @@ function lvec(mm::ModelMatrix, f::Int)
     end
 end
 
-function lvec(MF::ModelFrame, f::Union{Symbol, AbstractTerm})::Int
-    l = length(MF.f.rhs.terms)
+function lmatrix(mf::ModelFrame, f::Union{Symbol, AbstractTerm})
+    l   = length(mf.f.rhs.terms)
+    id  = findterm(mf, f)
+    n   = length(mf.f.rhs.terms[id].contrasts.termnames)
+    lm  = zeros(n, length(coefnames(mf)))
     vec = Array{Int, 1}(undef, 0)
     for i = 1:l
-        if isa(MF.f.rhs.terms[i], InterceptTerm)
+        if isa(mf.f.rhs.terms[i], InterceptTerm)
             if f == InterceptTerm
-                vec = vcat(vec, ones(length(1)))
+                vec = vcat(vec, ones(1))
+            else
+                vec = vcat(vec, zeros(1))
             end
-        elseif MF.f.rhs.terms[i].sym == f
-            vec = vcat(vec, ones(length(MF.f.rhs.terms[i].contrasts.termnames)))
+        elseif mf.f.rhs.terms[i].sym == f
+            vec = vcat(vec, ones(length(mf.f.rhs.terms[i].contrasts.termnames)))
+        else
+            vec = vcat(vec, zeros(length(mf.f.rhs.terms[i].contrasts.termnames)))
         end
     end
-    return vec
+    r     = 1
+    for i = 1:size(lm, 2)
+        if vec[i] == 1
+            lm[r, i] = 1
+            r +=1
+        end
+    end
+    return lm
 end
 #Find by Symbol
 function findterm(MF::ModelFrame, f::Union{Symbol, AbstractTerm})::Int

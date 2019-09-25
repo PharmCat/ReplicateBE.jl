@@ -14,9 +14,18 @@ end
 function Base.getindex(t::EffectTable, r::Int, c::Int)
     return getfield(t, fieldnames(typeof(t))[c])[r]
 end
+function Base.getindex(t::EffectTable, c::Int)
+    return getfield(t, fieldnames(typeof(t))[c])
+end
 
 function Base.show(io::IO, t::EffectTable)
+
     header      = ["Effect", "Value" , "SE",  "F" , "DF", "t", "P"]
+    mask        = Array{Bool, 1}(undef, length(header))
+    for i = 1:length(header)
+        if any(x -> x, t[i] .=== NaN) mask[i] = false else  mask[i] = true end
+    end
+
     matrix      = Array{String, 2}(undef, length(t.name), length(header))
     matrix[:,1] = string.(t.name)
     for c = 2:length(header)
@@ -24,6 +33,8 @@ function Base.show(io::IO, t::EffectTable)
             matrix[r,c] = string(round(t[r,c], sigdigits=6))
         end
     end
+    header = header[mask, :]
+    matrix = matrix[:, mask]
     l = maximum(length.(matrix), dims = 1) .+ 3
     for c = 1:length(header)
         if l[c] < length(header[c]) l[c] = length(header[c]) + 3 end

@@ -17,10 +17,12 @@ const MEMOPT = true
 
 
 include("effecttable.jl")
+include("design.jl")
 
 struct RBE
     model::ModelFrame               #Model frame
     rmodel::ModelFrame              #Random effect model
+    design::Design
     factors::Array{Symbol, 1}       #Factor list
     #β::Array{Float64, 1}            #β coefficients (fixed effect)
     θ0::Array{Float64, 1}           #Initial variance paramethers
@@ -30,7 +32,7 @@ struct RBE
     #se::Array{Float64, 1}           #SE for each β level
     #f::Array{Float64, 1}            #F for each β level
     #df::Array{Float64, 1}           #DF (degree of freedom) for each β level (Satterthwaite)
-    df2::Float64                    #DF N / pn - sn
+    #df2::Float64                    #DF N / pn - sn
     R::Array{Matrix{Float64},1}     #R matrices for each subject
     V::Array{Matrix{Float64},1}     #V matrices for each subject
     G::Matrix{Float64}              #G matrix
@@ -86,15 +88,16 @@ function rbe(df; dvar::Symbol,
     categorical!(df, period);
     categorical!(df, sequence);
     @timeit to "sort" sort!(df, [subject, formulation, period])
-    Xf = @eval(@formula($dvar ~ $sequence + $period + $formulation))
-    Zf = @eval(@formula($dvar ~ 0 + $formulation))
-    MF = ModelFrame(Xf, df)
+    Xf  = @eval(@formula($dvar ~ $sequence + $period + $formulation))
+    Zf  = @eval(@formula($dvar ~ 0 + $formulation))
+    MF  = ModelFrame(Xf, df)
     RMF = ModelFrame(Zf, df, contrasts = Dict(formulation => StatsModels.FullDummyCoding()))
-    MM = ModelMatrix(MF)
-    X  = MM.m
-    Z  = ModelMatrix(RMF).m
-    p  = rank(X)
-    y  = df[:, dvar]                                                            #Dependent variable
+    MM  = ModelMatrix(MF)
+    X   = MM.m
+    Z   = ModelMatrix(RMF).m
+    p   = rank(X)
+    zxr = rank(ModelMatrix(ModelFrame(@eval(@formula($dvar ~ $sequence + $period + $subject*$formulation)), df)).m)
+    y   = df[:, dvar]                                                            #Dependent variable
 
     #Make pre located arrays with matrices for each subject
     @timeit to "sortsubj" Xv, Zv, yv = sortsubjects(df, subject, X, Z, y)
@@ -102,6 +105,22 @@ function rbe(df; dvar::Symbol,
     N  = sum(length.(yv))
     pn = termmodellen(MF, period)
     sn = termmodellen(MF, sequence)
+
+    #fn = termmodellen(MF, formulation)
+    sbf = Array{Int, 1}(undef, 0)
+    fl  = MF.f.rhs.terms[findterm(MF, formulation)].contrasts.levels
+    for i = 1:length(fl)
+        push!(sbf, sbjnbyf(df, subject, formulation, fl[i]))
+    end
+    #=
+    zcn = 0
+    for i = 1:n
+        for c = 1:size(Zv[i], 2)
+            if any(x -> x == 1, Zv[i][:,c]) zcn += 1 end
+        end
+    end
+    println(zcn)
+    =#
     #pn = length(MF.contrasts[period].levels)
     #sn = length(MF.contrasts[sequence].levels)
 
@@ -191,10 +210,16 @@ function rbe(df; dvar::Symbol,
         #LinearAlgebra.eigen(L*C*L')
     end
     fixed       = EffectTable(coefnames(MF), β, se, F, df, t, pval)
-    df2          = n - sn                                                  #!!!should be checked!!!
+
+    design      = Design(N, n,
+    termmodelleveln(MF, sequence),
+    termmodelleveln(MF, period),
+    termmodelleveln(MF, formulation),
+    sbf,
+    p, zxr, n - termmodelleveln(MF, sequence), N - zxr, N - zxr + p)                                                  #!!!should be checked!!!
     #@timeit to "etc" se, F, df = ctrst(p, Xv, Zv, iVv, θ, β, A, C; memopt = memopt)
     #println(to)
-    return RBE(MF, RMF, [sequence, period, formulation], θvec0, θ, remlv, fixed, df2, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
+    return RBE(MF, RMF, design, [sequence, period, formulation], θvec0, θ, remlv, fixed, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
 end #END OF rbe()
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------

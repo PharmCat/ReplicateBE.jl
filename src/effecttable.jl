@@ -16,7 +16,7 @@ function Base.getindex(t::EffectTable, r::Int, c::Int)
 end
 
 function Base.show(io::IO, t::EffectTable)
-    header      = ["Effect", "Value" , "SE",  "DF" , "F", "t", "P"]
+    header      = ["Effect", "Value" , "SE",  "F" , "DF", "t", "P"]
     matrix      = Array{String, 2}(undef, length(t.name), length(header))
     matrix[:,1] = string.(t.name)
     for c = 2:length(header)

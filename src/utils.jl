@@ -36,6 +36,11 @@ function termmodellen(MF::ModelFrame, symbol::Symbol)::Int
     id = findterm(MF, symbol)
     return length(MF.f.rhs.terms[id].contrasts.termnames)
 end
+
+function termmodelleveln(MF::ModelFrame, symbol::Symbol)::Int
+    id = findterm(MF, symbol)
+    return length(MF.f.rhs.terms[id].contrasts.levels)
+end
 #Confidence interval
 function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::Bool = false, df = :sat)
     ifv = 1
@@ -131,4 +136,16 @@ end
 
 function geocv(var)
     return sqrt(exp(var)-1.0)
+end
+
+#
+#Subject number by factor (formulation)
+function sbjnbyf(df, subj, fac, f)
+    sbj = Array{Any, 1}(undef, 0)
+    for i = 1:size(df, 1)
+        if df[i, fac] == f
+            if !any(x -> x == df[i, subj], sbj) push!(sbj, df[i, subj]) end
+        end
+    end
+    return length(sbj)
 end

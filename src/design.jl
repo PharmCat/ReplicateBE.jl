@@ -1,3 +1,4 @@
+#Design structure
 struct Design
     obs::Int
     subj::Int

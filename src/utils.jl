@@ -5,7 +5,7 @@ function lvec(mm::ModelMatrix, f::Int)
         if mm.assign == f l[i] = 1 end
     end
 end
-
+# L Matrix for TYPE III
 function lmatrix(mf::ModelFrame, f::Union{Symbol, AbstractTerm})
     l   = length(mf.f.rhs.terms)
     id  = findterm(mf, f)
@@ -45,39 +45,17 @@ function findterm(MF::ModelFrame, f::Union{Symbol, AbstractTerm})::Int
     end
     return 0
 end
-#Return length by Symbol
+#Return term fixed effect length by symbol
 function termmodellen(MF::ModelFrame, symbol::Symbol)::Int
     id = findterm(MF, symbol)
     return length(MF.f.rhs.terms[id].contrasts.termnames)
 end
-
+#Return term levels count by symbol
 function termmodelleveln(MF::ModelFrame, symbol::Symbol)::Int
     id = findterm(MF, symbol)
     return length(MF.f.rhs.terms[id].contrasts.levels)
 end
-#Confidence interval
-function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::Bool = false, df = :sat)
-    ifv = 1
-    if inv ifv = -1 end
-    if isa(df, Array{Float64, 1})
-        if length(obj.fixed.df) != length(df)
-            df = obj.fixed.df
-        end
-    elseif isa(df, Symbol)
-        if df == :df2
-            df  = zeros(length(obj.fixed.df))
-            df .= obj.df2
-        else
-            df = obj.fixed.df
-        end
-    end
 
-    a = Array{Tuple{Float64, Float64},1}(undef, length(obj.fixed.est)-1)
-    for i = 2:length(obj.fixed.est)
-        a[i-1] = calcci(obj.fixed.est[i]*ifv, obj.fixed.se[i], df[i], alpha, expci)
-    end
-    return Tuple(a)
-end
 function calcci(x::Float64, se::Float64, df::Float64, alpha::Float64, expci::Bool)::Tuple{Float64, Float64}
     q = quantile(TDist(df), 1.0-alpha/2)
     if !expci
@@ -86,32 +64,27 @@ function calcci(x::Float64, se::Float64, df::Float64, alpha::Float64, expci::Boo
         return exp(x-q*se), exp(x+q*se)
     end
 end
-function Base.show(io::IO, obj::Tuple{Vararg{Tuple{Float64, Float64}}})
-    for i in obj
-        println(io, i)
-    end
-end
-function reml2(obj::RBE, θ::Array{Float64, 1})
-    return -2*reml(obj.yv, obj.Zv, rank(ModelMatrix(obj.model).m), obj.Xv, θ, obj.fixed.est)
-end
+#return contrast F
 function contrast(obj::RBE, L::Matrix{T}) where T <: Real
     lcl  = L*obj.C*L'
     lclr = rank(lcl)
-    return (L*obj.fixed.est)'*inv(lcl)*(L*obj.fixed.est)/lclr
+    return obj.fixed.est'*L'*inv(lcl)*L*obj.fixed.est/lclr  #?
 end
+#
 function lsm(obj::RBE, L::Matrix{T}) where T <: Real
     lcl  = L*obj.C*L'
     return L*obj.fixed.est, sqrt.(lcl)
 end
-function emm(obj::RBE, fm, lm)
-    La = lmean(obj::RBE)'
-    L  = La .* fm'
-    L  = L  .+ lm'
-    return lsm(obj, Matrix(L'))
+
+function emm(obj::RBE, fm::Matrix, lm::Matrix)
+    La = lmean(obj::RBE)
+    L  = La .* fm
+    L  = L  .+ lm
+    return lsm(obj, Matrix(L))
 end
+#General mean contrast L matrix 1xp
 function lmean(obj::RBE)
-    #coef  = Array{Float64, 1}(undef, length(obj.factors))
-    L    = zeros(length(obj.fixed.est))
+    L    = zeros(1, length(obj.fixed.est))
     L[1] = 1.0
     it    = 2
     for f in obj.factors
@@ -123,11 +96,8 @@ function lmean(obj::RBE)
             it  += 1
         end
     end
-    return Matrix(L')
+    return L
 end
-function fixedeffect()
-end
-
 #-------------------------------------------------------------------------------
 function checkdata(X, Z, Xv, Zv, y)
     if size(Z)[2] != 2 error("Size random effect matrix != 2. Not implemented yet!") end
@@ -136,23 +106,19 @@ function checkdata(X, Z, Xv, Zv, y)
         if size(Xv[i])[1]  != size(Zv[i])[1] error("Row num of subject $i Xv != Zv !!!") end
     end
 end
-
 #-------------------------------------------------------------------------------
-
+#show EffectTable
 function addspace(s::String, n::Int)::String
     for i = 1:n
-    s = s * Char(' ')
+        s = s * Char(' ')
     end
     return s
 end
-
 #-------------------------------------------------------------------------------
-
 function geocv(var)
     return sqrt(exp(var)-1.0)
 end
-
-#
+#-------------------------------------------------------------------------------
 #Subject number by factor (formulation)
 function sbjnbyf(df, subj, fac, f)
     sbj = Array{Any, 1}(undef, 0)
@@ -162,4 +128,10 @@ function sbjnbyf(df, subj, fac, f)
         end
     end
     return length(sbj)
+end
+#-------------------------------------------------------------------------------
+function Base.show(io::IO, obj::Tuple{Vararg{Tuple{Float64, Float64}}})
+    for i in obj
+        println(io, i)
+    end
 end

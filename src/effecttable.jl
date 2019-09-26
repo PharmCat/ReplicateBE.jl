@@ -1,31 +1,32 @@
-struct EffectTable
-    name
-    est
-    se
-    f
-    df
-    t
-    p
+#Tables structure
+
+abstract type RBETable end
+
+struct EffectTable <: RBETable
+    name::Vector
+    est::Vector
+    se::Vector
+    f::Vector
+    df::Vector
+    t::Vector
+    p::Vector
     function EffectTable(name, est, se, f, df, t, p)
         new(name, est, se, f, df, t, p)
     end
 end
 
-function Base.getindex(t::EffectTable, r::Int, c::Int)
+function Base.getindex(t::T, r::Int, c::Int) where T <: RBETable
     return getfield(t, fieldnames(typeof(t))[c])[r]
 end
-function Base.getindex(t::EffectTable, c::Int)
+function Base.getindex(t::T, c::Int)  where T <: RBETable
     return getfield(t, fieldnames(typeof(t))[c])
 end
-
-function Base.show(io::IO, t::EffectTable)
-
-    header      = ["Effect", "Value" , "SE",  "F" , "DF", "t", "P"]
+function Base.show(io::IO, t::T) where T <: RBETable
+    header      = tableheader(t)
     mask        = Array{Bool, 1}(undef, length(header))
     for i = 1:length(header)
         if any(x -> x, t[i] .=== NaN) mask[i] = false else  mask[i] = true end
     end
-
     matrix      = Array{String, 2}(undef, length(t.name), length(header))
     matrix[:,1] = string.(t.name)
     for c = 2:length(header)
@@ -53,4 +54,8 @@ function Base.show(io::IO, t::EffectTable)
         println(io, matrix[r,:] ...)
     end
     print(io, line)
+end
+
+function tableheader(t::EffectTable)
+    return ["Effect", "Value" , "SE",  "F" , "DF", "t", "P"]
 end

@@ -1,0 +1,4 @@
+
+
+struct Contrast()
+end

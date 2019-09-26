@@ -45,7 +45,6 @@ function rbe(df; dvar::Symbol,
     memopt = true)
 
     to = TimerOutput()
-
     categorical!(df, subject);
     categorical!(df, formulation);
     categorical!(df, period);
@@ -61,7 +60,6 @@ function rbe(df; dvar::Symbol,
     p   = rank(X)
     zxr = rank(ModelMatrix(ModelFrame(@eval(@formula($dvar ~ $sequence + $period + $subject*$formulation)), df)).m)
     y   = df[:, dvar]                                                            #Dependent variable
-
     #Make pre located arrays with matrices for each subject
     @timeit to "sortsubj" Xv, Zv, yv = sortsubjects(df, subject, X, Z, y)
     n  = length(Xv)
@@ -75,32 +73,17 @@ function rbe(df; dvar::Symbol,
     for i = 1:length(fl)
         push!(sbf, sbjnbyf(df, subject, formulation, fl[i]))
     end
-    #=
-    zcn = 0
-    for i = 1:n
-        for c = 1:size(Zv[i], 2)
-            if any(x -> x == 1, Zv[i][:,c]) zcn += 1 end
-        end
-    end
-    println(zcn)
-    =#
-    #pn = length(MF.contrasts[period].levels)
-    #sn = length(MF.contrasts[sequence].levels)
-
     #Memory pre-allocation arrays for matrix computations
     memc, memc2, memc3, memc4 = memcalloc(p, 2, yv)
     #Check data
     @timeit to "check" checkdata(X, Z, Xv, Zv, y)
-
     #Calculate initial fixed parameters
     qro   = qr(X)
     @timeit to "lm"  β     = inv(qro.R)*qro.Q'*y
-
     #Calculate initial variance
     iv = initvar(df, dvar, formulation, subject)
     if iv[1] < iv[3] || iv[2] < iv[3] iv[1] = iv[2] = 2*iv[3] end
     θvec0 = [iv[3], iv[3], iv[1]-iv[3], iv[2]-iv[3], 0.501]
-
     #Prelocatiom for G, R, V, V⁻¹ matrices
     G     = zeros(2, 2)
     Rv    = Array{Array{Float64,2}, 1}(undef, n)
@@ -109,7 +92,6 @@ function rbe(df; dvar::Symbol,
     matvecz!(Rv, Zv)
     matvecz!(Vv, Zv)
     matvecz!(iVv, Zv)
-
     #First step optimization (pre-optimization)
     od = OnceDifferentiable(x -> -2*reml(yv, Zv, p, Xv, x, β; memopt = memopt), θvec0; autodiff = :forward)
     #remlf(x)   = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
@@ -117,12 +99,10 @@ function rbe(df; dvar::Symbol,
     method = LBFGS()
     #method = ConjugateGradient()
     #method = NelderMead()
-
     limeps=eps()
     @timeit to "o1" pO = optimize(od, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-1))
     #pO = optimize(remlf,  [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-3))
     θ  = Optim.minimizer(pO)
-
     #Final optimization
     #Provide gradient function for Optim
     #Not used yet
@@ -133,14 +113,11 @@ function rbe(df; dvar::Symbol,
     #@timeit to "o2" O  = optimize(remlfb, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
     @timeit to "o2" O  = optimize(td, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
     θ  = Optim.minimizer(O)
-
     #Get reml
     #remlv = -2*reml(yv, Zv, p, Xv, θ, β)
     @timeit to "remlv"  remlv = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memc, memc2, memc3, memc4)
-
     #θ[5] can not be more than 1.0
     if θ[5] > 1 θ[5] = 1 end
-
     #Get Hessian matrix (H) with ForwardDiff
     @timeit to "H" H         = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, x, β), θ)
     dH          = det(H)
@@ -154,7 +131,6 @@ function rbe(df; dvar::Symbol,
     df          = Array{Float64, 1}(undef, p)
     t           = Array{Float64, 1}(undef, p)
     pval        = Array{Float64, 1}(undef, p)
-    #chisq1      = Chisq(1)    #??? F - distribution?
     for i = 1:p
         L       = zeros(1, p)
         L[i]    = 1
@@ -174,7 +150,6 @@ function rbe(df; dvar::Symbol,
         #LinearAlgebra.eigen(L*C*L')
     end
     fixed       = EffectTable(coefnames(MF), β, se, F, df, t, pval)
-
     fac         = [sequence, period, formulation]
     F           = Array{Float64, 1}(undef, length(fac))
     df          = Array{Float64, 1}(undef, length(fac))
@@ -198,25 +173,24 @@ function rbe(df; dvar::Symbol,
         df[i]   = 2*((lcl)[1])^2/(g'*(A)*g)
         pval[i] = ccdf(FDist(numdf[fac[i]], df[i]), F[i])
     end
-
-    anova       = EffectTable(fac, nan, nan, F, df, nan, pval)
-
+    typeiii       = EffectTable(fac, nan, nan, F, df, nan, pval)
     design      = Design(N, n,
     termmodelleveln(MF, sequence),
     termmodelleveln(MF, period),
     termmodelleveln(MF, formulation),
     sbf,
-    p, zxr, n - termmodelleveln(MF, sequence), N - zxr, N - zxr + p)                                                  #!!!should be checked!!!
-    #@timeit to "etc" se, F, df = ctrst(p, Xv, Zv, iVv, θ, β, A, C; memopt = memopt)
+    p, zxr, n - termmodelleveln(MF, sequence), N - zxr, N - zxr + p)
     #println(to)
-    return RBE(MF, RMF, design, fac, θvec0, θ, remlv, fixed, anova, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
+    return RBE(MF, RMF, design, fac, θvec0, θ, remlv, fixed, typeiii, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
 end #END OF rbe()
-
+#-------------------------------------------------------------------------------
 #returm -2REML
-function reml2(obj::RBE, θ::Array{Float64, 1})
-    return -2*reml(obj.yv, obj.Zv, rank(ModelMatrix(obj.model).m), obj.Xv, θ, obj.fixed.est)
+"""
+    Returm -2REML for rbe model object and θ variance parameters vector
+"""
+function reml2(rbe::RBE, θ::Array{Float64, 1})
+    return -2*reml(rbe.yv, rbe.Zv, rank(ModelMatrix(rbe.model).m), rbe.Xv, θ, rbe.fixed.est)
 end
-
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------

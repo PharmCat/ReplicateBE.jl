@@ -44,6 +44,8 @@ function rbe(df; dvar::Symbol,
     store_trace = false, extended_trace = false, show_trace = false,
     memopt = true)
 
+    if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
+
     to = TimerOutput()
     categorical!(df, subject);
     categorical!(df, formulation);

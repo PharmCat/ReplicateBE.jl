@@ -11,7 +11,7 @@ struct RBE
     θ::Array{Float64, 1}            #Final variance paramethers
     reml::Float64                   #-2REML
     fixed::EffectTable
-    typeiii::EffectTable
+    typeiii::ContrastTable
     #se::Array{Float64, 1}           #SE for each β level
     #f::Array{Float64, 1}            #F for each β level
     #df::Array{Float64, 1}           #DF (degree of freedom) for each β level (Satterthwaite)
@@ -45,6 +45,7 @@ function rbe(df; dvar::Symbol,
     memopt = true)
 
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
+    if !(eltype(df[!,dvar]) <: Real) println("Responce variable not a float!") end
 
     to = TimerOutput()
     categorical!(df, subject);
@@ -76,7 +77,7 @@ function rbe(df; dvar::Symbol,
         push!(sbf, sbjnbyf(df, subject, formulation, fl[i]))
     end
     #Memory pre-allocation arrays for matrix computations
-    memc, memc2, memc3, memc4 = memcalloc(p, 2, yv)
+    memalloc = MemAlloc(p, 2, yv)
     #Check data
     @timeit to "check" checkdata(X, Z, Xv, Zv, y)
     #Calculate initial fixed parameters
@@ -96,8 +97,6 @@ function rbe(df; dvar::Symbol,
     matvecz!(iVv, Zv)
     #First step optimization (pre-optimization)
     od = OnceDifferentiable(x -> -2*reml(yv, Zv, p, Xv, x, β; memopt = memopt), θvec0; autodiff = :forward)
-    #remlf(x)   = -reml2!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
-    #remlf(x)  = -reml2b!(yv, Zv, p, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
     method = LBFGS()
     #method = ConjugateGradient()
     #method = NelderMead()
@@ -117,7 +116,7 @@ function rbe(df; dvar::Symbol,
     θ  = Optim.minimizer(O)
     #Get reml
     #remlv = -2*reml(yv, Zv, p, Xv, θ, β)
-    @timeit to "remlv"  remlv = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memc, memc2, memc3, memc4)
+    @timeit to "remlv"  remlv = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memalloc)
     #θ[5] can not be more than 1.0
     if θ[5] > 1 θ[5] = 1 end
     #Get Hessian matrix (H) with ForwardDiff
@@ -137,18 +136,16 @@ function rbe(df; dvar::Symbol,
         L       = zeros(1, p)
         L[i]    = 1
         Lt      = L'
-        lcl     = L*C*Lt                         #lcl     = L*C*L'
+        lcl     = L*C*Lt                                                        #lcl     = L*C*L'
         lclr    = rank(lcl)
         se[i]   = sqrt((lcl)[1])
         #Lβ      = L*β
-        F[i]    = β'*L'*inv(lcl)*L*β/lclr
-        #F[i]    = Lβ'*inv(lcl)*Lβ/lclr           #F[i]    = (L*β)'*inv(L*C*L')*(L*β)
-        lclg(x) = lclgf(L, Lt, Xv, Zv, x; memopt = memopt)
-        g       = ForwardDiff.gradient(lclg, θ)
+        F[i]    = β'*L'*inv(lcl)*L*β/lclr                                       #F[i]    = (L*β)'*inv(L*C*L')*(L*β)/lclr
+        #lclg    = lclgf(L, Lt, Xv, Zv, x; memopt = memopt)
+        g       = ForwardDiff.gradient(x -> lclgf(L, Lt, Xv, Zv, x; memopt = memopt), θ)
         df[i]   = 2*((lcl)[1])^2/(g'*(A)*g)
         t[i]    = ((L*β)/se[i])[1]
         pval[i] = ccdf(TDist(df[i]), abs(t[i]))*2
-        #pval[i] = ccdf(FDist(1, df[i]), F[i])
         #LinearAlgebra.eigen(L*C*L')
     end
     fixed       = EffectTable(coefnames(MF), β, se, F, df, t, pval)
@@ -156,8 +153,6 @@ function rbe(df; dvar::Symbol,
     F           = Array{Float64, 1}(undef, length(fac))
     df          = Array{Float64, 1}(undef, length(fac))
     pval        = Array{Float64, 1}(undef, length(fac))
-    nan        = Array{Float64, 1}(undef, length(fac))
-    nan       .= NaN
     for i = 1:length(fac)
         L       = lmatrix(MF, fac[i])
         Lt      = L'
@@ -169,13 +164,11 @@ function rbe(df; dvar::Symbol,
         #F[i]    = β'*M*β/t1
         #df[i]   = 2*(t1)^2/(g'*(A)*g)
         F[i]    = β'*L'*inv(lcl)*L*β/lclr
-
-        lclg(x) = lclgf(L, Lt, Xv, Zv, x; memopt = memopt)
-        g       = ForwardDiff.gradient(lclg, θ)
+        g       = ForwardDiff.gradient(x -> lclgf(L, Lt, Xv, Zv, x; memopt = memopt), θ)
         df[i]   = 2*((lcl)[1])^2/(g'*(A)*g)
         pval[i] = ccdf(FDist(numdf[fac[i]], df[i]), F[i])
     end
-    typeiii       = EffectTable(fac, nan, nan, F, df, nan, pval)
+    typeiii     = ContrastTable(fac, F, df, pval)
     design      = Design(N, n,
     termmodelleveln(MF, sequence),
     termmodelleveln(MF, period),

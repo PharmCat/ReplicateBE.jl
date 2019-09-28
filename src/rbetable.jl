@@ -11,7 +11,26 @@ struct EffectTable <: RBETable
     t::Vector
     p::Vector
     function EffectTable(name, est, se, f, df, t, p)
+        if !(length(name)==length(est)==length(se)==length(f)==length(df)==length(t)==length(p)) throw(ArgumentError("Unequal vectors size!")) end
         new(name, est, se, f, df, t, p)
+    end
+end
+struct ContrastTable <: RBETable
+    name::Vector
+    f::Vector
+    df::Vector
+    p::Vector
+    function ContrastTable(name, f, df, p)
+        new(name, f, df, p)
+    end
+end
+struct EstimateTable <: RBETable
+    name::Vector
+    f::Vector
+    df::Vector
+    p::Vector
+    function EstimateTable(name, f, df, p)
+        new(name, f, df, p)
     end
 end
 
@@ -23,6 +42,7 @@ function Base.getindex(t::T, c::Int)  where T <: RBETable
 end
 function Base.show(io::IO, t::T) where T <: RBETable
     header      = tableheader(t)
+    fn          = fieldnames(typeof(t))
     mask        = Array{Bool, 1}(undef, length(header))
     for i = 1:length(header)
         if any(x -> x, t[i] .=== NaN) mask[i] = false else  mask[i] = true end
@@ -32,6 +52,7 @@ function Base.show(io::IO, t::T) where T <: RBETable
     for c = 2:length(header)
         for r = 1:length(t.name)
             matrix[r,c] = string(round(t[r,c], sigdigits=6))
+            if fn[c] == :p && t[r,c] < 0.05 matrix[r,c] = matrix[r,c]*"*" end
         end
     end
     header = header[mask, :]
@@ -57,5 +78,11 @@ function Base.show(io::IO, t::T) where T <: RBETable
 end
 
 function tableheader(t::EffectTable)
-    return ["Effect", "Value" , "SE",  "F" , "DF", "t", "P"]
+    return ["Effect", "Value" , "SE",  "F" , "DF", "t", "P|t|"]
+end
+function tableheader(t::ContrastTable)
+    return ["Effect", "F" , "DF", "P|f|"]
+end
+function tableheader(t::EstimateTable)
+    return ["Effect", "Value" , "SE",  "DF", "t", "P|t|", "CI Upper", "CI Lower"]
 end

@@ -15,7 +15,7 @@ using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlge
 const LOG2PI = log(2π)
 const MEMOPT = true
 
-include("effecttable.jl")
+include("rbetable.jl")
 include("design.jl")
 include("randrbeds.jl")
 include("memalloc.jl")

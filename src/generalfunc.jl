@@ -249,30 +249,30 @@ end
 """
     REML with β final update
 """
-function reml2b!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2}, Rv::T, Vv::T, iVv::T, θvec::Array{Float64, 1}, β::Array{Float64, 1}, memc, memc2, memc3, memc4)::Float64 where T <: Array{Array{Float64, 2}, 1} where S <: Array{Array{Float64, 1}, 1}
+function reml2b!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2}, Rv::T, Vv::T, iVv::T, θvec::Array{Float64, 1}, β::Array{Float64, 1}, mem::MemAlloc)::Float64 where T <: Array{Array{Float64, 2}, 1} where S <: Array{Array{Float64, 1}, 1}
     gmat!(G, θvec[3], θvec[4], θvec[5])
     c  = (N-p)*LOG2PI #log(2π)
     θ1 = 0
     θ2  = zeros(p, p)
     θ3 = 0
     iV   = nothing
-    fill!(memc4, 0)
+    #fill!(mem.mem4, 0)
     βm   = zeros(p)
     θr   = [θvec[1], θvec[2]]
     @inbounds for i = 1:n
         rmat!(Rv[i], θr, Zv[i])
-        vmat!(Vv[i], G, Rv[i], Zv[i], memc)
+        vmat!(Vv[i], G, Rv[i], Zv[i], mem.mem1)
         copyto!(iVv[i], inv(Vv[i]))
         θ1  += logdet(Vv[i])
-        mul!(memc2[size(Xv[i])[1]], Xv[i]', iVv[i])
-        θ2    .+= memc2[size(Xv[i])[1]]*Xv[i]
-        βm    .+= memc2[size(Xv[i])[1]]*yv[i]
+        mul!(mem.mem2[size(Xv[i])[1]], Xv[i]', iVv[i])
+        θ2    .+= mem.mem2[size(Xv[i])[1]]*Xv[i]
+        βm    .+= mem.mem2[size(Xv[i])[1]]*yv[i]
     end
     mul!(β, inv(θ2), βm)
     for i = 1:n
-        copyto!(memc3[length(yv[i])], yv[i])
-        memc3[length(yv[i])] .-= Xv[i]*β
-        θ3  += memc3[length(yv[i])]'*iVv[i]*memc3[length(yv[i])]
+        copyto!(mem.mem3[length(yv[i])], yv[i])
+        mem.mem3[length(yv[i])] .-= Xv[i]*β
+        θ3  += mem.mem3[length(yv[i])]'*iVv[i]*mem.mem3[length(yv[i])]
         #Same:
         #r    = yv[i] - Xv[i]*β
         #θ3  += r'*iVv[i]*r

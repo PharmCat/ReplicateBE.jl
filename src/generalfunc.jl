@@ -127,7 +127,6 @@ end
 end
 #println("θ₁: ", θ1, " θ₂: ",  θ2,  " θ₃: ", θ3)
 
-
 """
     REML function for ForwardDiff
 """

@@ -94,4 +94,85 @@ end
     @test rds[93:96, :formulation] == ["R", "T", "R", "T"]
     @test rds[5:8, :period] == ["1", "2", "3", "4"]
 
+    #TRTR/RTRT
+    #rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0])
+    #TTRR/RRTT
+    #rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "T" "R" "R"; "R" "R" "T" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0])
+    #TRT/RTR
+    #rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "R" "T"; "R" "T" "R"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 0.0])
+    #TRTR/RTRT/TTRR/RRTT
+    #rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1,1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T" ; "T" "T" "R" "R"; "R" "R" "T" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0])
+    #TRR/RTR/RRT
+    #rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1,1], design = ["T" "R" "R"; "R" "T" "R"; "R" "R" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 0.0])
+end
+
+@testset "  #  Validation with generated datasets         " begin
+    #1
+    #TRTR/RTRT
+    rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10001)
+    be  = ReplicateBE.rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+    @test ReplicateBE.reml2(be)         ≈ 164.61336006747743   atol=1E-5
+    @test ReplicateBE.coefse(be)[6]     ≈ 0.120162             atol=1E-5
+    #2
+    #TRRT/RTTR
+    rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "R" "R" "T"; "R" "T" "T" "R"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10002)
+    be  = ReplicateBE.rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+    @test ReplicateBE.reml2(be)         ≈ 197.20037077620236   atol=1E-5
+    @test ReplicateBE.coefse(be)[6]     ≈ 0.1067239435821625   atol=1E-5
+    #3
+    #TTRR/RRTT
+    rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "T" "R" "R"; "R" "R" "T" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10003)
+    be  = ReplicateBE.rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+    @test ReplicateBE.reml2(be)         ≈ 149.25493525435516   atol=1E-5
+    @test ReplicateBE.coefse(be)[6]     ≈ 0.0875493081845683   atol=1E-5
+    #4
+    #TRTR/RTRT/TRRT/RTTR
+    rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1,1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T" ; "T" "R" "R" "T"; "R" "T" "T" "R"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10004)
+    be  = ReplicateBE.rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+    @test ReplicateBE.reml2(be)         ≈ 178.85707596709256   atol=1E-5
+    @test ReplicateBE.coefse(be)[8]     ≈ 0.1126566088472447   atol=1E-5
+
+    #5
+    #TRRT/RTTR/TTRR/RRTT
+    rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1,1,1], design = ["T" "R" "R" "T"; "R" "T" "T" "R" ; "T" "T" "R" "R"; "R" "R" "T" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10005)
+    be  = ReplicateBE.rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+    @test ReplicateBE.reml2(be)         ≈ 173.3987026483377   atol=1E-5
+    @test ReplicateBE.coefse(be)[8]     ≈ 0.126898491641026    atol=1E-5
+    #6
+    #TRTR/RTRT/TTRR/RRTT
+    rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1,1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T" ; "T" "T" "R" "R"; "R" "R" "T" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10006)
+    be  = ReplicateBE.rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+    @test ReplicateBE.reml2(be)         ≈ 149.2780196484186   atol=1E-5
+    @test ReplicateBE.coefse(be)[8]     ≈ 0.109788602721634   atol=1E-5
+    #7
+    #TRT/RTR
+    rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "R" "T"; "R" "T" "R"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10007)
+    be  = ReplicateBE.rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+    @test ReplicateBE.reml2(be)         ≈ 138.0448457610444   atol=1E-5
+    @test ReplicateBE.coefse(be)[5]     ≈ 0.125891677227639   atol=1E-5
+    #8
+    #TRR/RTT
+    rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "R" "R"; "R" "T" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10008)
+    be  = ReplicateBE.rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+    @test ReplicateBE.reml2(be)         ≈ 126.8935514618381   atol=1E-5
+    @test ReplicateBE.coefse(be)[5]     ≈ 0.099838635201318   atol=1E-5
+    #9
+    #TR/RT/TT/RR
+    rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1,1,1], design = ["T" "R"; "R" "T"; "T" "T"; "R" "R"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0, 0.0], periodcoef = [0.0, 0.0], formcoef = [0.0, 0.0], seed = 10009)
+    be  = ReplicateBE.rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+    @test ReplicateBE.reml2(be)         ≈ 85.85655641168267   atol=1E-5
+    @test ReplicateBE.coefse(be)[6]     ≈ 0.201099945972322   atol=1E-5
+    #10
+    #TRR/RTR/RRT
+    rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1,1], design = ["T" "R" "R"; "R" "T" "R"; "R" "R" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10010)
+    be  = ReplicateBE.rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+    @test ReplicateBE.reml2(be)         ≈ 131.24074835974176   atol=1E-5
+    @test ReplicateBE.coefse(be)[6]     ≈ 0.10385830218446117  atol=1E-5
+    #11
+    #TRR/RTR
+    rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "R" "R"; "R" "T" "R"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10011)
+    be  = ReplicateBE.rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+    @test ReplicateBE.reml2(be)         ≈ 129.06198795781413   atol=1E-5
+    @test ReplicateBE.coefse(be)[5]     ≈ 0.1096846988112254   atol=1E-5
+
 end

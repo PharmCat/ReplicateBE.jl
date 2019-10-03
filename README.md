@@ -75,6 +75,11 @@ formulation: T / formulation: R
 83.1906 - 124.2586 (%)
 ```
 
+# Validation
+
+Validation information: [here](https://github.com/PharmCat/ReplicateBE.jl/blob/master/validation/validation.md)
+
+
 # Methods
 
 ### StatsBase.confint

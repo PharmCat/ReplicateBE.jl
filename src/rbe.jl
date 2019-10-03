@@ -224,6 +224,18 @@ end
 function coefse(rbe::RBE)
     return copy(rbe.fixed.se)
 end
+
+function design(rbe::RBE)::Design
+    return rbe.design
+end
+
+function fixed(rbe::RBE)
+    return rbe.fixed
+end
+
+function typeiii(rbe::RBE)
+    return rbe.typeiii
+end
 #-------------------------------------------------------------------------------
 function Base.show(io::IO, rbe::RBE)
     rcoef = coefnames(rbe.rmodel);

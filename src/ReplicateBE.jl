@@ -7,7 +7,7 @@ module ReplicateBE
 
 using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlgebra, Random, PDMats, Optim, Memoize, TimerOutputs
 
-    export RBE, rbe, reml2, coefvar, show, confint, contrast, lsm, emm, lmean, randrbeds
+    export RBE, rbe, reml2, coefse, fixed, typeiii, design, show, confint, contrast, lsm, emm, lmean, randrbeds
     import Base.show
     import StatsBase.confint, StatsBase.coef
     import Statistics.var

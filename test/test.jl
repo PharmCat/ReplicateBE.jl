@@ -20,10 +20,11 @@ include("testdata.jl")
 
     io = IOBuffer();
     Base.show(io, be)
-    #@test io.size == 1518
-    io = IOBuffer();
     Base.show(io, ci)
-    #@test io.size == 213
+    Base.show(io, be.design)
+    Base.show(io, be.fixed)
+    Base.show(io, be.typeiii)
+
 end
 
 @testset "  #4 QA 1 Bioequivalence 2x2x4, UnB, NC Dataset " begin
@@ -83,6 +84,13 @@ end
     @test lsm[1][1]    ≈ 4.616254407007809     atol=1E-5
     @test lsm[2][1]    ≈ 0.08217365963420642   atol=1E-5
     @test ReplicateBE.reml2(be, [0.1, 0.2, 0.3, 0.4, 1.0]) ≈ 357.238054967491   atol=1E-5
+
+    @test ReplicateBE.coef(be)[6]      ≈ 0.06434039007812514    atol=1E-5
+    @test ReplicateBE.coefse(be)[6]    ≈ 0.041534470947138996   atol=1E-5
+    @test ReplicateBE.reml2(be)        ≈ 329.25749377843044     atol=1E-5
+    @test ReplicateBE.design(be).obs   == 256
+    @test ReplicateBE.fixed(be)[1,2]   ≈ 4.4215751512542125     atol=1E-5
+    @test ReplicateBE.typeiii(be)[1,2] ≈ 4.968210074464397      atol=1E-5
 end
 
 @testset "  #  Random DataSet test                        " begin

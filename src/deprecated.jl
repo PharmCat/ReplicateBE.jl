@@ -112,3 +112,11 @@ function memcalloc(p, zs, yv)
     memc4 = zeros(p, p)
     return memc, memc2, memc3, memc4
 end
+
+#Model Frame utils
+function lvec(mm::ModelMatrix, f::Int)
+    l = zeros(length(mm.assign))
+    for i = 1:length(l)
+        if mm.assign == f l[i] = 1 end
+    end
+end

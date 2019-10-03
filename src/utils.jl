@@ -1,10 +1,3 @@
-#Model Frame utils
-function lvec(mm::ModelMatrix, f::Int)
-    l = zeros(length(mm.assign))
-    for i = 1:length(l)
-        if mm.assign == f l[i] = 1 end
-    end
-end
 # L Matrix for TYPE III
 function lmatrix(mf::ModelFrame, f::Union{Symbol, AbstractTerm})
     l   = length(mf.f.rhs.terms)

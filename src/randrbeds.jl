@@ -18,15 +18,18 @@ function randrbeds(;n=24, sequence=[1,1],
     design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
     inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2],
     intercept = 0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0],
-    dropsubj = 0.0, dropobs = 0.0)
-    return randrbeds(n, sequence, design, inter, intra, intercept, seqcoef, periodcoef, formcoef, dropsubj, dropobs)
+    dropsubj = 0.0, dropobs = 0.0, seed::Int = 0)
+    return randrbeds(n, sequence, design, inter, intra, intercept, seqcoef, periodcoef, formcoef, dropsubj, dropobs, seed)
 end
 
 function randrbeds(n::Int, sequence::Vector,
     design::Matrix,
     θinter::Vector, θintra::Vector,
     intercept::Real, seqcoef::Vector, periodcoef::Vector, formcoef::Vector,
-    dropsubj::Float64, dropobs::Float64)
+    dropsubj::Float64, dropobs::Float64, seed::Int)
+
+    rng = MersenneTwister()
+    if seed == 0  Random.seed!(rng) else Random.seed!(seed) end
 
     r = n/sum(sequence)
     sn = Array{Int, 1}(undef, length(sequence))

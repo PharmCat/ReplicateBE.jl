@@ -181,10 +181,13 @@ end #END OF rbe()
 #-------------------------------------------------------------------------------
 #returm -2REML
 """
-    Returm -2REML for rbe model object and θ variance parameters vector
+    Returm -2REML for rbe model
 """
 function reml2(rbe::RBE, θ::Array{Float64, 1})
     return -2*reml(rbe.yv, rbe.Zv, rank(ModelMatrix(rbe.model).m), rbe.Xv, θ, rbe.fixed.est)
+end
+function reml2(rbe::RBE)
+    return rbe.reml
 end
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
@@ -193,7 +196,7 @@ end
     Return model coefficients
 """
 function StatsBase.coef(rbe::RBE)
-    return copy(rme.fixed.est)
+    return copy(rbe.fixed.est)
 end
 #Confidence interval
 function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::Bool = false, df = :sat)
@@ -217,7 +220,10 @@ function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::B
     end
     return Tuple(a)
 end
-
+#-------------------------------------------------------------------------------
+function coefse(rbe::RBE)
+    return copy(rbe.fixed.se)
+end
 #-------------------------------------------------------------------------------
 function Base.show(io::IO, rbe::RBE)
     rcoef = coefnames(rbe.rmodel);

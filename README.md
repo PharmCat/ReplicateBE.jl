@@ -79,7 +79,6 @@ formulation: T / formulation: R
 
 Validation information: [here](https://github.com/PharmCat/ReplicateBE.jl/blob/master/validation/validation.md)
 
-
 # Methods
 
 ### StatsBase.confint

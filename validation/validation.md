@@ -18,7 +18,7 @@ Generated datasets made with *randrbeds* function with fixed seed (could be repr
   * 10 TRR/RTR/RRT
   * 11 TRR/RTR*
 
-  SAS procedures for generated datasets can be found in *validation/sas/* folder.
+  SAS procedures for generated datasets can be found in [*validation/sas/*](https://github.com/PharmCat/ReplicateBE.jl/tree/master/validation/sas) folder.
 
   All validation datasets include in package test procedure.
 

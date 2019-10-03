@@ -5,7 +5,7 @@
     * DF calculations
     * Type III Table
     * p values
-    * methods to get estimates and contrasts
+    * methods to get estimates and contrasts and others
     * optimization, bugfix, cosmetics
 
 - v0.1.3

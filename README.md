@@ -32,7 +32,6 @@ Where:
 - sequence::Symbol - sequence;
 
 Get results:
-
 ```
 be.fixed
 #or
@@ -41,6 +40,39 @@ fixed(be)
 be.typeiii
 #or
 typeiii(be)
+```
+
+Output example:
+```
+Bioequivalence Linear Mixed Effect Model
+
+-2REML: 164.613    REML: -82.3067
+
+Fixed effect:
+─────────────────────────────────────────────────────────────────────────────────────────
+Effect           Value        SE         F           DF        t           P|t|
+─────────────────────────────────────────────────────────────────────────────────────────
+(Intercept)      1.27158      0.191994   43.8645     26.6243   6.62303     4.47193e-7*
+sequence: TRTR   -0.114458    0.242518   0.222743    30.4503   -0.471956   0.640323
+period: 2        0.035864     0.139526   0.0660707   83.1868   0.257042    0.797781
+period: 3        0.0168505    0.100284   0.0282329   41.619    0.168027    0.867376      
+period: 4        0.0552216    0.139526   0.156642    83.1868   0.39578     0.693281
+formulation: T   -0.0165797   0.120162   0.0190378   62.661    -0.137978   0.890701      
+─────────────────────────────────────────────────────────────────────────────────────────
+Intra-individual variation:
+formulation: R  0.187712   CVᵂ: 0.454407
+formulation: T  0.0889289   CVᵂ: 0.304964
+
+Inter-individual variation:
+formulation: R  0.318313
+formulation: T  0.422413
+Cov:  0.266255
+
+Confidence intervals(90%):
+formulation: R / formulation: T
+80.4773 - 120.2059 (%)
+formulation: T / formulation: R
+83.1906 - 124.2586 (%)
 ```
 
 # Methods

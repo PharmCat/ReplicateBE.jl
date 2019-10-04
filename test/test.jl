@@ -76,7 +76,9 @@ end
 
     #df = CSV.read(IOBuffer(be6)) |> DataFrame
     be = ReplicateBE.rbe(df6, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
-    @test ReplicateBE.contrast(be, [0 0 0 0 0 1]) ≈ 2.399661660365819 atol=1E-5
+    @test ReplicateBE.contrast(be, [0 0 0 0 0 1]).f[1]  ≈ 2.3996616631488368 atol=1E-5
+    @test ReplicateBE.estimate(be, [0 0 0 0 0 1]).est[1] ≈ 0.06434039007812514 atol=1E-5
+    
     lsmean = ReplicateBE.lsm(be, [0 0 0 0 0 1])
     @test lsmean[1][1] ≈ 0.0643403 atol=1E-5
     @test lsmean[2][1] ≈ 0.0415345 atol=1E-5
@@ -87,6 +89,7 @@ end
 
     @test ReplicateBE.coef(be)[6]      ≈ 0.06434039007812514    atol=1E-5
     @test ReplicateBE.coefse(be)[6]    ≈ 0.041534470947138996   atol=1E-5
+    @test ReplicateBE.coefnum(be)      == 6
     @test ReplicateBE.reml2(be)        ≈ 329.25749377843044     atol=1E-5
     @test ReplicateBE.design(be).obs   == 256
     @test ReplicateBE.fixed(be)[1,2]   ≈ 4.4215751512542125     atol=1E-5

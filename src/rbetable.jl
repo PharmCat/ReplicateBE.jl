@@ -18,19 +18,25 @@ end
 struct ContrastTable <: RBETable
     name::Vector
     f::Vector
+    ndf::Vector
     df::Vector
     p::Vector
-    function ContrastTable(name, f, df, p)
-        new(name, f, df, p)
+    function ContrastTable(name, f, ndf, df, p)
+        new(name, f, ndf, df, p)
     end
 end
 struct EstimateTable <: RBETable
     name::Vector
-    f::Vector
+    est::Vector
+    se::Vector
     df::Vector
+    t::Vector
     p::Vector
-    function EstimateTable(name, f, df, p)
-        new(name, f, df, p)
+    ll::Vector
+    ul::Vector
+    alpha::Real
+    function EstimateTable(name, est, se, df, t, p, ll, ul, alpha)
+        new(name, est, se, df, t, p, ll, ul, alpha)
     end
 end
 
@@ -81,8 +87,8 @@ function tableheader(t::EffectTable)
     return ["Effect", "Value" , "SE",  "F" , "DF", "t", "P|t|"]
 end
 function tableheader(t::ContrastTable)
-    return ["Effect", "F" , "DF", "P|f|"]
+    return ["Effect", "F" , "NumDF", "DF", "P|f|"]
 end
 function tableheader(t::EstimateTable)
-    return ["Effect", "Value" , "SE",  "DF", "t", "P|t|", "CI Upper", "CI Lower"]
+    return ["Effect", "Value" , "SE",  "DF", "t", "P|t|", "$((1-t.alpha)*100)% CI Upper", "$((1-t.alpha)*100)% CI Lower"]
 end

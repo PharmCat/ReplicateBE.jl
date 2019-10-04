@@ -1,3 +1,9 @@
+#M       = L'*inv(L*L')*L
+#t1      = tr(M*C)
+#v1      = t1^2/tr(M*C*M*C)
+#F[i]    = β'*M*β/t1
+#df[i]   = 2*(t1)^2/(g'*(A)*g)
+
 """
     Secondary param estimation:
     SE

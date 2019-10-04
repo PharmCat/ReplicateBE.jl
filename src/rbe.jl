@@ -152,23 +152,21 @@ function rbe(df; dvar::Symbol,
     fac         = [sequence, period, formulation]
     F           = Array{Float64, 1}(undef, length(fac))
     df          = Array{Float64, 1}(undef, length(fac))
+    ndf         = Array{Float64, 1}(undef, length(fac))
     pval        = Array{Float64, 1}(undef, length(fac))
     for i = 1:length(fac)
         L       = lmatrix(MF, fac[i])
         Lt      = L'
         lcl     = L*C*Lt
         lclr    = rank(lcl)
-        #M       = L'*inv(L*L')*L
-        #t1      = tr(M*C)
-        #v1      = t1^2/tr(M*C*M*C)
-        #F[i]    = β'*M*β/t1
-        #df[i]   = 2*(t1)^2/(g'*(A)*g)
         F[i]    = β'*L'*inv(lcl)*L*β/lclr
         g       = ForwardDiff.gradient(x -> lclgf(L, Lt, Xv, Zv, x; memopt = memopt), θ)
+        #Add multidim corretion(!)
         df[i]   = 2*((lcl)[1])^2/(g'*(A)*g)
-        pval[i] = ccdf(FDist(numdf[fac[i]], df[i]), F[i])
+        ndf[i]  = numdf[fac[i]]
+        pval[i] = ccdf(FDist(ndf[i], df[i]), F[i])
     end
-    typeiii     = ContrastTable(fac, F, df, pval)
+    typeiii     = ContrastTable(fac, F, ndf, df, pval)
     design      = Design(N, n,
     termmodelleveln(MF, sequence),
     termmodelleveln(MF, period),
@@ -223,6 +221,10 @@ end
 #-------------------------------------------------------------------------------
 function coefse(rbe::RBE)
     return copy(rbe.fixed.se)
+end
+
+function coefnum(rbe::RBE)
+    return length(rbe.fixed.se)
 end
 
 function design(rbe::RBE)::Design

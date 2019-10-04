@@ -1,3 +1,37 @@
+#return contrast table
+function contrast(rbe::RBE, L::Matrix; numdf = 1, name = "Contrast", memopt = true)::ContrastTable
+    Lt      = L'
+    β       = rbe.fixed.est
+    lcl     = L*rbe.C*Lt
+    lclr    = rank(lcl)
+    F       = β'*L'*inv(lcl)*L*β/lclr
+    g       = ForwardDiff.gradient(x -> lclgf(L, Lt, rbe.Xv, rbe.Zv, x; memopt = memopt), rbe.θ)
+    #Add multidim corretion(!)
+    df      = 2*((lcl)[1])^2/(g'*(rbe.A)*g)
+    pval    = ccdf(FDist(1, df), F)
+    return ContrastTable([name], [F], [numdf], [df], [pval])
+    #=
+    lcl  = L*obj.C*L'
+    lclr = rank(lcl)
+    return obj.fixed.est'*L'*inv(lcl)*L*obj.fixed.est/lclr
+    =#
+end
+
+function estimate(rbe::RBE, L::Matrix; name = "Estimate", memopt = true, alpha = 0.05)
+    Lt      = L'
+    lcl     = L*rbe.C*Lt
+    β       = rbe.fixed.est
+    est     = (L*β)[1]
+    lclr    = rank(lcl)
+    se      = sqrt((lcl)[1])
+    F       = β'*L'*inv(lcl)*L*β/lclr
+    g       = ForwardDiff.gradient(x -> lclgf(L, Lt, rbe.Xv, rbe.Zv, x; memopt = memopt), rbe.θ)
+    df      = 2*((lcl)[1])^2/(g'*(rbe.A)*g)
+    t       = ((est)/se)
+    pval    = ccdf(TDist(df), abs(t))*2
+    return EstimateTable([name], [est], [se], [df], [t], [pval], [est - se*quantile(TDist(df), 1-alpha/2)], [est + se*quantile(TDist(df), 1-alpha/2)], alpha)
+end
+
 # L Matrix for TYPE III
 function lmatrix(mf::ModelFrame, f::Union{Symbol, AbstractTerm})
     l   = length(mf.f.rhs.terms)
@@ -56,12 +90,6 @@ function calcci(x::Float64, se::Float64, df::Float64, alpha::Float64, expci::Boo
     else
         return exp(x-q*se), exp(x+q*se)
     end
-end
-#return contrast F
-function contrast(obj::RBE, L::Matrix{T}) where T <: Real
-    lcl  = L*obj.C*L'
-    lclr = rank(lcl)
-    return obj.fixed.est'*L'*inv(lcl)*L*obj.fixed.est/lclr  #?
 end
 #
 function lsm(obj::RBE, L::Matrix{T}) where T <: Real

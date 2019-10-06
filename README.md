@@ -1,4 +1,4 @@
-[![ReplicateBE](https://github.com/PharmCat/ReplicateBE.jl/blob/master/docs/ReplicateBE-Logo.png)
+![ReplicateBE](https://github.com/PharmCat/ReplicateBE.jl/blob/master/docs/ReplicateBE-Logo.png)
 
 # ReplicateBE.jl
 

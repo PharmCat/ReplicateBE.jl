@@ -1,4 +1,4 @@
-Alpha version! This program comes with absolutely no warranty. No liability is accepted for any loss and risk to public health resulting from use of this software.
+*Alpha version!* This program comes with absolutely no warranty. No liability is accepted for any loss and risk to public health resulting from use of this software.
 
 <p align="center">
   <img src="https://github.com/PharmCat/ReplicateBE.jl/blob/master/docs/ReplicateBE-LogoNoSpace.png">

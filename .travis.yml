@@ -5,6 +5,9 @@ os:
   - osx
   - windows
 
+jobs:
+  include:
+    - stage: "Test"
 julia:
   - 1.0
   - 1.2
@@ -26,6 +29,12 @@ notifications:
 git:
   depth: 99999999
 
+after_success:
+  # push coverage results to Coveralls Pkg.test("ReplicateBE"; coverage = true);
+  - julia -e 'using Pkg; cd(Pkg.dir("ReplicateBE")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
+  # push coverage results to Codecov
+  - julia -e 'using Pkg; cd(Pkg.dir("ReplicateBE")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
+
 jobs:
   include:
     - stage: "Documentation"
@@ -36,9 +45,3 @@ jobs:
                                                Pkg.instantiate()'
         - julia --project=docs/ docs/make.jl
       after_success: skip
-
-after_success:
-  # push coverage results to Coveralls Pkg.test("ReplicateBE"; coverage = true);
-  - julia -e 'using Pkg; cd(Pkg.dir("ReplicateBE")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
-  # push coverage results to Codecov
-  - julia -e 'using Pkg; cd(Pkg.dir("ReplicateBE")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'

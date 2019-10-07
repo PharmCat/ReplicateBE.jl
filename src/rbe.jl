@@ -143,7 +143,7 @@ function rbe(df; dvar::Symbol,
         F[i]    = β'*L'*inv(lcl)*L*β/lclr                                       #F[i]    = (L*β)'*inv(L*C*L')*(L*β)/lclr
         #lclg    = lclgf(L, Lt, Xv, Zv, x; memopt = memopt)
         g       = ForwardDiff.gradient(x -> lclgf(L, Lt, Xv, Zv, x; memopt = memopt), θ)
-        df[i]   = 2*((lcl)[1])^2/(g'*(A)*g)
+        df[i]   = max(1, 2*((lcl)[1])^2/(g'*(A)*g))
         t[i]    = ((L*β)/se[i])[1]
         pval[i] = ccdf(TDist(df[i]), abs(t[i]))*2
         #LinearAlgebra.eigen(L*C*L')
@@ -156,13 +156,22 @@ function rbe(df; dvar::Symbol,
     pval        = Array{Float64, 1}(undef, length(fac))
     for i = 1:length(fac)
         L       = lmatrix(MF, fac[i])
-        Lt      = L'
-        lcl     = L*C*Lt
+        lcl     = L*C*L'
         lclr    = rank(lcl)
         F[i]    = β'*L'*inv(lcl)*L*β/lclr
-        g       = ForwardDiff.gradient(x -> lclgf(L, Lt, Xv, Zv, x; memopt = memopt), θ)
-        #Add multidim corretion(!)
-        df[i]   = 2*((lcl)[1])^2/(g'*(A)*g)
+        if lclr ≥ 2
+            vm  = Array{Float64, 1}(undef, lclr)
+            for i = 1:lclr
+                g       = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', Xv, Zv, x; memopt = memopt), θ)
+                dfi      = 2*((L[i:i,:]*C*L[i:i,:]')[1])^2/(g'*(A)*g)
+                vm[i]   = dfi/(dfi-2)
+            end
+            dfi = 2*sum(vm)/(sum(vm)-lclr)
+        else
+            g   = ForwardDiff.gradient(x -> lclgf(L, L', Xv, Zv, x; memopt = memopt), θ)
+            dfi = 2*((lcl)[1])^2/(g'*(A)*g)
+        end
+        df[i]   = max(1, dfi)
         ndf[i]  = numdf[fac[i]]
         pval[i] = ccdf(FDist(ndf[i], df[i]), F[i])
     end

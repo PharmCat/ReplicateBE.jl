@@ -1,19 +1,20 @@
 #return contrast table
 function contrast(rbe::RBE, L::Matrix; numdf = 1, name = "Contrast", memopt = true)::ContrastTable
-    β       = rbe.fixed.est
+    β       = coef(rbe)
     lcl     = L*rbe.C*L'
     lclr    = rank(lcl)
     F       = β'*L'*inv(lcl)*L*β/lclr
+    θ       = theta(rbe)
     if rank(L) ≥ 2
         vm      = Array{Float64, 1}(undef, size(L, 1))
         for i = 1:length(vm)
-            g       = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', rbe.Xv, rbe.Zv, x; memopt = memopt), rbe.θ)
+            g       = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
             df      = 2*((L[i:i,:]*rbe.C*L[i:i,:]')[1])^2/(g'*(rbe.A)*g)
             vm[i]   = df/(df-2)
         end
         df = 2*sum(vm)/(sum(vm)-rank(L))
     else
-        g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, x; memopt = memopt), rbe.θ)
+        g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
         df      = 2*((lcl)[1])^2/(g'*(rbe.A)*g)
     end
     pval    = ccdf(FDist(1, df), F)
@@ -21,14 +22,14 @@ function contrast(rbe::RBE, L::Matrix; numdf = 1, name = "Contrast", memopt = tr
 end
 
 function estimate(rbe::RBE, L::Matrix; name = "Estimate", memopt = true, alpha = 0.05)
-    Lt      = L'
-    lcl     = L*rbe.C*Lt
-    β       = rbe.fixed.est
+    lcl     = L*rbe.C*L'
+    β       = coef(rbe)
     est     = (L*β)[1]
     lclr    = rank(lcl)
     se      = sqrt((lcl)[1])
     F       = β'*L'*inv(lcl)*L*β/lclr
-    g       = ForwardDiff.gradient(x -> lclgf(L, Lt, rbe.Xv, rbe.Zv, x; memopt = memopt), rbe.θ)
+    θ       = theta(rbe)
+    g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
     df      = 2*((lcl)[1])^2/(g'*(rbe.A)*g)
     t       = ((est)/se)
     pval    = ccdf(TDist(df), abs(t))*2
@@ -95,9 +96,9 @@ function calcci(x::Float64, se::Float64, df::Float64, alpha::Float64, expci::Boo
     end
 end
 #
-function lsm(obj::RBE, L::Matrix{T}) where T <: Real
-    lcl  = L*obj.C*L'
-    return L*obj.fixed.est, sqrt.(lcl)
+function lsm(rbe::RBE, L::Matrix)
+    lcl  = L*rbe.C*L'
+    return L*coef(rbe), sqrt.(lcl)
 end
 
 function emm(obj::RBE, fm::Matrix, lm::Matrix)

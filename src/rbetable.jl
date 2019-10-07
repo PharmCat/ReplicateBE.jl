@@ -3,16 +3,16 @@
 abstract type RBETable end
 
 struct EffectTable <: RBETable
-    name::Vector
-    est::Vector
-    se::Vector
-    f::Vector
-    df::Vector
-    t::Vector
-    p::Vector
+    name::Tuple{Vararg}
+    est::Tuple{Vararg}
+    se::Tuple{Vararg}
+    f::Tuple{Vararg}
+    df::Tuple{Vararg}
+    t::Tuple{Vararg}
+    p::Tuple{Vararg}
     function EffectTable(name, est, se, f, df, t, p)
         if !(length(name)==length(est)==length(se)==length(f)==length(df)==length(t)==length(p)) throw(ArgumentError("Unequal vectors size!")) end
-        new(name, est, se, f, df, t, p)
+        new(Tuple(name), Tuple(est), Tuple(se), Tuple(f), Tuple(df), Tuple(t), Tuple(p))
     end
 end
 struct ContrastTable <: RBETable
@@ -54,7 +54,7 @@ function Base.show(io::IO, t::T) where T <: RBETable
         if any(x -> x, t[i] .=== NaN) mask[i] = false else  mask[i] = true end
     end
     matrix      = Array{String, 2}(undef, length(t.name), length(header))
-    matrix[:,1] = string.(t.name)
+    matrix[:,1] = string.(collect(t.name))
     for c = 2:length(header)
         for r = 1:length(t.name)
             matrix[r,c] = string(round(t[r,c], sigdigits=6))

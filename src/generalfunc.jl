@@ -121,7 +121,7 @@ end
     p = size(Xv[1])[2]
     C = zeros(p,p)
     for i=1:length(Xv)
-        C .+= Xv[i]'*iVv[i]*Xv[i]
+        @inbounds C .+= Xv[i]'*iVv[i]*Xv[i]
     end
     return inv(C)
 end
@@ -150,22 +150,22 @@ function reml(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vec
     θr   = [θvec[1], θvec[2]]
     for i = 1:n
         if MEMOPT && memopt
-            R    = memrmat(θr, Zv[i])
-            V    = memvmat(memzgz(G, Zv[i]), R)
+            @inbounds R    = memrmat(θr, Zv[i])
+            @inbounds V    = memvmat(memzgz(G, Zv[i]), R)
             iV   = meminv(V)
         else
-            R    = rmat(θr, Zv[i])
-            V    = vmat(G, R, Zv[i])
+            @inbounds R    = rmat(θr, Zv[i])
+            @inbounds V    = vmat(G, R, Zv[i])
             iV   = inv(V)
         end
         θ1  += logdet(V)
         #-----------------------------------------------------------------------
         #θ2 += Xv[i]'*iV*Xv[i]
-        mul!(mXviV[size(Xv[i])[1]], Xv[i]', iV)
-        mul!(mXviVXv, mXviV[size(Xv[i])[1]], Xv[i])
+        @inbounds mul!(mXviV[size(Xv[i])[1]], Xv[i]', iV)
+        @inbounds mul!(mXviVXv, mXviV[size(Xv[i])[1]], Xv[i])
         θ2  += mXviVXv
         #-----------------------------------------------------------------------
-        r    = yv[i]-Xv[i]*β
+        @inbounds r    = yv[i]-Xv[i]*β
         θ3  += r'*iV*r
     end
     return   -(θ1 + logdet(θ2) + θ3 + c)/2
@@ -196,21 +196,21 @@ function remlb(yv, Zv, p, Xv, θvec, β; memopt::Bool = true)
     θr        = [θvec[1], θvec[2]]
     for i = 1:n
         if MEMOPT && memopt
-            R    = memrmat(θr, Zv[i])
-            V    = memvmat(memzgz(G, Zv[i]), R)
-            iVv[i]   = meminv(V)
+            @inbounds R    = memrmat(θr, Zv[i])
+            @inbounds V    = memvmat(memzgz(G, Zv[i]), R)
+            @inbounds iVv[i]   = meminv(V)
         else
-            R    = rmat(θr, Zv[i])
-            V    = vmat(G, R, Zv[i])
-            iVv[i]   = inv(V)
+            @inbounds R    = rmat(θr, Zv[i])
+            @inbounds V    = vmat(G, R, Zv[i])
+            @inbounds iVv[i]   = inv(V)
         end
         θ1  += logdet(V)
         #-----------------------------------------------------------------------
         #θ2 += Xv[i]'*iV*Xv[i]
-        mul!(mXviV[size(Xv[i])[1]], Xv[i]', iVv[i])
-        mul!(mXviVXv, mXviV[size(Xv[i])[1]], Xv[i])
+        @inbounds mul!(mXviV[size(Xv[i])[1]], Xv[i]', iVv[i])
+        @inbounds mul!(mXviVXv, mXviV[size(Xv[i])[1]], Xv[i])
         θ2  += mXviVXv
-        βm  .+= mXviV[size(Xv[i])[1]]*yv[i]
+        @inbounds βm  .+= mXviV[size(Xv[i])[1]]*yv[i]
         #-----------------------------------------------------------------------
         #tm   = Xv[i]'*iVv[i]    #Temp matrix for Xv[i]'*iV*Xv[i] and Xv[i]'*iV*yv[i] calc
         #θ2m .+= tm*Xv[i]
@@ -218,8 +218,8 @@ function remlb(yv, Zv, p, Xv, θvec, β; memopt::Bool = true)
     end
     mul!(βt, inv(θ2), βm)
     for i = 1:n
-        r    = yv[i] - Xv[i]*βt
-        θ3  += r'*iVv[i]*r
+        @inbounds r    = yv[i] - Xv[i]*βt
+        @inbounds θ3  += r'*iVv[i]*r
     end
     return   -(θ1 + logdet(θ2) + θ3 + c)/2
 end

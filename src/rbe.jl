@@ -8,7 +8,7 @@ struct RBE
     factors::Array{Symbol, 1}       #Factor list
     #β::Array{Float64, 1}            #β coefficients (fixed effect)
     θ0::Array{Float64, 1}           #Initial variance paramethers
-    θ::Array{Float64, 1}            #Final variance paramethers
+    θ::Tuple{Vararg{Float64}}       #Final variance paramethers
     reml::Float64                   #-2REML
     fixed::EffectTable
     typeiii::ContrastTable
@@ -183,7 +183,7 @@ function rbe(df; dvar::Symbol,
     sbf,
     p, zxr, n - termmodelleveln(MF, sequence), N - zxr, N - zxr + p)
     #println(to)
-    return RBE(MF, RMF, design, fac, θvec0, θ, remlv, fixed, typeiii, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
+    return RBE(MF, RMF, design, fac, θvec0, Tuple(θ), remlv, fixed, typeiii, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
 end #END OF rbe()
 #-------------------------------------------------------------------------------
 #returm -2REML
@@ -191,7 +191,7 @@ end #END OF rbe()
     Returm -2REML for rbe model
 """
 function reml2(rbe::RBE, θ::Array{Float64, 1})
-    return -2*reml(rbe.yv, rbe.Zv, rank(ModelMatrix(rbe.model).m), rbe.Xv, θ, rbe.fixed.est)
+    return -2*reml(rbe.yv, rbe.Zv, rank(ModelMatrix(rbe.model).m), rbe.Xv, θ, coef(rbe))
 end
 function reml2(rbe::RBE)
     return rbe.reml
@@ -203,7 +203,7 @@ end
     Return model coefficients
 """
 function StatsBase.coef(rbe::RBE)
-    return copy(rbe.fixed.est)
+    return collect(rbe.fixed.est)
 end
 #Confidence interval
 function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::Bool = false, df = :sat)
@@ -229,7 +229,10 @@ function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::B
 end
 #-------------------------------------------------------------------------------
 function coefse(rbe::RBE)
-    return copy(rbe.fixed.se)
+    return collect(rbe.fixed.se)
+end
+function theta(rbe::RBE)
+    return collect(rbe.θ)
 end
 
 function coefnum(rbe::RBE)

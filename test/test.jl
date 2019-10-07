@@ -11,6 +11,7 @@ include("testdata.jl")
     #df = CSV.read(IOBuffer(minibe)) |> DataFrame
     df[!,:var] = float.(df[!,:var])
     be = ReplicateBE.rbe(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
+    e1 = be.fixed.est[6]
     @test be.fixed.est[6]  ≈  -0.0791666 atol=1E-5
     @test be.fixed.se[6] ≈   0.09037378448083119 atol=1E-5
     @test be.reml  ≈  10.065238638105903 atol=1E-5
@@ -18,12 +19,16 @@ include("testdata.jl")
     @test ci[5][1] ≈  -0.25791330363201714 atol=1E-5
     @test ci[5][2] ≈   0.09957997029868393 atol=1E-5
 
+    be = ReplicateBE.rbe(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10, memopt = false);
+    @test be.fixed.est[6] == e1
+
     io = IOBuffer();
     Base.show(io, be)
     Base.show(io, ci)
     Base.show(io, be.design)
     Base.show(io, be.fixed)
     Base.show(io, be.typeiii)
+    Base.show(io, ReplicateBE.estimate(be, [0 0 0 0 0 1]))
 
 end
 
@@ -78,7 +83,7 @@ end
     be = ReplicateBE.rbe(df6, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     @test ReplicateBE.contrast(be, [0 0 0 0 0 1]).f[1]  ≈ 2.3996616631488368 atol=1E-5
     @test ReplicateBE.estimate(be, [0 0 0 0 0 1]).est[1] ≈ 0.06434039007812514 atol=1E-5
-    
+
     lsmean = ReplicateBE.lsm(be, [0 0 0 0 0 1])
     @test lsmean[1][1] ≈ 0.0643403 atol=1E-5
     @test lsmean[2][1] ≈ 0.0415345 atol=1E-5
@@ -104,6 +109,8 @@ end
     @test rds[1:4, :formulation] == ["T", "R", "T", "R"]
     @test rds[93:96, :formulation] == ["R", "T", "R", "T"]
     @test rds[5:8, :period] == ["1", "2", "3", "4"]
+    rds = ReplicateBE.randrbeds(dropobs = 6)
+    @test size(rds)[1] == 90
 
     #TRTR/RTRT
     #rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0])

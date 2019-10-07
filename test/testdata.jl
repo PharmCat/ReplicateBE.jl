@@ -3,7 +3,7 @@
 # Copyright © 2019 Vladimir Arnautov aka PharmCat <mail@pharmcat.net>
 # Licence: GNU General Public License v3.0
 
-df=csv"""subject,sequence,period,formulation,var
+df=CSV.read(IOBuffer("""subject,sequence,period,formulation,var
 1,1,1,1,1.0
 1,1,2,2,1.1
 1,1,3,1,1.2
@@ -23,9 +23,9 @@ df=csv"""subject,sequence,period,formulation,var
 5,2,1,2,1.5
 5,2,2,1,1.7
 5,2,3,2,1.2
-5,2,4,1,1.8"""
+5,2,4,1,1.8""")) |> DataFrame
 
-df4=csv"""subject,sequence,period,formulation,var1
+df4=CSV.read(IOBuffer("""subject,sequence,period,formulation,var1
 1,2,1,2,7.734541
 1,2,2,1,7.578565
 1,2,3,2,7.204848
@@ -323,9 +323,9 @@ df4=csv"""subject,sequence,period,formulation,var1
 78,2,1,2,9.921992
 78,2,2,1,9.524392
 78,2,3,2,9.932319
-78,2,4,1,10.106352"""
+78,2,4,1,10.106352""")) |> DataFrame
 
-df5=csv"""subject,sequence,period,formulation,var1
+df5=CSV.read(IOBuffer("""subject,sequence,period,formulation,var1
 24,3,1,2,3.48216274
 24,3,2,2,4.776177983
 24,3,3,1,5.051969158
@@ -478,9 +478,9 @@ df5=csv"""subject,sequence,period,formulation,var1
 55,1,3,2,4.746235626
 56,1,1,1,3.667400422
 56,1,2,2,2.623943692
-56,1,3,2,4.132282402"""
+56,1,3,2,4.132282402""")) |> DataFrame
 
-df6=csv"""subject,sequence,period,formulation,var1
+df6=CSV.read(IOBuffer("""subject,sequence,period,formulation,var1
 1,1,1,1,4.923914784
 1,1,2,1,5.083860972
 1,1,3,2,3.830335613
@@ -736,4 +736,4 @@ df6=csv"""subject,sequence,period,formulation,var1
 64,2,1,2,5.120929618
 64,2,2,2,6.002646792
 64,2,3,1,5.700316475
-64,2,4,1,4.906170673"""
+64,2,4,1,4.906170673""")) |> DataFrame

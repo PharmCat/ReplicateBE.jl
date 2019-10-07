@@ -1,3 +1,5 @@
+#=
+
 #M       = L'*inv(L*L')*L
 #t1      = tr(M*C)
 #v1      = t1^2/tr(M*C*M*C)
@@ -126,3 +128,5 @@ function lvec(mm::ModelMatrix, f::Int)
         if mm.assign == f l[i] = 1 end
     end
 end
+
+=#

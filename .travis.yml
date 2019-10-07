@@ -1,39 +1,37 @@
 language: julia
-dist: trusty
-os:
-  - linux
-  - osx
-  - windows
 
 jobs:
   include:
     - stage: "Test"
-julia:
-  - 1.0
-  - 1.2
-  - 1.3
-  - nightly
+    dist: trusty
+    os:
+      - linux
+      - osx
+      - windows
+    julia:
+      - 1.0
+      - 1.2
+      - 1.3
 
-branches:
-  only:
-  - master
+    branches:
+      only:
+      - master
 
-matrix:
-  allow_failures:
-  - julia: 1.3
-  - julia: nightly
+    matrix:
+      allow_failures:
+      - julia: 1.3
 
-notifications:
-  email: false
+    notifications:
+      email: false
 
-git:
-  depth: 99999999
+    git:
+      depth: 99999999
 
-after_success:
+    after_success:
   # push coverage results to Coveralls Pkg.test("ReplicateBE"; coverage = true);
-  - julia -e 'using Pkg; cd(Pkg.dir("ReplicateBE")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
+      - julia -e 'using Pkg; cd(Pkg.dir("ReplicateBE")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
   # push coverage results to Codecov
-  - julia -e 'using Pkg; cd(Pkg.dir("ReplicateBE")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
+      - julia -e 'using Pkg; cd(Pkg.dir("ReplicateBE")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
 
 jobs:
   include:

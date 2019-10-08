@@ -104,7 +104,7 @@ end
     return
 end
 """
-    Return set of zero feeled matrices
+    Feel M with zero feeled matrices
 """
 function matvecz!(M, Zv)
     n  = length(Zv)

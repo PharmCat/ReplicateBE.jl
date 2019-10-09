@@ -1,4 +1,8 @@
 #return contrast table
+"""
+    Return contrast table for L matrix.
+        ReplicateBE.contrast(rbe::RBE, L::Matrix; numdf = 1, name = "Contrast", memopt = true)::ContrastTable
+"""
 function contrast(rbe::RBE, L::Matrix; numdf = 1, name = "Contrast", memopt = true)::ContrastTable
     β       = coef(rbe)
     lcl     = L*rbe.C*L'
@@ -20,7 +24,9 @@ function contrast(rbe::RBE, L::Matrix; numdf = 1, name = "Contrast", memopt = tr
     pval    = ccdf(FDist(1, df), F)
     return ContrastTable([name], [F], [numdf], [df], [pval])
 end
-
+"""
+    Return estimate table for L 1xp matrix.
+"""
 function estimate(rbe::RBE, L::Matrix; name = "Estimate", memopt = true, alpha = 0.05)
     lcl     = L*rbe.C*L'
     β       = coef(rbe)
@@ -86,21 +92,12 @@ function termmodelleveln(MF::ModelFrame, symbol::Symbol)::Int
     id = findterm(MF, symbol)
     return length(MF.f.rhs.terms[id].contrasts.levels)
 end
-
-function calcci(x::Float64, se::Float64, df::Float64, alpha::Float64, expci::Bool)::Tuple{Float64, Float64}
-    q = quantile(TDist(df), 1.0-alpha/2)
-    if !expci
-        return x-q*se, x+q*se
-    else
-        return exp(x-q*se), exp(x+q*se)
-    end
-end
 #
 function lsm(rbe::RBE, L::Matrix)
     lcl  = L*rbe.C*L'
     return L*coef(rbe), sqrt.(lcl)
 end
-
+#
 function emm(obj::RBE, fm::Matrix, lm::Matrix)
     La = lmean(obj::RBE)
     L  = La .* fm

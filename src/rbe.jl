@@ -6,16 +6,11 @@ struct RBE
     rmodel::ModelFrame              #Random effect model
     design::Design
     factors::Array{Symbol, 1}       #Factor list
-    #β::Array{Float64, 1}            #β coefficients (fixed effect)
     θ0::Array{Float64, 1}           #Initial variance paramethers
     θ::Tuple{Vararg{Float64}}       #Final variance paramethers
     reml::Float64                   #-2REML
     fixed::EffectTable
     typeiii::ContrastTable
-    #se::Array{Float64, 1}           #SE for each β level
-    #f::Array{Float64, 1}            #F for each β level
-    #df::Array{Float64, 1}           #DF (degree of freedom) for each β level (Satterthwaite)
-    #df2::Float64                    #DF N / pn - sn
     R::Array{Matrix{Float64},1}     #R matrices for each subject
     V::Array{Matrix{Float64},1}     #V matrices for each subject
     G::Matrix{Float64}              #G matrix
@@ -45,9 +40,10 @@ function rbe(df; dvar::Symbol,
     memopt = true)
 
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
-    if !(eltype(df[!,dvar]) <: Real) println("Responce variable not a float!") end
+    if !(eltype(df[!,dvar]) <: Real) println("Responce variable ∉ Real!") end
 
     to = TimerOutput()
+    #should not change initial DS
     categorical!(df, subject);
     categorical!(df, formulation);
     categorical!(df, period);
@@ -206,6 +202,9 @@ function StatsBase.coef(rbe::RBE)
     return collect(rbe.fixed.est)
 end
 #Confidence interval
+"""
+    Return confidence intervals for coefficients.
+"""
 function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::Bool = false, df = :sat)
     ifv = 1
     if inv ifv = -1 end
@@ -227,26 +226,48 @@ function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::B
     end
     return Tuple(a)
 end
+function calcci(x::Float64, se::Float64, df::Float64, alpha::Float64, expci::Bool)::Tuple{Float64, Float64}
+    q = quantile(TDist(df), 1.0-alpha/2)
+    if !expci
+        return x-q*se, x+q*se
+    else
+        return exp(x-q*se), exp(x+q*se)
+    end
+end
 #-------------------------------------------------------------------------------
+"""
+    Return standart error for coefficients.
+"""
 function coefse(rbe::RBE)
     return collect(rbe.fixed.se)
 end
+"""
+    Return theta vector.
+"""
 function theta(rbe::RBE)
     return collect(rbe.θ)
 end
-
+"""
+    Return number of coefficients.
+"""
 function coefnum(rbe::RBE)
     return length(rbe.fixed.se)
 end
-
+"""
+    Return design information object.
+"""
 function design(rbe::RBE)::Design
     return rbe.design
 end
-
+"""
+    Return fixed effect table.
+"""
 function fixed(rbe::RBE)
     return rbe.fixed
 end
-
+"""
+    Return type III table.
+"""
 function typeiii(rbe::RBE)
     return rbe.typeiii
 end

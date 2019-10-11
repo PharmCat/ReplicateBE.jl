@@ -14,6 +14,16 @@ mutable struct RandRBEDS
     dataset::DataFrame
 end
 
+"""
+    randrbeds(;n=24, sequence=[1,1],
+        design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
+        inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2],
+        intercept = 0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0],
+        dropsubj = 0.0, dropobs::Int = 0, seed::Int = 0)
+
+    Random dataset for bioequivalence.
+
+"""
 function randrbeds(;n=24, sequence=[1,1],
     design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
     inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2],
@@ -22,6 +32,16 @@ function randrbeds(;n=24, sequence=[1,1],
     return randrbeds(n, sequence, design, inter, intra, intercept, seqcoef, periodcoef, formcoef, dropsubj, dropobs, seed)
 end
 
+"""
+    randrbeds(n::Int, sequence::Vector,
+        design::Matrix,
+        θinter::Vector, θintra::Vector,
+        intercept::Real, seqcoef::Vector, periodcoef::Vector, formcoef::Vector,
+        dropsubj::Float64, dropobs::Int, seed::Int)
+
+    Random dataset for bioequivalence.
+
+"""
 function randrbeds(n::Int, sequence::Vector,
     design::Matrix,
     θinter::Vector, θintra::Vector,

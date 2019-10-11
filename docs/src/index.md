@@ -8,8 +8,8 @@ CurrentModule = ReplicateBE
 
 ```@contents
 Pages = [
-        "syntax.md",
         "examples.md",
+        "syntax.md",
         "api.md"]
 Depth = 2
 ```

@@ -5,5 +5,8 @@ makedocs(sitename="ReplicateBE",
     linkcheck = false,
     doctest = false,
     pages = [
-        "Home" => "index.md"
+        "Home" => "index.md",
+        "Examples" => "examples.md",
+        "Syntax" => "syntax.md",
+        "Api" => "api.md"
     ])

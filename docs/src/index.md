@@ -10,5 +10,6 @@ CurrentModule = ReplicateBE
 Pages = [
         "examples.md",
         "syntax.md",
+        "details.md",
         "api.md"]
 ```

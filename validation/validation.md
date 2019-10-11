@@ -22,11 +22,11 @@ Generated datasets made with *randrbeds* function with fixed seed (could be repr
 
   All validation datasets include in package test procedure.
 
-  *SAS WARNING: Stopped because of infinite likelihood.
-  
+  *SAS WARNING*: Stopped because of infinite likelihood.
+
   ## Simulation study
-  
-  Following simulation was performed:
+
+  Following simulation was performed for version v0.1.4:
   ```
   using Distributions, ReplicateBE
   function simulation(num)
@@ -62,7 +62,7 @@ end
 
 simulation(100000)
 ```
- 
+
  Rusults:
 ```
  7104.944474 seconds (9.51 G allocations: 2.230 TiB, 44.90% gc time)

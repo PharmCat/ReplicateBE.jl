@@ -44,6 +44,13 @@ end
         memopt = true)
 
 Mixed model fitting function for replicate bioequivalence.
+
+Mixed model in matrix form:
+``y = X\\beta+Zu+\\epsilon``
+
+with covariance matrix for each subject:
+``V_{i} = Z_{i}GZ_i'+R_{i}``
+
 """
 function rbe(df; dvar::Symbol,
     subject::Symbol,
@@ -210,6 +217,9 @@ end
     reml2(rbe::RBE)
 
 Returm -2REML for rbe model
+
+``2logREML(\\theta,\\beta) = -\\frac{N-p}{2} - \\frac{1}{2}\\sum_{i=1}^nlog|V_{i}|-\\frac{1}{2}log|\\sum_{i=1}^nX_i'V_i^{-1}X_i|-\\frac{1}{2}\\sum_{i=1}^n(y_i - X_{i}\\beta)'V_i^{-1}(y_i - X_{i}\\beta)``
+
 """
 function reml2(rbe::RBE)
     return rbe.reml
@@ -220,7 +230,9 @@ end
 """
     coef(rbe::RBE)
 
-Return model coefficients
+Return model coefficients.
+
+``\\beta = {(\\sum_{i=1}^n X_{i}'V_i^{-1}X_{i})}^{-1}(\\sum_{i=1}^n X_{i}'V_i^{-1}y_{i})``
 """
 function StatsBase.coef(rbe::RBE)
     return collect(rbe.fixed.est)
@@ -265,6 +277,8 @@ end
     coefse(rbe::RBE)
 
 Return standart error for coefficients.
+
+``se = \\sqrt{LCL'}``
 """
 function coefse(rbe::RBE)
     return collect(rbe.fixed.se)
@@ -272,7 +286,7 @@ end
 """
     theta(rbe::RBE)
 
-Return theta vector.
+Return theta vector (vector of variation parameters from optimization procedure).
 """
 function theta(rbe::RBE)
     return collect(rbe.θ)
@@ -280,7 +294,7 @@ end
 """
     coefnum(rbe::RBE)
 
-Return number of coefficients.
+Return number of coefficients (length β).
 """
 function coefnum(rbe::RBE)
     return length(rbe.fixed.se)
@@ -296,7 +310,7 @@ end
 """
     fixed(rbe::RBE)
 
-Return fixed effect table.
+Return fixed effect table (β).
 """
 function fixed(rbe::RBE)
     return rbe.fixed
@@ -304,7 +318,9 @@ end
 """
     typeiii(rbe::RBE)
 
-Return type III table.
+Return TYPE III table.
+
+see contrast
 """
 function typeiii(rbe::RBE)
     return rbe.typeiii

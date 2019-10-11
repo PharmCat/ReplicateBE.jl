@@ -11,5 +11,4 @@ Pages = [
         "examples.md",
         "syntax.md",
         "api.md"]
-Depth = 2
 ```

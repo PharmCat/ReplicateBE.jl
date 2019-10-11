@@ -224,7 +224,7 @@ function remlb(yv, Zv, p, Xv, θvec, β; memopt::Bool = true)
     return   -(θ1 + logdet(θ2) + θ3 + c)/2
 end
 """
-    Satterthwaite DF gradient function
+Satterthwaite DF gradient function.
 """
 function lclgf(L, Lt, Xv, Zv, θ; memopt::Bool = true)
     p   = size(Xv[1])[2]

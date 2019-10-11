@@ -1,8 +1,8 @@
 #return contrast table
 """
     contrast(rbe::RBE, L::Matrix; numdf = 1, name = "Contrast", memopt = true)::ContrastTable
-    Return contrast table for L matrix.
-        ReplicateBE.contrast(rbe::RBE, L::Matrix; numdf = 1, name = "Contrast", memopt = true)::ContrastTable
+
+Return contrast table for L matrix.
 """
 function contrast(rbe::RBE, L::Matrix; numdf = 1, name = "Contrast", memopt = true)::ContrastTable
     β       = coef(rbe)
@@ -27,7 +27,8 @@ function contrast(rbe::RBE, L::Matrix; numdf = 1, name = "Contrast", memopt = tr
 end
 """
     estimate(rbe::RBE, L::Matrix; name = "Estimate", memopt = true, alpha = 0.05)
-    Return estimate table for L 1xp matrix.
+
+Return estimate table for L 1xp matrix.
 """
 function estimate(rbe::RBE, L::Matrix; name = "Estimate", memopt = true, alpha = 0.05)
     lcl     = L*rbe.C*L'
@@ -47,6 +48,7 @@ end
 # L Matrix for TYPE III
 """
     lmatrix(mf::ModelFrame, f::Union{Symbol, AbstractTerm})
+
 """
 function lmatrix(mf::ModelFrame, f::Union{Symbol, AbstractTerm})
     l   = length(mf.f.rhs.terms)
@@ -100,6 +102,8 @@ end
 #
 """
     lsm(rbe::RBE, L::Matrix)
+
+LSM
 """
 function lsm(rbe::RBE, L::Matrix)
     lcl  = L*rbe.C*L'
@@ -108,6 +112,8 @@ end
 #
 """
     emm(obj::RBE, fm::Matrix, lm::Matrix)
+
+EMM
 """
 function emm(obj::RBE, fm::Matrix, lm::Matrix)
     La = lmean(obj::RBE)
@@ -117,7 +123,9 @@ function emm(obj::RBE, fm::Matrix, lm::Matrix)
 end
 #General mean contrast L matrix 1xp
 """
-    function lmean(obj::RBE)
+    lmean(obj::RBE)
+
+LMEAN
 """
 function lmean(obj::RBE)
     L    = zeros(1, length(obj.fixed.est))

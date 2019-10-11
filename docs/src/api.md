@@ -10,58 +10,66 @@ ReplicateBE.RBE
 ReplicateBE.rbe
 ```
 
-## ReplicateBE.coef
+## StatsBase.coef
 ```@docs
-ReplicateBE.coef
+coef
 ```
-## ReplicateBE.coef
-```@docs
-ReplicateBE.coef
-```
+
 ## ReplicateBE.coefnum
 ```@docs
 ReplicateBE.coefnum
 ```
+
 ## ReplicateBE.fixed
 ```@docs
 ReplicateBE.fixed
 ```
+
 ## ReplicateBE.typeiii
 ```@docs
 ReplicateBE.typeiii
 ```
-## ReplicateBE.confint
+
+## StatsBase.confint
 ```@docs
-ReplicateBE.confint
+confint
 ```
+
 ## ReplicateBE.design
 ```@docs
 ReplicateBE.design
 ```
+
 ## ReplicateBE.contrast
 ```@docs
 ReplicateBE.contrast
 ```
+
 ## ReplicateBE.estimate
 ```@docs
 ReplicateBE.estimate
 ```
+
 ## ReplicateBE.reml2
 ```@docs
 ReplicateBE.reml2
 ```
+
 ## ReplicateBE.lsm
 ```@docs
 ReplicateBE.lsm
 ```
+
 ## ReplicateBE.emm
 ```@docs
 ReplicateBE.emm
 ```
+
 ## ReplicateBE.lmean
 ```@docs
 ReplicateBE.lmean
 ```
+
 ## ReplicateBE.randrbeds
 ```@docs
 ReplicateBE.randrbeds

@@ -2,7 +2,9 @@
 # GENARAL REPLICATE BIOEQUIVALENCE STRUCTURE
 #
 """
+
     Replicate bioequivalence structure.
+
 """
 struct RBE
     model::ModelFrame               #Model frame
@@ -31,6 +33,7 @@ struct RBE
 end
 
 """
+
     rbe(df; dvar::Symbol,
         subject::Symbol,
         formulation::Symbol,
@@ -40,7 +43,7 @@ end
         store_trace = false, extended_trace = false, show_trace = false,
         memopt = true)
 
-    Mixed model fitting function for replicate bioequivalence.
+Mixed model fitting function for replicate bioequivalence.
 """
 function rbe(df; dvar::Symbol,
     subject::Symbol,
@@ -197,14 +200,16 @@ end #END OF rbe()
 #returm -2REML
 """
     reml2(rbe::RBE, θ::Array{Float64, 1})
-    Returm -2REML for rbe model
+
+Returm -2REML for rbe model
 """
 function reml2(rbe::RBE, θ::Array{Float64, 1})
     return -2*reml(rbe.yv, rbe.Zv, rank(ModelMatrix(rbe.model).m), rbe.Xv, θ, coef(rbe))
 end
 """
     reml2(rbe::RBE)
-    Returm -2REML for rbe model
+
+Returm -2REML for rbe model
 """
 function reml2(rbe::RBE)
     return rbe.reml
@@ -214,7 +219,8 @@ end
 #-------------------------------------------------------------------------------
 """
     coef(rbe::RBE)
-    Return model coefficients
+
+Return model coefficients
 """
 function StatsBase.coef(rbe::RBE)
     return collect(rbe.fixed.est)
@@ -222,7 +228,8 @@ end
 #Confidence interval
 """
     confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::Bool = false, df = :sat)
-    Return confidence intervals for coefficients.
+
+Return confidence intervals for coefficients.
 """
 function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::Bool = false, df = :sat)
     ifv = 1
@@ -256,42 +263,48 @@ end
 #-------------------------------------------------------------------------------
 """
     coefse(rbe::RBE)
-    Return standart error for coefficients.
+
+Return standart error for coefficients.
 """
 function coefse(rbe::RBE)
     return collect(rbe.fixed.se)
 end
 """
     theta(rbe::RBE)
-    Return theta vector.
+
+Return theta vector.
 """
 function theta(rbe::RBE)
     return collect(rbe.θ)
 end
 """
     coefnum(rbe::RBE)
-    Return number of coefficients.
+
+Return number of coefficients.
 """
 function coefnum(rbe::RBE)
     return length(rbe.fixed.se)
 end
 """
     design(rbe::RBE)::Design
-    Return design information object.
+
+Return design information object.
 """
 function design(rbe::RBE)::Design
     return rbe.design
 end
 """
     fixed(rbe::RBE)
-    Return fixed effect table.
+
+Return fixed effect table.
 """
 function fixed(rbe::RBE)
     return rbe.fixed
 end
 """
     typeiii(rbe::RBE)
-    Return type III table.
+
+Return type III table.
 """
 function typeiii(rbe::RBE)
     return rbe.typeiii

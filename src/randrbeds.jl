@@ -21,8 +21,7 @@ end
         intercept = 0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0],
         dropsubj = 0.0, dropobs::Int = 0, seed::Int = 0)
 
-    Random dataset for bioequivalence.
-
+Random dataset for bioequivalence.
 """
 function randrbeds(;n=24, sequence=[1,1],
     design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
@@ -39,7 +38,7 @@ end
         intercept::Real, seqcoef::Vector, periodcoef::Vector, formcoef::Vector,
         dropsubj::Float64, dropobs::Int, seed::Int)
 
-    Random dataset for bioequivalence.
+Random dataset for bioequivalence.
 
 """
 function randrbeds(n::Int, sequence::Vector,

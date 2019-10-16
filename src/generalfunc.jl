@@ -292,7 +292,7 @@ function initvar(df, dv, fac, sbj)
         for r in v
             push!(fvd, df[r, dv])
         end
-        push!(fv, var(fvd))
+        if length(fvd) > 1 push!(fv, var(fvd)) end
     end
     sv = Array{Float64, 1}(undef, 0)
     for i in u
@@ -301,8 +301,8 @@ function initvar(df, dv, fac, sbj)
         for r in v
             push!(fvd, df[r, dv])
         end
-        push!(sv, var(fvd))
+        if length(fvd) > 1 push!(sv, var(fvd)) end
     end
-    push!(fv, mean(sv))
+    push!(fv, mean(filter!(x -> x !== NaN, sv)))
     return fv
 end

@@ -64,13 +64,12 @@ function rbe(df; dvar::Symbol,
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
     if !(eltype(df[!,dvar]) <: Real) println("Responce variable ∉ Real!") end
 
-    to = TimerOutput()
     #should not change initial DS
     categorical!(df, subject);
     categorical!(df, formulation);
     categorical!(df, period);
     categorical!(df, sequence);
-    @timeit to "sort" sort!(df, [subject, formulation, period])
+    sort!(df, [subject, formulation, period])
     Xf  = @eval(@formula($dvar ~ $sequence + $period + $formulation))
     Zf  = @eval(@formula($dvar ~ 0 + $formulation))
     MF  = ModelFrame(Xf, df)
@@ -82,7 +81,7 @@ function rbe(df; dvar::Symbol,
     zxr = rank(ModelMatrix(ModelFrame(@eval(@formula($dvar ~ $sequence + $period + $subject*$formulation)), df)).m)
     y   = df[:, dvar]                                                            #Dependent variable
     #Make pre located arrays with matrices for each subject
-    @timeit to "sortsubj" Xv, Zv, yv = sortsubjects(df, subject, X, Z, y)
+    Xv, Zv, yv = sortsubjects(df, subject, X, Z, y)
     n  = length(Xv)
     N  = sum(length.(yv))
     pn = termmodellen(MF, period)
@@ -97,10 +96,10 @@ function rbe(df; dvar::Symbol,
     #Memory pre-allocation arrays for matrix computations
     memalloc = MemAlloc(p, 2, yv)
     #Check data
-    @timeit to "check" checkdata(X, Z, Xv, Zv, y)
+    checkdata(X, Z, Xv, Zv, y)
     #Calculate initial fixed parameters
     qro   = qr(X)
-    @timeit to "lm"  β     = inv(qro.R)*qro.Q'*y
+    β     = inv(qro.R)*qro.Q'*y
     #Calculate initial variance
     iv = initvar(df, dvar, formulation, subject)
     if iv[1] < iv[3] || iv[2] < iv[3] iv[1] = iv[2] = 2*iv[3] end
@@ -118,10 +117,17 @@ function rbe(df; dvar::Symbol,
     method = LBFGS()
     #method = ConjugateGradient()
     #method = NelderMead()
-    limeps=eps()
-    @timeit to "o1" pO = optimize(od, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-1))
+    limeps  = eps()
+    pO      = nothing
+    try
+        pO = optimize(od, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-1))
     #pO = optimize(remlf,  [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-3))
-    θ  = Optim.minimizer(pO)
+        θ  = Optim.minimizer(pO)
+    catch
+        #@warn "First optimization step failed. Start step two with initial θ..."
+        println("First optimization step failed. Start step two with initial θ...")
+        θ  = θvec0
+    end
     #Final optimization
     #Provide gradient function for Optim
     #Not used yet
@@ -130,15 +136,15 @@ function rbe(df; dvar::Symbol,
     td = TwiceDifferentiable(x -> -2*remlb(yv, Zv, p, Xv, x, β; memopt = memopt), θvec0; autodiff = :forward)
     #remlfb(x) = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
     #@timeit to "o2" O  = optimize(remlfb, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
-    @timeit to "o2" O  = optimize(td, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
+    O  = optimize(td, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
     θ  = Optim.minimizer(O)
     #Get reml
     #remlv = -2*reml(yv, Zv, p, Xv, θ, β)
-    @timeit to "remlv"  remlv = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memalloc)
+    remlv = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memalloc)
     #θ[5] can not be more than 1.0
     if θ[5] > 1 θ[5] = 1 end
     #Get Hessian matrix (H) with ForwardDiff
-    @timeit to "H" H         = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, x, β), θ)
+    H         = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, x, β), θ)
     dH          = det(H)
     H[5,:]     .= 0
     H[:,5]     .= 0
@@ -200,7 +206,6 @@ function rbe(df; dvar::Symbol,
     termmodelleveln(MF, formulation),
     sbf,
     p, zxr, n - termmodelleveln(MF, sequence), N - zxr, N - zxr + p)
-    #println(to)
     return RBE(MF, RMF, design, fac, θvec0, Tuple(θ), remlv, fixed, typeiii, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
 end #END OF rbe()
 #-------------------------------------------------------------------------------

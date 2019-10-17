@@ -1,3 +1,9 @@
+- v0.2.0
+
+    * bugfix
+    * documentation
+    * validation tests
+
 - v0.1.4
     * StatsModels v0.6
     * change struct RBE (some fields renamed, new fixed effect struct)

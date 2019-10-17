@@ -1,4 +1,4 @@
-*Alpha version!* This program comes with absolutely no warranty. No liability is accepted for any loss and risk to public health resulting from use of this software.
+**Alpha version!** This program comes with absolutely no warranty. No liability is accepted for any loss and risk to public health resulting from use of this software.
 
 <p align="center">
   <img src="https://github.com/PharmCat/ReplicateBE.jl/blob/master/docs/ReplicateBE-LogoNoSpace.png">
@@ -6,9 +6,10 @@
 
 Mixed model solution for replicate designed bioequivalence study. This can be used to obtained results with methods C (random effects with interaction), given by the EMA in [Annex I](https://www.ema.europa.eu/en/documents/other/31-annex-i-statistical-analysis-methods-compatible-ema-bioequivalence-guideline_en.pdf "EMA/582648/2016, 21 September 2016"). Statistical model formed with accordance [FDA Guidance for Industry: Statistical Approaches to Establishing Bioequivalence](https://www.fda.gov/media/70958/download), APPENDIX F.
 
+[![GitHub version](https://badge.fury.io/gh/PharmCat%2FReplicateBE.jl.svg)](https://badge.fury.io/gh/PharmCat%2FReplicateBE.jl)
 [![Build Status](https://api.travis-ci.com/PharmCat/ReplicateBE.jl.svg?branch=master)](https://travis-ci.com/PharmCat/ReplicateBE.jl)
 [![codecov](https://codecov.io/gh/PharmCat/ReplicateBE.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/PharmCat/ReplicateBE.jl)
-
+[![Latest docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://pharmcat.github.io/ReplicateBE.jl/build/)
 
 Install:
 ```
@@ -31,16 +32,14 @@ Where:
 - subject::Symbol - subject;
 - formulation::Symbol - formulation/drug;
 - period::Symbol - study period;
-- sequence::Symbol - sequence;
+- sequence::Symbol - sequence.
 
-Get results:
+How to get results?
 ```
-be.fixed
-#or
+#Fixed effect table:
 fixed(be)
 
-be.typeiii
-#or
+#Type III table
 typeiii(be)
 ```
 
@@ -81,7 +80,9 @@ formulation: T / formulation: R
 
 Validation information: [here](https://github.com/PharmCat/ReplicateBE.jl/blob/master/validation/validation.md)
 
-# Methods
+# Basic methods
+
+All API docs see [here](https://pharmcat.github.io/ReplicateBE.jl/build/api/).
 
 ### StatsBase.confint
 
@@ -149,30 +150,9 @@ Return -2REML for model.
 ```
 Return F for L matrix. L matrix should be 1×p or l×p.
 
-### ReplicateBE.lsm
-
-```
-    lsm(obj::RBE, L::Matrix{T}) where T <: Real
-```
-Return mean & se for L matrix. L matrix should be 1×p.
-
-### ReplicateBE.emm
-
-```
-    emm(obj::RBE, fm, lm)
-```
-Return marginal means. fm and lm arrays p length.
-
-fm - factor map;
-lm - level map.
-
-### ReplicateBE.emm
-```
-    lmean(obj::RBE)
-```
-Return L matrix for general mean.
-
 # Random Dataset
+
+Random dataset function is made for generation validation datasets and simulation data.  
 
 ```
 randrbeds(;n=24, sequence=[1,1],

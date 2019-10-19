@@ -46,9 +46,11 @@ end
 Mixed model fitting function for replicate bioequivalence.
 
 Mixed model in matrix form:
+
 ``y = X\\beta+Zu+\\epsilon``
 
 with covariance matrix for each subject:
+
 ``V_{i} = Z_{i}GZ_i'+R_{i}``
 
 """
@@ -223,7 +225,8 @@ end
 
 Returm -2REML for rbe model
 
-``2logREML(\\theta,\\beta) = -\\frac{N-p}{2} - \\frac{1}{2}\\sum_{i=1}^nlog|V_{i}|-\\frac{1}{2}log|\\sum_{i=1}^nX_i'V_i^{-1}X_i|-\\frac{1}{2}\\sum_{i=1}^n(y_i - X_{i}\\beta)'V_i^{-1}(y_i - X_{i}\\beta)``
+``2logREML(\\theta,\\beta) = -\\frac{N-p}{2} - \\frac{1}{2}\\sum_{i=1}^nlog|V_{i}|-
+-\\frac{1}{2}log|\\sum_{i=1}^nX_i'V_i^{-1}X_i|-\\frac{1}{2}\\sum_{i=1}^n(y_i - X_{i}\\beta)'V_i^{-1}(y_i - X_{i}\\beta)``
 
 """
 function reml2(rbe::RBE)
@@ -254,12 +257,22 @@ function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::B
     if isa(df, Array{Float64, 1})
         if length(obj.fixed.df) != length(df)
             df = obj.fixed.df
+        else
+            #WARN
+            df = obj.fixed.df
         end
     elseif isa(df, Symbol)
+        df  = zeros(length(obj.fixed.df))
         if df == :df2
-            df  = zeros(length(obj.fixed.df))
             df .= obj.design.df2
+        elseif df == :df3 || df == :contb
+            df .= obj.design.df3
+        elseif df == :contw
+            df .= sum(obj.design.sbf) - length(obj.design.sbf)*obj.design.sqn
+        elseif df == :sat
+            df = obj.fixed.df
         else
+            #WARN
             df = obj.fixed.df
         end
     end
@@ -307,7 +320,23 @@ end
 """
     design(rbe::RBE)::Design
 
-Return design information object.
+Return design information object, where:
+
+    ```
+    struct Design
+        obs::Int          # Number of observations
+        subj::Int         # Number of statistica independent subjects
+        sqn::Int          # Number of sequences
+        pn::Int           # Number of periods
+        fn::Int           # Number of formulations
+        sbf::Vector{Int}  # Subjects in each formulation level
+        rankx::Int        # Rank of fixed effect matrix
+        rankxz::Int       # Rank of XZ (fixed+random) effect matrix
+        df2::Int          # subj - sqn         (Robust DF)
+        df3::Int          # obs  - rankxz      (Contain DF inter-subject factor)
+        df4::Int          # obs  - rankxz + p
+    end```
+
 """
 function design(rbe::RBE)::Design
     return rbe.design
@@ -329,6 +358,13 @@ see contrast
 """
 function typeiii(rbe::RBE)
     return rbe.typeiii
+end
+"""
+
+Return optimization status
+"""
+function optstat(rbe::RBE)
+
 end
 #-------------------------------------------------------------------------------
 function Base.show(io::IO, rbe::RBE)

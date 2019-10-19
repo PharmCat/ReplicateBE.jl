@@ -6,6 +6,17 @@ Return contrast table for L matrix.
 
 ``F = \\frac{\\beta'L'(LCL')^{-1}L\\beta}{rank(LCL')}``
 
+DF for one-dimetion case:
+
+``df = \\frac{2(LCL')^{2}}{g'Ag}``
+
+where ``A = 2H``
+
+where ``g = \\triangledown _{\\theta}(LC^{-1}L')``
+
+DF for multi-dimention case:
+
+
 """
 function contrast(rbe::RBE, L::Matrix; numdf = 1, name = "Contrast", memopt = true)::ContrastTable
     β       = coef(rbe)
@@ -40,8 +51,12 @@ Return estimate table for L 1xp matrix.
 ``t = estimate/se``
 
 ``df = \\frac{2(LCL')^{2}}{g'Ag}``
+
 where ``A = 2H``
+
 where ``g = \\triangledown _{\\theta}(LC^{-1}L')``
+
+CI estimate is ``CI =``
 """
 function estimate(rbe::RBE, L::Matrix; name = "Estimate", memopt = true, alpha = 0.05)
     lcl     = L*rbe.C*L'

@@ -334,7 +334,7 @@ Return design information object, where:
         rankx::Int        # Rank of fixed effect matrix
         rankxz::Int       # Rank of XZ (fixed+random) effect matrix
         df2::Int          # subj - sqn         (Robust DF)
-        df3::Int          # obs  - rankxz      (Contain DF inter-subject factor)
+        df3::Int          # obs  - rankxz      (Contain DF for sequence and period)
         df4::Int          # obs  - rankxz + p
     end```
 
@@ -370,21 +370,34 @@ end
 #-------------------------------------------------------------------------------
 function Base.show(io::IO, rbe::RBE)
     rcoef = coefnames(rbe.rmodel);
-    println(io, "Bioequivalence Linear Mixed Effect Model")
+    println(io, "Bioequivalence Linear Mixed Effect Model (status: $(Optim.converged(rbe.optim) ? "converged" : "not converged"))")
     println(io, "")
     println(io, "-2REML: $(round(rbe.reml, sigdigits=6))    REML: $(round(-rbe.reml/2, sigdigits=6))")
     println(io, "")
     println(io, "Fixed effect:")
     println(io, rbe.fixed)
     println(io, "Intra-individual variation:")
+    #=
     println(io, rcoef[1], "  ", round(rbe.θ[1], sigdigits=6), "   CVᵂ: ", round(geocv(rbe.θ[1]), sigdigits=6))
     println(io, rcoef[2], "  ", round(rbe.θ[2], sigdigits=6), "   CVᵂ: ", round(geocv(rbe.θ[2]), sigdigits=6))
     println(io, "")
+    =#
+    printmatrix(io,[rcoef[1] round(rbe.θ[1], sigdigits=6) "CVᵂ:" round(geocv(rbe.θ[1]), sigdigits=6);
+                    rcoef[2] round(rbe.θ[2], sigdigits=6) "CVᵂ:" round(geocv(rbe.θ[2]), sigdigits=6)])
+    println(io, "")
+
     println(io, "Inter-individual variation:")
+    #=
     println(io, rcoef[1], "  ", round(rbe.θ[3], sigdigits=6))
     println(io, rcoef[2], "  ", round(rbe.θ[4], sigdigits=6))
-    println(io,   "Cov:", "  ", round(sqrt(rbe.θ[4]*rbe.θ[3])*rbe.θ[5], sigdigits=6))
+    println(io, "ρ: $(round(rbe.θ[5], sigdigits=6))", " Cov:", "  ", round(sqrt(rbe.θ[4]*rbe.θ[3])*rbe.θ[5], sigdigits=6))
     println(io, "")
+    =#
+    printmatrix(io,[rcoef[1] round(rbe.θ[3], sigdigits=6) "";
+                    rcoef[2] round(rbe.θ[4], sigdigits=6) "";
+                    "ρ:"     round(rbe.θ[5], sigdigits=6) "Cov: $(round(sqrt(rbe.θ[4]*rbe.θ[3])*rbe.θ[5], sigdigits=6))"])
+    println(io, "")
+
     println(io, "Confidence intervals(90%):")
     ci = confint(rbe, 0.1, expci = true, inv = false)
     println(io, rcoef[1], " / ", rcoef[2])

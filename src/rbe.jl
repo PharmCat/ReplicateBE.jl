@@ -28,7 +28,7 @@ struct RBE
     Zv::Array{Matrix{Float64},1}    #Z matrices for each subject
     yv::Array{Array{Float64, 1},1}  #responce vectors for each subject
     detH::Float64                   #Hessian determinant
-    preoptim::Optim.MultivariateOptimizationResults        #Pre-optimization result object
+    preoptim::Union{Optim.MultivariateOptimizationResults, Nothing}        #Pre-optimization result object
     optim::Optim.MultivariateOptimizationResults           #Optimization result object
 end
 
@@ -61,7 +61,9 @@ function rbe(df; dvar::Symbol,
     sequence::Symbol,
     g_tol::Float64 = 1e-8, x_tol::Float64 = 0.0, f_tol::Float64 = 0.0, iterations::Int = 100,
     store_trace = false, extended_trace = false, show_trace = false,
-    memopt = true)
+    memopt = true,
+    init = [],
+    twostep = true)
 
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
     if !(eltype(df[!,dvar]) <: Real) println("Responce variable ∉ Real!") end
@@ -121,13 +123,12 @@ function rbe(df; dvar::Symbol,
     #method = NelderMead()
     limeps  = eps()
     pO      = nothing
-    try
+    if twostep
         pO = optimize(od, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-1))
     #pO = optimize(remlf,  [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-3))
         θ  = Optim.minimizer(pO)
-    catch
+    else
         #@warn "First optimization step failed. Start step two with initial θ..."
-        println("First optimization step failed. Start step two with initial θ...")
         θ  = θvec0
     end
     #Final optimization

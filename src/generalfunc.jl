@@ -65,6 +65,18 @@ end
     if σ[2] < 0.0 σ[2] = 1.0e-6 end
     return Matrix(Diagonal((Z*σ)[:,1]))
 end
+function mrmat(σ::Vector{S}, Z::Matrix{T}, cache)::Matrix where S <: Real where T <: Real
+    h = hash(tuple(σ, Z))
+    if h in keys(cache)
+        return cache[h]
+    else
+        if σ[1] < 0.0 σ[1] = 1.0e-6 end
+        if σ[2] < 0.0 σ[2] = 1.0e-6 end
+        R = Matrix(Diagonal((Z*σ)[:,1]))
+        cache[h] = R
+        return R
+    end
+end
 """
     R matrix  (memory pre-allocation)
 """
@@ -75,19 +87,6 @@ end
     return
 end
 #-------------------------------------------------------------------------------
-# MEMOIZATION
-@memoize function memrmat(σ::Vector, Z::Matrix)::Matrix
-    return rmat(σ, Z)
-end
-@memoize function memzgz(G::Matrix, Z::Matrix)::Matrix
-    return Z*G*Z'
-end
-@memoize function memvmat(ZGZ::Matrix, R::Matrix)::Matrix
-    return ZGZ + R
-end
-@memoize function meminv(m::Matrix)::Matrix
-    return inv(m)
-end
 #-------------------------------------------------------------------------------
 """
     Return variance-covariance matrix V
@@ -102,6 +101,18 @@ end
     mul!(V, memc[size(Z)[1]], Z')
     V .+= R
     return
+end
+function mvmat(G::Matrix{S}, σ::Vector{T}, Z::Matrix{U}, cache) where S <: Real where T <: Real where U <: Real
+    h = hash(tuple(σ, Z))
+    if h in keys(cache)
+        return cache[h]
+    else
+        if σ[1] < 0.0 σ[1] = 1.0e-6 end
+        if σ[2] < 0.0 σ[2] = 1.0e-6 end
+        V  = Z*G*Z' + Matrix(Diagonal((Z*σ)[:,1]))
+        cache[h] = V
+        return V
+    end
 end
 """
     Feel M with zero feeled matrices
@@ -127,6 +138,27 @@ end
 end
 #println("θ₁: ", θ1, " θ₂: ",  θ2,  " θ₃: ", θ3)
 
+function minv(M, cache)
+    h = hash(M)
+    if h in keys(cache)
+        return cache[h]
+    else
+        iM = inv(M)
+        cache[h] = iM
+        return iM
+    end
+end
+function mlogdet(M, cache)
+    h = hash(M)
+    if h in keys(cache)
+        return cache[h]
+    else
+        iM = logdet(M)
+        cache[h] = iM
+        return iM
+    end
+end
+
 """
     REML function for ForwardDiff
 """
@@ -138,6 +170,9 @@ function reml(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vec
     for i = 1:maxobs
         mXviV[i] =  zeros(promote_type(Float64, eltype(θvec)), p, i)
     end
+    cache     = Dict()
+    cachel    = Dict()
+    cachem    = Dict()
     #---------------------------------------------------------------------------
     n         = length(yv)
     N         = sum(length.(yv))
@@ -147,18 +182,20 @@ function reml(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vec
     θ2        = zeros(promote_type(Float64, eltype(θvec)), p, p)
     θ3        = 0
     iV        = nothing
-    θr   = [θvec[1], θvec[2]]
+    θr        = θvec[1:2]
     for i = 1:n
         if MEMOPT && memopt
-            @inbounds R    = memrmat(θr, Zv[i])
-            @inbounds V    = memvmat(memzgz(G, Zv[i]), R)
-            iV   = meminv(V)
+            #@inbounds R    = mrmat(θr, Zv[i], cacher)
+            #@inbounds V    = memvmat(memzgz(G, Zv[i]), R)
+            @inbounds V    = mvmat(G, θr, Zv[i], cachem)
+            iV   = minv(V, cache)
+            θ1  += mlogdet(V, cachel)
         else
-            @inbounds R    = rmat(θr, Zv[i])
-            @inbounds V    = vmat(G, R, Zv[i])
+            @inbounds V    = vmat(G, rmat(θr, Zv[i]), Zv[i])
             iV   = inv(V)
+            θ1  += logdet(V)
         end
-        θ1  += logdet(V)
+
         #-----------------------------------------------------------------------
         #θ2 += Xv[i]'*iV*Xv[i]
         @inbounds mul!(mXviV[size(Xv[i])[1]], Xv[i]', iV)
@@ -181,6 +218,9 @@ function remlb(yv, Zv, p, Xv, θvec, β; memopt::Bool = true)
     for i = 1:maxobs
         mXviV[i] =  zeros(promote_type(Float64, eltype(θvec)), p, i)
     end
+    cache     = Dict()
+    cachel    = Dict()
+    cachem    = Dict()
     #---------------------------------------------------------------------------
     n         = length(yv)
     N         = sum(length.(yv))
@@ -193,18 +233,21 @@ function remlb(yv, Zv, p, Xv, θvec, β; memopt::Bool = true)
     iV        = nothing
     βm        = zeros(promote_type(Float64, eltype(θvec)), p)
     βt        = zeros(promote_type(Float64, eltype(θvec)), p)
-    θr        = [θvec[1], θvec[2]]
+    θr        = θvec[1:2]
     for i = 1:n
         if MEMOPT && memopt
-            @inbounds R    = memrmat(θr, Zv[i])
-            @inbounds V    = memvmat(memzgz(G, Zv[i]), R)
-            @inbounds iVv[i]   = meminv(V)
+            #@inbounds R        = memrmat(θr, Zv[i])
+            #@inbounds V        = memvmat(memzgz(G, Zv[i]), R)
+            @inbounds V        = mvmat(G, θr, Zv[i], cachem)
+            @inbounds iVv[i]   = minv(V, cache)
+            θ1                += mlogdet(V, cachel)
         else
-            @inbounds R    = rmat(θr, Zv[i])
-            @inbounds V    = vmat(G, R, Zv[i])
+            @inbounds R        = rmat(θr, Zv[i])
+            @inbounds V        = vmat(G, R, Zv[i])
             @inbounds iVv[i]   = inv(V)
+            θ1                += logdet(V)
         end
-        θ1  += logdet(V)
+
         #-----------------------------------------------------------------------
         #θ2 += Xv[i]'*iV*Xv[i]
         @inbounds mul!(mXviV[size(Xv[i])[1]], Xv[i]', iVv[i])
@@ -227,13 +270,15 @@ end
 Satterthwaite DF gradient function.
 """
 function lclgf(L, Lt, Xv, Zv, θ; memopt::Bool = true)
-    p   = size(Xv[1])[2]
-    G   = gmat(θ[3], θ[4], θ[5])
-    C   = zeros(promote_type(Float64, eltype(θ)), p, p)
-    θr  = [θ[1], θ[2]]
-    for i=1:length(Xv)
+    p     = size(Xv[1])[2]
+    G     = gmat(θ[3], θ[4], θ[5])
+    C     = zeros(promote_type(Float64, eltype(θ)), p, p)
+    θr    = θ[1:2]
+    cache     = Dict()
+    cachem    = Dict()
+    for i = 1:length(Xv)
         if MEMOPT && memopt
-            iV   = meminv(memvmat(memzgz(G, Zv[i]), memrmat(θr, Zv[i])))
+            iV   = minv(mvmat(G, θr, Zv[i], cachem), cache)
         else
             R   = rmat(θr, Zv[i])
             iV  = inv(vmat(G, R, Zv[i]))
@@ -258,11 +303,15 @@ function reml2b!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 
     #fill!(mem.mem4, 0)
     βm   = zeros(p)
     θr   = [θvec[1], θvec[2]]
+    cache     = Dict()
+    cachel    = Dict()
     @inbounds for i = 1:n
         rmat!(Rv[i], θr, Zv[i])
         vmat!(Vv[i], G, Rv[i], Zv[i], mem.mem1)
-        copyto!(iVv[i], inv(Vv[i]))
-        θ1  += logdet(Vv[i])
+        #Memopt!
+        copyto!(iVv[i], minv(Vv[i], cache))
+        θ1  += mlogdet(Vv[i], cachel)
+        #-
         mul!(mem.mem2[size(Xv[i])[1]], Xv[i]', iVv[i])
         θ2    .+= mem.mem2[size(Xv[i])[1]]*Xv[i]
         βm    .+= mem.mem2[size(Xv[i])[1]]*yv[i]

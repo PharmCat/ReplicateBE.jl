@@ -1,3 +1,17 @@
+# MEMOIZATION
+@memoize function memrmat(σ::Vector, Z::Matrix)::Matrix
+    return rmat(σ, Z)
+end
+@memoize function memzgz(G::Matrix, Z::Matrix)::Matrix
+    return Z*G*Z'
+end
+@memoize function memvmat(ZGZ::Matrix, R::Matrix)::Matrix
+    return ZGZ + R
+end
+@memoize function meminv(m::Matrix)::Matrix
+    return inv(m)
+end
+
 #=
 
 #M       = L'*inv(L*L')*L

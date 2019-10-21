@@ -35,25 +35,25 @@ end
 """
     G matrix
 """
-@inline function gmat(σ₁::S, σ₂::T, ρ::U)::Matrix where S <: Real where T <: Real where U <: Real
-    if ρ > 1.0 ρ = 1.0 end
-    if ρ < 0.0 ρ = 0.0 end
-    if σ₁ < 0.0 σ₁ = 1.0e-6 end
-    if σ₂ < 0.0 σ₂ = 1.0e-6 end
-    cov = sqrt(σ₁ * σ₂) * ρ
-    return [σ₁ cov; cov σ₂]
+@inline function gmat(σ::Vector)::Matrix
+    if σ[3] > 1.0 σ[3] = 1.0 end
+    if σ[3] < 0.0 σ[3] = 0.0 end
+    if σ[1] < 0.0 σ[1] = 1.0e-6 end
+    if σ[2] < 0.0 σ[2] = 1.0e-6 end
+    cov = sqrt(σ[1] * σ[2]) * σ[3]
+    return [σ[1] cov; cov σ[2]]
 end
 """
     G matrix  (memory pre-allocation)
 """
-@inline function gmat!(G::Matrix{Float64}, σ₁::Float64, σ₂::Float64, ρ::Float64)
-    if ρ > 1.0 ρ = 1.0 end
-    if ρ < 0.0 ρ = 0.0 end
-    if σ₁ < 0.0 σ₁ = 1.0e-6 end
-    if σ₂ < 0.0 σ₂ = 1.0e-6 end
-    G[1, 1] = σ₁
-    G[2, 2] = σ₂
-    G[1, 2] = G[2, 1] = sqrt(σ₁ * σ₂) * ρ
+@inline function gmat!(G::Matrix{Float64}, σ::Vector)
+    if σ[3] > 1.0 σ[3] = 1.0 end
+    if σ[3] < 0.0 σ[3] = 0.0 end
+    if σ[1] < 0.0 σ[1] = 1.0e-6 end
+    if σ[2] < 0.0 σ[2] = 1.0e-6 end
+    G[1, 1] = σ[1]
+    G[2, 2] = σ[2]
+    G[1, 2] = G[2, 1] = sqrt(σ[1] * σ[2]) * σ[3]
     return
 end
 
@@ -176,7 +176,7 @@ function reml(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vec
     #---------------------------------------------------------------------------
     n         = length(yv)
     N         = sum(length.(yv))
-    G         = gmat(θvec[3], θvec[4], θvec[5])
+    G         = gmat(θvec[3:5])
     c         = (N-p)*LOG2PI
     θ1        = 0
     θ2        = zeros(promote_type(Float64, eltype(θvec)), p, p)
@@ -224,7 +224,7 @@ function remlb(yv, Zv, p, Xv, θvec, β; memopt::Bool = true)
     #---------------------------------------------------------------------------
     n         = length(yv)
     N         = sum(length.(yv))
-    G         = gmat(θvec[3], θvec[4], θvec[5])
+    G         = gmat(θvec[3:5])
     iVv       = Array{Array{eltype(θvec), 2}, 1}(undef, n)
     c         = (N-p)*LOG2PI
     θ1        = 0
@@ -271,7 +271,7 @@ Satterthwaite DF gradient function.
 """
 function lclgf(L, Lt, Xv, Zv, θ; memopt::Bool = true)
     p     = size(Xv[1])[2]
-    G     = gmat(θ[3], θ[4], θ[5])
+    G     = gmat(θ[3:5])
     C     = zeros(promote_type(Float64, eltype(θ)), p, p)
     θr    = θ[1:2]
     cache     = Dict()
@@ -294,7 +294,7 @@ end
     REML with β final update
 """
 function reml2b!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2}, Rv::T, Vv::T, iVv::T, θvec::Array{Float64, 1}, β::Array{Float64, 1}, mem::MemAlloc)::Float64 where T <: Array{Array{Float64, 2}, 1} where S <: Array{Array{Float64, 1}, 1}
-    gmat!(G, θvec[3], θvec[4], θvec[5])
+    gmat!(G, θvec[3:5])
     c  = (N-p)*LOG2PI #log(2π)
     θ1 = 0
     θ2  = zeros(p, p)

@@ -71,7 +71,7 @@ end
     df6[!,:var1] = float.(df6[!,:var1])
     be = ReplicateBE.rbe(df6, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     ci = ReplicateBE.confint(be, 0.1, expci = true, inv = true)
-    @test be.reml  ≈  329.25749377843033 atol=1E-5
+    @test ReplicateBE.reml2(be)  ≈  329.25749377843033 atol=1E-5
     @test be.fixed.f[6]  ≈  2.399661661708039 atol=1E-5
     @test ci[5][1] ≈    0.8754960202413755 atol=1E-5
     @test ci[5][2] ≈    1.0042930817939983 atol=1E-5

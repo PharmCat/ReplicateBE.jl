@@ -383,7 +383,7 @@ end
 Return optimization status
 """
 function optstat(rbe::RBE)
-
+    return Optim.converged(rbe.optim)
 end
 #-------------------------------------------------------------------------------
 function Base.show(io::IO, rbe::RBE)

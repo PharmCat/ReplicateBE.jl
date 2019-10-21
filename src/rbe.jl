@@ -63,7 +63,8 @@ function rbe(df; dvar::Symbol,
     store_trace = false, extended_trace = false, show_trace = false,
     memopt = true,
     init = [],
-    twostep = true)
+    twostep = true,
+    postopt = false)
 
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
     if !(eltype(df[!,dvar]) <: Real) println("Responce variable ∉ Real!") end
@@ -140,19 +141,36 @@ function rbe(df; dvar::Symbol,
     #remlfb(x) = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
     #@timeit to "o2" O  = optimize(remlfb, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
     O  = optimize(td, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
-    θ  = Optim.minimizer(O)
+    θ  = copy(Optim.minimizer(O))
     #Get reml
     #remlv = -2*reml(yv, Zv, p, Xv, θ, β)
     remlv = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memalloc)
+
     #θ[5] can not be more than 1.0
-    if θ[5] > 1 θ[5] = 1 end
+    if θ[5] > 1
+        θ[5] = 1.0 - limeps
+        if !twostep && !postopt
+            @warn "ρ is more than 1.0, and no twostep or postopt used. Results may be incorrect, use twostep = true or postopt = true"
+        end
+        if postopt
+            O  = optimize(od, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θ,  Fminbox(BFGS()), Optim.Options(g_tol = g_tol, x_tol=x_tol, f_tol=f_tol))
+            θ  = copy(Optim.minimizer(O))
+            remlv = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memalloc)
+        end
+    end
     #Get Hessian matrix (H) with ForwardDiff
-    H         = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, x, β), θ)
+    #H           = Optim.trace(O)[end].metadata["h(x)"]
+    H           = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, x, β), θ)
     dH          = det(H)
+
+
     H[5,:]     .= 0
     H[:,5]     .= 0
+
     #Secondary parameters calculation
     A           = 2*pinv(H)
+    #A[5,:]     .= 0
+    #A[:,5]     .= 0
     C           = cmat(Xv, Zv, iVv, θ)
     se          = Array{Float64, 1}(undef, p)
     F           = Array{Float64, 1}(undef, p)
@@ -189,9 +207,9 @@ function rbe(df; dvar::Symbol,
         if lclr ≥ 2
             vm  = Array{Float64, 1}(undef, lclr)
             for i = 1:lclr
-                g       = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', Xv, Zv, x; memopt = memopt), θ)
+                g        = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', Xv, Zv, x; memopt = memopt), θ)
                 dfi      = 2*((L[i:i,:]*C*L[i:i,:]')[1])^2/(g'*(A)*g)
-                vm[i]   = dfi/(dfi-2)
+                vm[i]    = dfi/(dfi-2)
             end
             dfi = 2*sum(vm)/(sum(vm)-lclr)
         else

@@ -217,8 +217,10 @@ function sbjnbyf(df, subj, fac, f)
     return length(sbj)
 end
 #-------------------------------------------------------------------------------
+#=
 function Base.show(io::IO, obj::Tuple{Vararg{Tuple{Float64, Float64}}})
     for i in obj
         println(io, i)
     end
 end
+=#

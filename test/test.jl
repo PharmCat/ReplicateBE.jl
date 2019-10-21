@@ -100,11 +100,12 @@ end
     @test ReplicateBE.optstat(be)
     @test ReplicateBE.theta(be)[end]   ≈ 0.9802882310955287     atol=1E-5
 
-    @test dof(be)[end]         ≈ 207.65104847136425      atol=1E-5
+    @test dof(be)[end]         ≈ 207.65104847136425     atol=1E-5
     @test nobs(be)             == 64
     @test coef(be)[end]        ≈ 0.06434039007812514    atol=1E-5
     @test stderror(be)[end]    ≈ 0.041534470947138996   atol=1E-5
-    @test confint(be)[end]     == (-0.01754291069544353, 0.14622369085169434)
+    @test confint(be)[end][1]  ≈ -0.01754291069544353   atol=1E-5
+    @test confint(be)[end][2]  ≈ 0.14622369085169434    atol=1E-5
 end
 
 @testset "  #  Random DataSet test                        " begin

@@ -25,4 +25,4 @@ rbe(df; dvar::Symbol,
 - store_trace
 - extended_trace
 - show_trace
-- memopt::Bool - memory optimization using Memoize.jl, can increase performance, but also can lead to memory leak in simulation tasks   
+- memopt::Bool - memory optimization, can increase performance  

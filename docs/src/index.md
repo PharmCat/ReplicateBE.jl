@@ -13,4 +13,5 @@ Pages = [
         "details.md",
         "validation.md",
         "api.md"]
+Depth = 0
 ```

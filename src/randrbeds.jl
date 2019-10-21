@@ -66,7 +66,7 @@ function randrbeds(n::Int, sequence::Vector,
     end
     Zv = Array{Matrix, 1}(undef, sqnum)
     Vv = Array{Matrix, 1}(undef, sqnum)
-    G = gmat(θinter[1], θinter[2], θinter[3])
+    G = gmat(θinter)
     for i = 1:size(design)[1]
         Z = Array{Int, 2}(undef, pnum, length(u))
         for c = 1:pnum

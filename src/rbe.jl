@@ -119,7 +119,8 @@ function rbe(df; dvar::Symbol,
     matvecz!(iVv, Zv)
     #First step optimization (pre-optimization)
     od = OnceDifferentiable(x -> -2*reml(yv, Zv, p, Xv, x, β; memopt = memopt), θvec0; autodiff = :forward)
-    method = LBFGS()
+    method = BFGS(linesearch = LineSearches.HagerZhang(), alphaguess = LineSearches.InitialStatic())
+    #method = optm
     #method = ConjugateGradient()
     #method = NelderMead()
     limeps  = eps()
@@ -153,7 +154,7 @@ function rbe(df; dvar::Symbol,
             @warn "ρ is more than 1.0, and no twostep or postopt used. Results may be incorrect, use twostep = true or postopt = true"
         end
         if postopt
-            O  = optimize(od, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θ,  Fminbox(BFGS()), Optim.Options(g_tol = g_tol, x_tol=x_tol, f_tol=f_tol))
+            O  = optimize(od, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θ,  Fminbox(method), Optim.Options(g_tol=g_tol, x_tol=x_tol, f_tol=f_tol))
             θ  = copy(Optim.minimizer(O))
             remlv = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memalloc)
         end

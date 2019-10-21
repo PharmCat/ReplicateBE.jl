@@ -5,7 +5,7 @@
 
 module ReplicateBE
 
-using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlgebra, Random, PDMats, Optim, Memoize
+using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlgebra, Random, PDMats, Optim, LineSearches, Memoize
 
     export RBE, rbe, reml2, coef, coefse, coefnum, fixed, theta, typeiii, design, show, confint, contrast, estimate, randrbeds
     import Base.show

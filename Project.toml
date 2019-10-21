@@ -19,9 +19,10 @@ PDMats = "90014a1f-27ba-587c-ab20-58faa44d9150"
 [extras]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [targets]
-test = ["CSV", "Test"]
+test = ["CSV", "Test", "StatsBase"]
 
 [compat]
 julia = "1.0, 1.1, 1.2"

@@ -243,10 +243,11 @@ end
 """
     reml2(rbe::RBE)
 
-Returm -2REML for rbe model
+Returm -2logREML for rbe model
 
-``2logREML(\\theta,\\beta) = -\\frac{N-p}{2} - \\frac{1}{2}\\sum_{i=1}^nlog|V_{i}|-
--\\frac{1}{2}log|\\sum_{i=1}^nX_i'V_i^{-1}X_i|-\\frac{1}{2}\\sum_{i=1}^n(y_i - X_{i}\\beta)'V_i^{-1}(y_i - X_{i}\\beta)``
+``logREML(\\theta,\\beta) = -\\frac{N-p}{2} - \\frac{1}{2}\\sum_{i=1}^nlog|V_{i}|-``
+
+``-\\frac{1}{2}log|\\sum_{i=1}^nX_i'V_i^{-1}X_i|-\\frac{1}{2}\\sum_{i=1}^n(y_i - X_{i}\\beta)'V_i^{-1}(y_i - X_{i}\\beta)``
 
 """
 function reml2(rbe::RBE)
@@ -255,6 +256,24 @@ end
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
+"""
+    StatsBase.nobs(rbe::RBE)
+
+Return number of statistically independent observations (subjects).
+"""
+function StatsBase.nobs(rbe::RBE)
+    return rbe.design.subj
+end
+"""
+    StatsBase.stderror(rbe::RBE)
+
+Return the standard errors for the coefficients of the model.
+
+``se = \\sqrt{LCL'}``
+"""
+function StatsBase.stderror(rbe::RBE)
+    return collect(rbe.fixed.se)
+end
 """
     coef(rbe::RBE)
 
@@ -265,12 +284,33 @@ Return model coefficients.
 function StatsBase.coef(rbe::RBE)
     return collect(rbe.fixed.est)
 end
+"""
+    dof(rbe::RBE)
+
+Return the number of degrees of freedom for the coefficients of the model.
+
+"""
+function StatsBase.dof(rbe::RBE)
+    return collect(rbe.fixed.df)
+end
 #Confidence interval
 """
-    confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::Bool = false, df = :sat)
+    confint(obj::RBE; level::Real=0.95, expci::Bool = false, inv::Bool = false, df = :sat)
 
-Return confidence intervals for coefficients.
+Compute confidence intervals for coefficients, with confidence level ```level``` (by default 95%).
+
+```expci = true```: return exponented CI.
+
+```inv = true```: return ```-estimate ± t*se```
+
+```df = :sat```: use Satterthwaite DF approximation.
+
+```df = :df3```: DF (contain) = N - rank(ZX).
+
 """
+function StatsBase.confint(obj::RBE; level::Real=0.95, expci::Bool = false, inv::Bool = false, df = :sat)
+    confint(obj, 1 - level; expci = expci, inv = inv, df = df)
+end
 function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::Bool = false, df = :sat)
     ifv = 1
     if inv ifv = -1 end
@@ -296,9 +336,9 @@ function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::B
             df = obj.fixed.df
         end
     end
-    a = Array{Tuple{Float64, Float64},1}(undef, length(obj.fixed.est)-1)
-    for i = 2:length(obj.fixed.est)
-        a[i-1] = calcci(obj.fixed.est[i]*ifv, obj.fixed.se[i], df[i], alpha, expci)
+    a = Array{Tuple{Float64, Float64},1}(undef, length(obj.fixed.est))
+    for i = 1:length(obj.fixed.est)
+        a[i] = calcci(obj.fixed.est[i]*ifv, obj.fixed.se[i], df[i], alpha, expci)
     end
     return Tuple(a)
 end
@@ -311,16 +351,6 @@ function calcci(x::Float64, se::Float64, df::Float64, alpha::Float64, expci::Boo
     end
 end
 #-------------------------------------------------------------------------------
-"""
-    coefse(rbe::RBE)
-
-Return standart error for coefficients.
-
-``se = \\sqrt{LCL'}``
-"""
-function coefse(rbe::RBE)
-    return collect(rbe.fixed.se)
-end
 """
     theta(rbe::RBE)
 
@@ -380,8 +410,9 @@ function typeiii(rbe::RBE)
     return rbe.typeiii
 end
 """
+    optstat(rbe::RBE)
 
-Return optimization status
+Return optimization status.
 """
 function optstat(rbe::RBE)
     return Optim.converged(rbe.optim)
@@ -396,22 +427,13 @@ function Base.show(io::IO, rbe::RBE)
     println(io, "Fixed effect:")
     println(io, rbe.fixed)
     println(io, "Intra-individual variation:")
-    #=
-    println(io, rcoef[1], "  ", round(rbe.θ[1], sigdigits=6), "   CVᵂ: ", round(geocv(rbe.θ[1]), sigdigits=6))
-    println(io, rcoef[2], "  ", round(rbe.θ[2], sigdigits=6), "   CVᵂ: ", round(geocv(rbe.θ[2]), sigdigits=6))
-    println(io, "")
-    =#
+
     printmatrix(io,[rcoef[1] round(rbe.θ[1], sigdigits=6) "CVᵂ:" round(geocv(rbe.θ[1]), sigdigits=6);
                     rcoef[2] round(rbe.θ[2], sigdigits=6) "CVᵂ:" round(geocv(rbe.θ[2]), sigdigits=6)])
     println(io, "")
 
     println(io, "Inter-individual variation:")
-    #=
-    println(io, rcoef[1], "  ", round(rbe.θ[3], sigdigits=6))
-    println(io, rcoef[2], "  ", round(rbe.θ[4], sigdigits=6))
-    println(io, "ρ: $(round(rbe.θ[5], sigdigits=6))", " Cov:", "  ", round(sqrt(rbe.θ[4]*rbe.θ[3])*rbe.θ[5], sigdigits=6))
-    println(io, "")
-    =#
+
     printmatrix(io,[rcoef[1] round(rbe.θ[3], sigdigits=6) "";
                     rcoef[2] round(rbe.θ[4], sigdigits=6) "";
                     "ρ:"     round(rbe.θ[5], sigdigits=6) "Cov: $(round(sqrt(rbe.θ[4]*rbe.θ[3])*rbe.θ[5], sigdigits=6))"])

@@ -56,7 +56,7 @@ where ``A = 2H``
 
 where ``g = \\triangledown _{\\theta}(LC^{-1}L')``
 
-CI estimate is ``CI =``
+CI estimate is ``CI = stimate ± t(alpha, df)*se ``
 """
 function estimate(rbe::RBE, L::Matrix; name = "Estimate", memopt = true, alpha = 0.05)
     lcl     = L*rbe.C*L'

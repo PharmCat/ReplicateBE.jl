@@ -11,5 +11,6 @@ Pages = [
         "examples.md",
         "syntax.md",
         "details.md",
+        "validation.md",
         "api.md"]
 ```

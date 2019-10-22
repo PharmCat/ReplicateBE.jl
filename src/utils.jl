@@ -18,12 +18,15 @@ DF for multi-dimention case:
 
 
 """
-function contrast(rbe::RBE, L::Matrix; numdf = 1, name = "Contrast", memopt = true)::ContrastTable
+function contrast(rbe::RBE, L::Matrix; numdf = 0, name = "Contrast", memopt = true)::ContrastTable
     β       = coef(rbe)
     lcl     = L*rbe.C*L'
     lclr    = rank(lcl)
     F       = β'*L'*inv(lcl)*L*β/lclr
     θ       = theta(rbe)
+
+    if numdf == 0 numdf = rank(L) end
+
     if rank(L) ≥ 2
         vm      = Array{Float64, 1}(undef, size(L, 1))
         for i = 1:length(vm)
@@ -36,11 +39,11 @@ function contrast(rbe::RBE, L::Matrix; numdf = 1, name = "Contrast", memopt = tr
         g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
         df      = 2*((lcl)[1])^2/(g'*(rbe.A)*g)
     end
-    pval    = ccdf(FDist(1, df), F)
+    pval    = ccdf(FDist(numdf, df), F)
     return ContrastTable([name], [F], [numdf], [df], [pval])
 end
 """
-    estimate(rbe::RBE, L::Matrix; name = "Estimate", memopt = true, alpha = 0.05)
+    estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = true, alpha = 0.05)
 
 Return estimate table for L 1xp matrix.
 
@@ -50,24 +53,36 @@ Return estimate table for L 1xp matrix.
 
 ``t = estimate/se``
 
+For ```df = :sat```:
+
 ``df = \\frac{2(LCL')^{2}}{g'Ag}``
 
 where ``A = 2H``
 
 where ``g = \\triangledown _{\\theta}(LC^{-1}L')``
 
+For ```df = :cont``` (contain):
+
+``df = N - rank(ZX)``
+
 CI estimate is ``CI = stimate ± t(alpha, df)*se ``
 """
-function estimate(rbe::RBE, L::Matrix; name = "Estimate", memopt = true, alpha = 0.05)
+function estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = true, alpha = 0.05)
     lcl     = L*rbe.C*L'
     β       = coef(rbe)
     est     = (L*β)[1]
     lclr    = rank(lcl)
     se      = sqrt((lcl)[1])
     #F       = β'*L'*inv(lcl)*L*β/lclr
-    θ       = theta(rbe)
-    g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
-    df      = 2*((lcl)[1])^2/(g'*(rbe.A)*g)
+    if df == :sat
+        θ       = theta(rbe)
+        g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
+        df      = 2*((lcl)[1])^2/(g'*(rbe.A)*g)
+    elseif df == :cont
+        df      = obj.design.df3
+    else
+        throw(ArgumentError("df unknown!"))
+    end
     t       = ((est)/se)
     pval    = ccdf(TDist(df), abs(t))*2
     return EstimateTable([name], [est], [se], [df], [t], [pval], [est - se*quantile(TDist(df), 1-alpha/2)], [est + se*quantile(TDist(df), 1-alpha/2)], alpha)

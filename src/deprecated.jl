@@ -1,3 +1,17 @@
+#=
+function mrmat(σ::Vector{S}, Z::Matrix{T}, cache)::Matrix where S <: Real where T <: Real
+    h = hash(tuple(σ, Z))
+    if h in keys(cache)
+        return cache[h]
+    else
+        if σ[1] < 0.0 σ[1] = 1.0e-6 end
+        if σ[2] < 0.0 σ[2] = 1.0e-6 end
+        R = Matrix(Diagonal((Z*σ)[:,1]))
+        cache[h] = R
+        return R
+    end
+end
+=#
 # MEMOIZATION
 #=
 @memoize function memrmat(σ::Vector, Z::Matrix)::Matrix

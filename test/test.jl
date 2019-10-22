@@ -30,6 +30,13 @@ include("testdata.jl")
     Base.show(io, be.typeiii)
     Base.show(io, ReplicateBE.estimate(be, [0 0 0 0 0 1]))
 
+    #POSTOPT+
+    be = ReplicateBE.rbe(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10, twostep = false, postopt = true) 
+    #CONTRAST MULTIDIM+
+    L = [0 0 1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 1 0]
+    t =  ReplicateBE.typeiii(be)
+    c =  ReplicateBE.contrast(be, L)
+    @test t[2, 5] ≈ c[1, 5]
 end
 
 @testset "  #4 QA 1 Bioequivalence 2x2x4, UnB, NC Dataset " begin

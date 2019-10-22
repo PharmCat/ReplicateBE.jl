@@ -227,7 +227,7 @@ function rbe(df; dvar::Symbol,
     termmodelleveln(MF, period),
     termmodelleveln(MF, formulation),
     sbf,
-    p, zxr, n - termmodelleveln(MF, sequence), N - zxr, N - zxr + p)
+    p, zxr)
     return RBE(MF, RMF, design, fac, θvec0, Tuple(θ), remlv, fixed, typeiii, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
 end #END OF rbe()
 #-------------------------------------------------------------------------------
@@ -305,7 +305,7 @@ Compute confidence intervals for coefficients, with confidence level ```level```
 
 ```df = :sat```: use Satterthwaite DF approximation.
 
-```df = :df3```: DF (contain) = N - rank(ZX).
+```df = :df3``` or ```df = :cont```: DF (contain) = N - rank(ZX).
 
 """
 function StatsBase.confint(obj::RBE; level::Real=0.95, expci::Bool = false, inv::Bool = false, df = :sat)
@@ -325,7 +325,7 @@ function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::B
         df  = zeros(length(obj.fixed.df))
         if df == :df2
             df .= obj.design.df2
-        elseif df == :df3 || df == :contb
+        elseif df == :df3 || df == :cont
             df .= obj.design.df3
         elseif df == :contw
             df .= sum(obj.design.sbf) - length(obj.design.sbf)*obj.design.sqn

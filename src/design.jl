@@ -11,6 +11,9 @@ struct Design
     df2::Int
     df3::Int
     df4::Int
+    function Design(obs, subj, sqn, pn, fn, sbf, rankx, rankxz)
+        new(obs, subj, sqn, pn, fn, sbf, rankx, rankxz, subj - sqn, obs - rankxz, sum(sbf) - sqn - 1)::Design
+    end
 end
 
 function Base.show(io::IO, d::Design)
@@ -29,6 +32,6 @@ function Base.show(io::IO, d::Design)
     println(io, "  Rank XZ:               $(d.rankxz)")
     println(io, "  DF (robust):           $(d.df2)")
     println(io, "  DF (contain):          $(d.df3)")
-    print(io,   "  DF (Subj(Form)):       $(sum(d.sbf) - length(d.sbf)*d.sqn)")
+    print(io,   "  DF (Subj(Form)):       $(d.df4)")
 
 end

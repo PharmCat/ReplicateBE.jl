@@ -11,8 +11,8 @@ Pages = [
         "examples.md",
         "syntax.md",
         "details.md",
-        "validation.md",
+        "testval.md",
         "struct.md",
         "api.md"]
-Depth = 1
+Depth = 2
 ```

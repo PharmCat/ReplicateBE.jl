@@ -20,17 +20,17 @@ Generated datasets made with *randrbeds* function with fixed seed (could be repr
 
 ### 48 subjects, unbalanced, 20 dropped observations
 
-    * 12  TRTR/RTRT
-    * 13  TRRT/RTTR
-    * 14  TTRR/RRTT
-    * 15  TRTR/RTRT/TRRT/RTTR
-    * 16  TRRT/RTTR/TTRR/RRTT
-    * 17  TRTR/RTRT/TTRR/RRTT
-    * 18  TRT/RTR
-    * 19  TRR/RTT
-    * 20  TR/RT/TT/RR
-    * 21 TRR/RTR/RRT
-    * 22 TRR/RTR*
+  * 12  TRTR/RTRT
+  * 13  TRRT/RTTR
+  * 14  TTRR/RRTT
+  * 15  TRTR/RTRT/TRRT/RTTR
+  * 16  TRRT/RTTR/TTRR/RRTT
+  * 17  TRTR/RTRT/TTRR/RRTT
+  * 18  TRT/RTR
+  * 19  TRR/RTT
+  * 20  TR/RT/TT/RR
+  * 21 TRR/RTR/RRT
+  * 22 TRR/RTR
 
 ### Special cases
 

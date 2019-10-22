@@ -78,77 +78,11 @@ formulation: T / formulation: R
 
 # Validation
 
-Validation information: [here](https://github.com/PharmCat/ReplicateBE.jl/blob/master/validation/validation.md)
+Validation information: [here](https://github.com/PharmCat/ReplicateBE.jl/blob/master/docs/src/validation.md)
 
 # Basic methods
 
 All API docs see [here](https://pharmcat.github.io/ReplicateBE.jl/build/api/).
-
-### StatsBase.confint
-
-```
-    StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::Bool = false)
-```
-Return (1-alpha)×100% confidence intervals for β.
-
-* obj::RBE - bioequivalence struct;
-* alpha::Float64 - alpha;
-* expci::Bool - exp(ci)
-* inv::Bool - β = -β
-
-### StatsBase.coef
-
-```
-    StatsBase.coef(rbe::RBE)
-```
-Return model coefficients.
-
-### ReplicateBE.coefse
-
-```
-    coefse(rbe::RBE)
-```
-Return standard error for coefficients.
-
-### ReplicateBE.design
-
-```
-    design(rbe::RBE)::Design
-```
-Return design information.
-
-### ReplicateBE.fixed
-
-```
-    fixed(rbe::RBE)
-```
-Return fixed effect table.
-
-### ReplicateBE.typeiii
-
-```
-    typeiii(rbe::RBE)
-```
-Return type III effect table.
-
-### ReplicateBE.reml2
-
-```
-    reml2(obj::RBE, θ::Array{Float64, 1})
-```
-Return -2REML for vector θ.
-
-```
-    reml2(obj::RBE)
-```
-Return -2REML for model.
-
-### ReplicateBE.contrast
-
-```
-    contrast(obj::RBE, L::Matrix{T}) where T <: Real
-```
-Return F for L matrix. L matrix should be 1×p or l×p.
 
 # Random Dataset
 
@@ -174,89 +108,7 @@ Generate DataFrame with random multivariate data. Where:
 
 ## Structures
 
-### RBE
-
-```
-struct RBE
-    model::ModelFrame               #Model frame
-    rmodel::ModelFrame              #Random effect model
-    design::Design
-    factors::Array{Symbol, 1}       #Factor list
-    θ0::Array{Float64, 1}           #Initial variance paramethers
-    θ::Array{Float64, 1}            #Final variance paramethers
-    reml::Float64                   #-2REML
-    fixed::EffectTable
-    typeiii::ContrastTable
-    R::Array{Matrix{Float64},1}     #R matrices for each subject
-    V::Array{Matrix{Float64},1}     #V matrices for each subject
-    G::Matrix{Float64}              #G matrix
-    C::Matrix{Float64}              #C var(β) p×p variance-covariance matrix
-    A::Matrix{Float64}              #asymptotic variance-covariance matrix ofb θ
-    H::Matrix{Float64}              #Hessian matrix
-    X::Matrix                       #Matrix for fixed effects
-    Z::Matrix                       #Matrix for random effects
-    Xv::Array{Matrix{Float64},1}    #X matrices for each subject
-    Zv::Array{Matrix{Float64},1}    #Z matrices for each subject
-    yv::Array{Array{Float64, 1},1}  #responce vectors for each subject
-    detH::Float64                   #Hessian determinant
-    preoptim::Optim.MultivariateOptimizationResults        #Pre-optimization result object
-    optim::Optim.MultivariateOptimizationResults           #Optimization result object
-end
-```
-
-### Design
-
-```
-struct Design
-    obs::Int
-    subj::Int
-    sqn::Int
-    pn::Int
-    fn::Int
-    sbf::Vector{Int}
-    rankx::Int
-    rankxz::Int
-    df2::Int
-    df3::Int
-    df4::Int
-end
-```
-
-### EffectTable
-
-```
-struct EffectTable <: RBETable
-    name::Vector
-    est::Vector
-    se::Vector
-    f::Vector
-    df::Vector
-    t::Vector
-    p::Vector
-end
-```
-
-### ContrastTable
-
-```
-struct ContrastTable <: RBETable
-    name::Vector
-    f::Vector
-    df::Vector
-    p::Vector
-end
-```
-
-### EstimateTable
-
-```
-struct EstimateTable <: RBETable
-    name::Vector
-    f::Vector
-    df::Vector
-    p::Vector
-end
-```
+Struct information see [here](https://pharmcat.github.io/ReplicateBE.jl/).
 
 ## Acknowledgments
 
@@ -273,4 +125,4 @@ Best acknowledgments to D.Sc. in Physical and Mathematical Sciences Anastasia Sh
 - Wright, Stephen, and Jorge Nocedal (2006) "Numerical optimization." Springer
 
 Author: Vladimir Arnautov aka PharmCat
-Copyright © 2019 Vladimir Arnautov aka PharmCat <mail@pharmcat.net>
+Copyright © 2019 Vladimir Arnautov <mail@pharmcat.net>

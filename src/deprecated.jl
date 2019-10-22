@@ -12,6 +12,13 @@ function mrmat(σ::Vector{S}, Z::Matrix{T}, cache)::Matrix where S <: Real where
     end
 end
 =#
+#=
+function Base.show(io::IO, obj::Tuple{Vararg{Tuple{Float64, Float64}}})
+    for i in obj
+        println(io, i)
+    end
+end
+=#
 # MEMOIZATION
 #=
 @memoize function memrmat(σ::Vector, Z::Matrix)::Matrix

@@ -318,7 +318,7 @@ function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::B
         if length(obj.fixed.df) != length(df)
             df = obj.fixed.df
         else
-            #WARN
+            @warn "length(df) not equal parameters count, default df used!"
             df = obj.fixed.df
         end
     elseif isa(df, Symbol)
@@ -334,7 +334,7 @@ function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::B
         elseif df == :sat
             df = obj.fixed.df
         else
-            #WARN
+            @warn "df unknown, default df used!"
             df = obj.fixed.df
         end
     end

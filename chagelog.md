@@ -1,8 +1,11 @@
 - v0.2.0
 
     * bugfix
+    * optimization
     * documentation
     * validation tests
+    * memory caching
+    * post optimization (can be done if Newton() failed)
 
 - v0.1.4
     * StatsModels v0.6

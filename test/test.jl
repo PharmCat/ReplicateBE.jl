@@ -7,7 +7,7 @@ using Test, CSV, DataFrames, StatsBase
 
 include("testdata.jl")
 
-@testset "  Basic mixed model test                        " begin
+@testset "  Basic mixed model test                         " begin
     #df = CSV.read(IOBuffer(minibe)) |> DataFrame
     df[!,:var] = float.(df[!,:var])
     be = ReplicateBE.rbe(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
@@ -39,7 +39,7 @@ include("testdata.jl")
     @test t[2, 5] ≈ c[1, 5]
 end
 
-@testset "  #1 " begin
+@testset "  #1                                             " begin
     be = ReplicateBE.rbe(df1, dvar = :logCmax, subject = :id, formulation = :formulation, period = :period, sequence = :sequence)
     ci = confint(be, 0.1; expci = true)[end]
     @test ci[1]  ≈  0.831853  atol=1E-4
@@ -50,14 +50,14 @@ end
     @test ci[2]  ≈ 1.079473264081974 atol=1E-4
 end
 
-@testset "  #2 " begin
+@testset "  #2                                             " begin
     be = ReplicateBE.rbe(df2, dvar = :logAUC, subject = :id, formulation = :formulation, period = :period, sequence = :sequence)
     ci = confint(be, 0.1; expci = true)[end]
     @test ci[1]  ≈  0.9819173624303988 atol=1E-4
     @test ci[2]  ≈  1.387034130727021 atol=1E-4
 end
 
-@testset "  #3 " begin
+@testset "  #3                                             " begin
     be = ReplicateBE.rbe(df3, dvar = :logCmax, subject = :id, formulation = :formulation, period = :period, sequence = :sequence)
     ci = confint(be, 0.1; expci = true, inv = true)[end]
     @test ci[1]  ≈   0.5810225885280289 atol=1E-4
@@ -68,7 +68,7 @@ end
     @test ci[2]  ≈  0.9717955188690252 atol=1E-4
 end
 
-@testset "  #4 QA 1 Bioequivalence 2x2x4, UnB, NC Dataset " begin
+@testset "  #4 QA 1 Bioequivalence 2x2x4, UnB, NC Dataset  " begin
     #REML 530.14451303
     #SE 0.04650
     #DF 208
@@ -85,7 +85,7 @@ end
 end
 
 #Patterson SD, Jones B. Viewpoint: observations on scaled average bioequivalence. Pharm Stat. 2012; 11(1): 1–7. doi:10.1002/pst.498
-@testset "  #5 Patterson 2012 doi:10.1002/pst.498 AUC     " begin
+@testset "  #5 Patterson 2012 doi:10.1002/pst.498 AUC      " begin
     #REML 321.44995530 - SAS STOP!
     #df = CSV.read(IOBuffer(be5)) |> DataFrame
     df5[!,:var1] = float.(df5[!,:var1])
@@ -98,7 +98,7 @@ end
 end
 
 #Shumaker RC, Metzler CM. The Phenytoin Trial is a Case Study of ‘Individual’ Bioequivalence. Drug Inf J. 1998; 32(4): 1063–72
-@testset "  #6 Pub Bioequivalence TTRR/RRTT Dataset       " begin
+@testset "  #6 Shumaker 1998 doi:10.1177/009286159803200426" begin
     #REML 329.25749378
     #SE 0.04153
     #DF 62
@@ -113,7 +113,7 @@ end
     @test ci[end][2] ≈    1.0042930817939983 atol=1E-5
 end
 
-@testset "  #  Utils test                                 " begin
+@testset "  #  Utils test                                  " begin
     #df = CSV.read(IOBuffer(be6)) |> DataFrame
     be = ReplicateBE.rbe(df6, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     @test ReplicateBE.contrast(be, [0 0 0 0 0 1]).f[1]  ≈ 2.3996616631488368 atol=1E-5
@@ -143,7 +143,7 @@ end
     @test confint(be)[end][2]  ≈ 0.14622369085169434    atol=1E-5
 end
 
-@testset "  #  Random DataSet test                        " begin
+@testset "  #  Random DataSet test                         " begin
     rds = ReplicateBE.randrbeds()
     @test size(rds)[1] == 96
     @test size(rds)[2] == 5
@@ -153,20 +153,9 @@ end
     @test rds[5:8, :period] == ["1", "2", "3", "4"]
     rds = ReplicateBE.randrbeds(dropobs = 6)
     @test size(rds)[1] == 90
-
-    #TRTR/RTRT
-    #rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0])
-    #TTRR/RRTT
-    #rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "T" "R" "R"; "R" "R" "T" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0])
-    #TRT/RTR
-    #rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "R" "T"; "R" "T" "R"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 0.0])
-    #TRTR/RTRT/TTRR/RRTT
-    #rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1,1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T" ; "T" "T" "R" "R"; "R" "R" "T" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0])
-    #TRR/RTR/RRT
-    #rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1,1], design = ["T" "R" "R"; "R" "T" "R"; "R" "R" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 0.0])
 end
 
-@testset "  #  Validation with generated datasets         " begin
+@testset "  #  Validation with generated datasets          " begin
     #1
     #TRTR/RTRT
     rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10001)

@@ -148,8 +148,8 @@ function rbe(df; dvar::Symbol,
     remlv = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memalloc)
 
     #θ[5] can not be more than 1.0
-    if θ[5] > 1
-        θ[5] = 1.0 - limeps
+    if θ[5] >= 1.0
+        θ[5] = 1.0 - eps()
         if !twostep && !postopt
             @warn "ρ is more than 1.0, and no twostep or postopt used. Results may be incorrect, use twostep = true or postopt = true"
         end
@@ -165,8 +165,8 @@ function rbe(df; dvar::Symbol,
     dH          = det(H)
 
 
-    H[5,:]     .= 0
-    H[:,5]     .= 0
+    H[5,:]     .= eps()
+    H[:,5]     .= eps()
 
     #Secondary parameters calculation
     A           = 2*pinv(H)

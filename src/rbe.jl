@@ -322,12 +322,14 @@ function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::B
             df = obj.fixed.df
         end
     elseif isa(df, Symbol)
-        df  = zeros(length(obj.fixed.df))
         if df == :df2
+            df  = zeros(length(obj.fixed.df))
             df .= obj.design.df2
         elseif df == :df3 || df == :cont
+            df  = zeros(length(obj.fixed.df))
             df .= obj.design.df3
         elseif df == :contw
+            df  = zeros(length(obj.fixed.df))
             df .= sum(obj.design.sbf) - length(obj.design.sbf)*obj.design.sqn
         elseif df == :sat
             df = obj.fixed.df

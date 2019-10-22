@@ -1,4 +1,4 @@
-# Package validation
+## Validation
 
 Validation program include public datasets and generated datasets. All public datasets include in test/testdata.jl.
 
@@ -113,7 +113,7 @@ formulation: T / formulation: R
 
   *SAS WARNING*: Stopped because of infinite likelihood.
 
-  ## Simulation study
+  ### Simulation study
 
   Following simulation was performed for version v0.1.4:
   ```

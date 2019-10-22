@@ -12,6 +12,7 @@ Pages = [
         "syntax.md",
         "details.md",
         "validation.md",
+        "struct.md",
         "api.md"]
 Depth = 1
 ```

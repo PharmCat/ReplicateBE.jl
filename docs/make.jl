@@ -10,5 +10,6 @@ makedocs(sitename="ReplicateBE",
         "Syntax" => "syntax.md",
         "Details" => "details.md",
         "Validation" => "validation.md",
+        "Structures" => "struct.md",
         "Api" => "api.md"
     ])

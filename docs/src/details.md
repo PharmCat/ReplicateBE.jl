@@ -1,1 +1,1 @@
-## Estimation details
+## Details

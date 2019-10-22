@@ -1,71 +1,71 @@
-#API
+## API
 
-## ReplicateBE.RBE
+### ReplicateBE.RBE
 ```@docs
 ReplicateBE.RBE
 ```
 
-## ReplicateBE.rbe
+### ReplicateBE.rbe
 ```@docs
 ReplicateBE.rbe
 ```
 
-## StatsBase.coef
+### StatsBase.coef
 ```@docs
 coef
 ```
 
-## StatsBase.confint
+### StatsBase.confint
 ```@docs
 confint
 ```
 
-## StatsBase.dof
+### StatsBase.dof
 ```@docs
 dof
 ```
 
-## StatsBase.stderror
+### StatsBase.stderror
 ```@docs
 stderror
 ```
 
-## ReplicateBE.coefnum
+### ReplicateBE.coefnum
 ```@docs
 ReplicateBE.coefnum
 ```
 
-## ReplicateBE.contrast
+### ReplicateBE.contrast
 ```@docs
 ReplicateBE.contrast
 ```
 
-## ReplicateBE.design
+### ReplicateBE.design
 ```@docs
 ReplicateBE.design
 ```
 
-## ReplicateBE.estimate
+### ReplicateBE.estimate
 ```@docs
 ReplicateBE.estimate
 ```
 
-## ReplicateBE.fixed
+### ReplicateBE.fixed
 ```@docs
 ReplicateBE.fixed
 ```
 
-## ReplicateBE.randrbeds
+### ReplicateBE.randrbeds
 ```@docs
 ReplicateBE.randrbeds
 ```
 
-## ReplicateBE.reml2
+### ReplicateBE.reml2
 ```@docs
 ReplicateBE.reml2
 ```
 
-## ReplicateBE.typeiii
+### ReplicateBE.typeiii
 ```@docs
 ReplicateBE.typeiii
 ```

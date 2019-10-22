@@ -31,12 +31,41 @@ include("testdata.jl")
     Base.show(io, ReplicateBE.estimate(be, [0 0 0 0 0 1]))
 
     #POSTOPT+
-    be = ReplicateBE.rbe(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10, twostep = false, postopt = true) 
+    be = ReplicateBE.rbe(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10, twostep = false, postopt = true)
     #CONTRAST MULTIDIM+
     L = [0 0 1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 1 0]
     t =  ReplicateBE.typeiii(be)
     c =  ReplicateBE.contrast(be, L)
     @test t[2, 5] ≈ c[1, 5]
+end
+
+@testset "  #1 " begin
+    be = ReplicateBE.rbe(df1, dvar = :logCmax, subject = :id, formulation = :formulation, period = :period, sequence = :sequence)
+    ci = confint(be, 0.1; expci = true)[end]
+    @test ci[1]  ≈  0.831853  atol=1E-4
+    @test ci[2]  ≈  1.000517  atol=1E-4
+    be = ReplicateBE.rbe(df1, dvar = :logAUC, subject = :id, formulation = :formulation, period = :period, sequence = :sequence)
+    ci = confint(be, 0.1; expci = true)[end]
+    @test ci[1]  ≈ 0.994909084986253 atol=1E-4
+    @test ci[2]  ≈ 1.079473264081974 atol=1E-4
+end
+
+@testset "  #2 " begin
+    be = ReplicateBE.rbe(df2, dvar = :logAUC, subject = :id, formulation = :formulation, period = :period, sequence = :sequence)
+    ci = confint(be, 0.1; expci = true)[end]
+    @test ci[1]  ≈  0.9819173624303988 atol=1E-4
+    @test ci[2]  ≈  1.387034130727021 atol=1E-4
+end
+
+@testset "  #3 " begin
+    be = ReplicateBE.rbe(df3, dvar = :logCmax, subject = :id, formulation = :formulation, period = :period, sequence = :sequence)
+    ci = confint(be, 0.1; expci = true, inv = true)[end]
+    @test ci[1]  ≈   0.5810225885280289 atol=1E-4
+    @test ci[2]  ≈   0.7549434322747091 atol=1E-4
+    be = ReplicateBE.rbe(df3, dvar = :logAUC, subject = :id, formulation = :formulation, period = :period, sequence = :sequence)
+    ci = confint(be, 0.1; expci = true, inv = true)[end]
+    @test ci[1]  ≈  0.8417474030979498 atol=1E-4
+    @test ci[2]  ≈  0.9717955188690252 atol=1E-4
 end
 
 @testset "  #4 QA 1 Bioequivalence 2x2x4, UnB, NC Dataset " begin
@@ -56,7 +85,7 @@ end
 end
 
 #Patterson SD, Jones B. Viewpoint: observations on scaled average bioequivalence. Pharm Stat. 2012; 11(1): 1–7. doi:10.1002/pst.498
-@testset "  #5 Pub Bioequivalence Dataset                 " begin
+@testset "  #5 Patterson 2012 doi:10.1002/pst.498 AUC     " begin
     #REML 321.44995530 - SAS STOP!
     #df = CSV.read(IOBuffer(be5)) |> DataFrame
     df5[!,:var1] = float.(df5[!,:var1])
@@ -85,7 +114,6 @@ end
 end
 
 @testset "  #  Utils test                                 " begin
-
     #df = CSV.read(IOBuffer(be6)) |> DataFrame
     be = ReplicateBE.rbe(df6, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     @test ReplicateBE.contrast(be, [0 0 0 0 0 1]).f[1]  ≈ 2.3996616631488368 atol=1E-5

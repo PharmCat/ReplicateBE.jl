@@ -79,7 +79,7 @@ function estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = tr
         g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
         df      = 2*((lcl)[1])^2/(g'*(rbe.A)*g)
     elseif df == :cont
-        df      = obj.design.df3
+        df      = rbe.design.df3
     else
         throw(ArgumentError("df unknown!"))
     end

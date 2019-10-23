@@ -2,8 +2,33 @@
 # GENARAL REPLICATE BIOEQUIVALENCE STRUCTURE
 #
 """
+    struct RBE
+        model::ModelFrame               #Model frame
+        rmodel::ModelFrame              #Random effect model
+        design::Design                  #Design description
+        factors::Array{Symbol, 1}       #Factor list
+        θ0::Array{Float64, 1}           #Initial variance paramethers
+        θ::Tuple{Vararg{Float64}}       #Final variance paramethers
+        reml::Float64                   #-2REML
+        fixed::EffectTable              #Fixed Effect table
+        typeiii::ContrastTable          #Type III table
+        R::Array{Matrix{Float64},1}     #R matrices for each subject
+        V::Array{Matrix{Float64},1}     #V matrices for each subject
+        G::Matrix{Float64}              #G matrix
+        C::Matrix{Float64}              #C var(β) p×p variance-covariance matrix
+        A::Matrix{Float64}              #asymptotic variance-covariance matrix of b θ
+        H::Matrix{Float64}              #Hessian matrix
+        X::Matrix                       #Matrix for fixed effects
+        Z::Matrix                       #Matrix for random effects
+        Xv::Array{Matrix{Float64},1}    #X matrices for each subject
+        Zv::Array{Matrix{Float64},1}    #Z matrices for each subject
+        yv::Array{Array{Float64, 1},1}  #responce vectors for each subject
+        detH::Float64                   #Hessian determinant
+        preoptim::Union{Optim.MultivariateOptimizationResults, Nothing}         #Pre-optimization result object
+        optim::Optim.MultivariateOptimizationResults                            #Optimization result object
+    end
 
-    Replicate bioequivalence structure.
+Replicate bioequivalence structure.
 
 """
 struct RBE
@@ -43,11 +68,13 @@ end
         store_trace = false, extended_trace = false, show_trace = false,
         memopt = true)
 
-Mixed model fitting function for replicate bioequivalence.
+Mixed model fitting function for replicate bioequivalence without data preparation (apply categorical! for each factor and sort! to dataframe).
 
 Mixed model in matrix form:
 
+<p align="center">
 ``y = X\\beta+Zu+\\epsilon``
+</p>
 
 with covariance matrix for each subject:
 
@@ -67,14 +94,16 @@ function rbe(df; dvar::Symbol,
     postopt = false)
 
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
-    if !(eltype(df[!,dvar]) <: Real) println("Responce variable ∉ Real!") end
+    if !(eltype(df[!,dvar]) <: Real)
+        @warn "Responce variable ∉ Real!"
+    end
 
     #should not change initial DS
-    categorical!(df, subject);
-    categorical!(df, formulation);
-    categorical!(df, period);
-    categorical!(df, sequence);
-    sort!(df, [subject, formulation, period])
+    #categorical!(df, subject);
+    #categorical!(df, formulation);
+    #categorical!(df, period);
+    #categorical!(df, sequence);
+    #sort!(df, [subject, formulation, period])
     Xf  = @eval(@formula($dvar ~ $sequence + $period + $formulation))
     Zf  = @eval(@formula($dvar ~ 0 + $formulation))
     MF  = ModelFrame(Xf, df)
@@ -230,6 +259,46 @@ function rbe(df; dvar::Symbol,
     p, zxr)
     return RBE(MF, RMF, design, fac, θvec0, Tuple(θ), remlv, fixed, typeiii, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
 end #END OF rbe()
+"""
+This function apply following code for each factor before executing:
+
+    categorical!(df, subject);
+    categorical!(df, formulation);
+    categorical!(df, period);
+    categorical!(df, sequence);
+    sort!(df, [subject, formulation, period])
+
+It can takes more time, but can help to avoid some errors like: "ERROR: type ContinuousTerm has no field contrasts".
+"""
+function rbe!(df; dvar::Symbol,
+    subject::Symbol,
+    formulation::Symbol,
+    period::Symbol,
+    sequence::Symbol,
+    g_tol::Float64 = 1e-8, x_tol::Float64 = 0.0, f_tol::Float64 = 0.0, iterations::Int = 100,
+    store_trace = false, extended_trace = false, show_trace = false,
+    memopt = true,
+    init = [],
+    twostep = true,
+    postopt = false)
+
+    if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
+    if !(eltype(df[!,dvar]) <: Real)
+        @warn "Responce variable ∉ Real!"
+        df[!,dvar] = float.(df[!,dvar])
+    end
+
+    categorical!(df, subject);
+    categorical!(df, formulation);
+    categorical!(df, period);
+    categorical!(df, sequence);
+    sort!(df, [subject, formulation, period])
+
+    return rbe(df, dvar=dvar, subject=subject, formulation=formulation, period=period, sequence=sequence,
+    g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, iterations=iterations,
+    store_trace=store_trace, extended_trace=extended_trace, show_trace=show_trace,
+    memopt=memopt, init=init, twostep=twostep, postopt=postopt)
+end
 #-------------------------------------------------------------------------------
 #returm -2REML
 """
@@ -374,7 +443,7 @@ end
 
 Return design information object, where:
 
-    ```
+
     struct Design
         obs::Int          # Number of observations
         subj::Int         # Number of statistica independent subjects
@@ -387,7 +456,7 @@ Return design information object, where:
         df2::Int          # subj - sqn         (Robust DF)
         df3::Int          # obs  - rankxz      (Contain DF for sequence and period)
         df4::Int          # obs  - rankxz + p
-    end```
+    end
 
 """
 function design(rbe::RBE)::Design

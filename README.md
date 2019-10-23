@@ -1,4 +1,4 @@
-**Alpha version!** This program comes with absolutely no warranty. No liability is accepted for any loss and risk to public health resulting from use of this software.
+**Beta version!** This program comes with absolutely no warranty. No liability is accepted for any loss and risk to public health resulting from use of this software.
 
 <p align="center">
   <img src="https://github.com/PharmCat/ReplicateBE.jl/blob/master/docs/ReplicateBE-LogoNoSpace.png">
@@ -23,7 +23,7 @@ using Pkg; Pkg.clone("https://github.com/PharmCat/ReplicateBE.jl.git")
 Using:
 ```
 using ReplicateBE
-be = ReplicateBE.rbe(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence);
+be = ReplicateBE.rbe!(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence);
 ci = confint(be, 0.1)
 ```
 Where:
@@ -78,7 +78,7 @@ formulation: T / formulation: R
 
 # Validation
 
-Validation information: [here](https://github.com/PharmCat/ReplicateBE.jl/blob/master/docs/src/validation.md)
+Validation information: [here](https://pharmcat.github.io/ReplicateBE.jl/build/testval/)
 
 # Basic methods
 

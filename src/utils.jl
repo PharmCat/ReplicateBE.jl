@@ -4,11 +4,15 @@
 
 Return contrast table for L matrix.
 
-``F = \\frac{\\beta'L'(LCL')^{-1}L\\beta}{rank(LCL')}``
+```math
+F = \\frac{\\beta'L'(LCL')^{-1}L\\beta}{rank(LCL')}
+```
 
 DF for one-dimetion case:
 
-``df = \\frac{2(LCL')^{2}}{g'Ag}``
+```math
+df = \\frac{2(LCL')^{2}}{g'Ag}
+```
 
 where ``A = 2H``
 
@@ -47,15 +51,23 @@ end
 
 Return estimate table for L 1xp matrix.
 
-``estimate = L\\beta``
+```math
+estimate = L\\beta
+```
 
-``se = \\sqrt{LCL'}``
+```math
+se = \\sqrt{LCL'}
+```
 
-``t = estimate/se``
+```math
+t = estimate/se
+```
 
 For ```df = :sat```:
 
-``df = \\frac{2(LCL')^{2}}{g'Ag}``
+```math
+df = \\frac{2(LCL')^{2}}{g'Ag}
+```
 
 where ``A = 2H``
 
@@ -63,9 +75,15 @@ where ``g = \\triangledown _{\\theta}(LC^{-1}L')``
 
 For ```df = :cont``` (contain):
 
-``df = N - rank(ZX)``
+```math
+df = N - rank(ZX)
+```
 
-CI estimate is ``CI = stimate ± t(alpha, df)*se ``
+CI estimate is:
+
+```math
+CI = stimate ± t(alpha, df)*se 
+```
 """
 function estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = true, alpha = 0.05)
     lcl     = L*rbe.C*L'

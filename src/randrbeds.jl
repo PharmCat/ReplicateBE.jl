@@ -15,13 +15,42 @@ mutable struct RandRBEDS
 end
 
 """
+```julia
     randrbeds(;n=24, sequence=[1,1],
         design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
         inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2],
         intercept = 0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0],
         dropsubj = 0.0, dropobs::Int = 0, seed::Int = 0)
+```
 
-Random dataset for bioequivalence.
+Random dataset generation for bioequivalence.
+
+#  Parameters
+    * n: number of subjects
+    * sequence: distribution in sequences [1,1] means 1:1, [1,3] - 1:4 etc.
+    * design: desin matrix, each line is a sequence, each column - periods, cell - formulation id
+    * inter: inter-subject variance vector for G matrix (length 3)
+    * intra: intra-subject variance vector for R matrix (length 2)
+    * intercept: intercept effect value
+    * seqcoef: coefficients of sequences (length(sequence) == length(seqcoef) == size(design, 1))
+    * periodcoef: coefficients of periods (length(periodcoef) == size(design, 2))
+    * formcoef: coeficients of formulations
+    * dropobs: number of randomly dropped subjects
+    * seed: seed for random
+
+Multivariate normal disribution:
+
+```math
+f(\\mathbf{x}; \\boldsymbol{\\mu}, \\boldsymbol{V}) = \\frac{1}{(2 \\pi)^{d/2} |\\boldsymbol{V}|^{1/2}}
+\\exp \\left( - \\frac{1}{2} (\\mathbf{x} - \\boldsymbol{\\mu})^T V^{-1} (\\mathbf{x} - \\boldsymbol{\\mu}) \\right)
+```
+
+Where V:
+
+```math
+V_{i} = Z_{i}GZ_i'+R_{i}
+```
+
 """
 function randrbeds(;n=24, sequence=[1,1],
     design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
@@ -32,13 +61,15 @@ function randrbeds(;n=24, sequence=[1,1],
 end
 
 """
+```julia
     randrbeds(n::Int, sequence::Vector,
         design::Matrix,
         θinter::Vector, θintra::Vector,
         intercept::Real, seqcoef::Vector, periodcoef::Vector, formcoef::Vector,
         dropsubj::Float64, dropobs::Int, seed::Int)
+```
 
-Random dataset for bioequivalence.
+Simple interface.
 
 """
 function randrbeds(n::Int, sequence::Vector,

@@ -2,6 +2,7 @@
 # GENARAL REPLICATE BIOEQUIVALENCE STRUCTURE
 #
 """
+```julia
     struct RBE
         model::ModelFrame               #Model frame
         rmodel::ModelFrame              #Random effect model
@@ -27,6 +28,7 @@
         preoptim::Union{Optim.MultivariateOptimizationResults, Nothing}         #Pre-optimization result object
         optim::Optim.MultivariateOptimizationResults                            #Optimization result object
     end
+```
 
 Replicate bioequivalence structure.
 
@@ -72,13 +74,16 @@ Mixed model fitting function for replicate bioequivalence without data preparati
 
 Mixed model in matrix form:
 
-<p align="center">
-``y = X\\beta+Zu+\\epsilon``
-</p>
+```math
+y = X\\beta+Zu+\\epsilon
+```math
+
 
 with covariance matrix for each subject:
 
-``V_{i} = Z_{i}GZ_i'+R_{i}``
+```math
+V_{i} = Z_{i}GZ_i'+R_{i}
+```
 
 """
 function rbe(df; dvar::Symbol,
@@ -262,11 +267,13 @@ end #END OF rbe()
 """
 This function apply following code for each factor before executing:
 
+```julia
     categorical!(df, subject);
     categorical!(df, formulation);
     categorical!(df, period);
     categorical!(df, sequence);
     sort!(df, [subject, formulation, period])
+```
 
 It can takes more time, but can help to avoid some errors like: "ERROR: type ContinuousTerm has no field contrasts".
 """
@@ -314,9 +321,12 @@ end
 
 Returm -2logREML for rbe model
 
-``logREML(\\theta,\\beta) = -\\frac{N-p}{2} - \\frac{1}{2}\\sum_{i=1}^nlog|V_{i}|-``
+```math
 
-``-\\frac{1}{2}log|\\sum_{i=1}^nX_i'V_i^{-1}X_i|-\\frac{1}{2}\\sum_{i=1}^n(y_i - X_{i}\\beta)'V_i^{-1}(y_i - X_{i}\\beta)``
+logREML(\\theta,\\beta) = -\\frac{N-p}{2} - \\frac{1}{2}\\sum_{i=1}^nlog|V_{i}|-
+
+-\\frac{1}{2}log|\\sum_{i=1}^nX_i'V_i^{-1}X_i|-\\frac{1}{2}\\sum_{i=1}^n(y_i - X_{i}\\beta)'V_i^{-1}(y_i - X_{i}\\beta)
+```
 
 """
 function reml2(rbe::RBE)
@@ -338,7 +348,9 @@ end
 
 Return the standard errors for the coefficients of the model.
 
-``se = \\sqrt{LCL'}``
+```math
+se = \\sqrt{LCL'}
+```
 """
 function StatsBase.stderror(rbe::RBE)
     return collect(rbe.fixed.se)
@@ -348,7 +360,9 @@ end
 
 Return model coefficients.
 
-``\\beta = {(\\sum_{i=1}^n X_{i}'V_i^{-1}X_{i})}^{-1}(\\sum_{i=1}^n X_{i}'V_i^{-1}y_{i})``
+```math
+\\beta = {(\\sum_{i=1}^n X_{i}'V_i^{-1}X_{i})}^{-1}(\\sum_{i=1}^n X_{i}'V_i^{-1}y_{i})
+```
 """
 function StatsBase.coef(rbe::RBE)
     return collect(rbe.fixed.est)
@@ -368,6 +382,8 @@ end
 
 Compute confidence intervals for coefficients, with confidence level ```level``` (by default 95%).
 
+# Arguments
+
 ```expci = true```: return exponented CI.
 
 ```inv = true```: return ```-estimate ± t*se```
@@ -375,6 +391,10 @@ Compute confidence intervals for coefficients, with confidence level ```level```
 ```df = :sat```: use Satterthwaite DF approximation.
 
 ```df = :df3``` or ```df = :cont```: DF (contain) = N - rank(ZX).
+
+```math
+CI = stimate ± t(alpha, df)*se
+```
 
 """
 function StatsBase.confint(obj::RBE; level::Real=0.95, expci::Bool = false, inv::Bool = false, df = :sat)
@@ -425,7 +445,7 @@ end
 """
     theta(rbe::RBE)
 
-Return theta vector (vector of variation parameters from optimization procedure).
+Return theta (θ) vector (vector of variation parameters from optimization procedure).
 """
 function theta(rbe::RBE)
     return collect(rbe.θ)
@@ -443,7 +463,7 @@ end
 
 Return design information object, where:
 
-
+```julia
     struct Design
         obs::Int          # Number of observations
         subj::Int         # Number of statistica independent subjects
@@ -457,7 +477,7 @@ Return design information object, where:
         df3::Int          # obs  - rankxz      (Contain DF for sequence and period)
         df4::Int          # obs  - rankxz + p
     end
-
+```
 """
 function design(rbe::RBE)::Design
     return rbe.design

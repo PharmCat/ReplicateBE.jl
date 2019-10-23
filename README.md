@@ -108,7 +108,7 @@ Generate DataFrame with random multivariate data. Where:
 
 ## Structures
 
-Struct information see [here](https://github.com/PharmCat/ReplicateBE.jl/blob/master/docs/src/struct.md).
+Struct information see [here](https://pharmcat.github.io/ReplicateBE.jl/build/struct/).
 
 ## Acknowledgments
 

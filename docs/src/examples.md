@@ -1,7 +1,7 @@
 ## Examples
 
-```
-using CSV, DataFrames, ReplicateBE
+```julia
+using CSV, DataFrames, ReplicateBE, StatsBase
 
 #Load Dataframe...
 
@@ -33,11 +33,11 @@ be = ReplicateBE.rbe!(df, dvar = :var, subject = :subject, formulation = :formul
 
 #Get fixed effect object
 
-ReplicateBE.fixed(be)
+fixed(be)
 
 #Get Type III object
 
-ReplicateBE.typeiii(be)
+ypeiii(be)
 
 #Get model coefficients
 
@@ -45,17 +45,17 @@ coef(be)
 
 #Get Standard Error for coefficients
 
-ReplicateBE.coefse(be)
+stderror(be)
 
-#Get confidence intervals
+#Get confidence intervals for all coefficients
 
-ReplicateBE.confint(be, 0.1, expci = false, inv = false)
+confint(be, 0.1, expci = false, inv = false)
 
 #Get -2 REML for model
 
-ReplicateBE.reml2(be)
+reml2(be)
 
 #Design information
 
-ReplicateBE.design(be)
+design(be)
 ```

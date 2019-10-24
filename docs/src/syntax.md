@@ -1,6 +1,18 @@
 ## Syntax
 
+### Simple syntax
+
+Simple syntax can be used in general purpose. 
+
+```julia
+rbe!(df; dvar::Symbol, subject::Symbol, formulation::Symbol, period::Symbol, sequence::Symbol)
 ```
+
+### Full syntax
+
+With keywords you can define additional options. 
+
+```julia
 rbe!(df; dvar::Symbol,
     subject::Symbol,
     formulation::Symbol,
@@ -10,6 +22,8 @@ rbe!(df; dvar::Symbol,
     store_trace = false, extended_trace = false, show_trace = false,
     memopt = true)
 ```
+
+### Arguments and keywords
 
 - df::DataFrame - DataFrame with data
 - dvar::Symbol - variable
@@ -25,3 +39,12 @@ rbe!(df; dvar::Symbol,
 - extended_trace
 - show_trace
 - memopt::Bool - memory optimization, can increase performance  
+
+### Not modifying syntax
+
+If you use ```rbe!()``` function no data transformations done with ```df```such as ```categorical!()``` and ```sort!()```.
+
+```julia
+rbe!(df; dvar::Symbol, subject::Symbol, formulation::Symbol, period::Symbol, sequence::Symbol)
+```
+

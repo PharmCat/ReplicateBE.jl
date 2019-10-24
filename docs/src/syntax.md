@@ -1,7 +1,7 @@
 ## Syntax
 
 ```
-rbe(df; dvar::Symbol,
+rbe!(df; dvar::Symbol,
     subject::Symbol,
     formulation::Symbol,
     period::Symbol,

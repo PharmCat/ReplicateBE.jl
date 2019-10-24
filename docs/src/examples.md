@@ -29,7 +29,7 @@ df=CSV.read(IOBuffer("""subject,sequence,period,formulation,var
 
 #Execute BE
 
-be = ReplicateBE.rbe(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+be = ReplicateBE.rbe!(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
 
 #Get fixed effect object
 

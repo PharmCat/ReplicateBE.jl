@@ -10,6 +10,11 @@ ReplicateBE.RBE
 ReplicateBE.rbe
 ```
 
+### ReplicateBE.rbe
+```@docs
+ReplicateBE.rbe!
+```
+
 ### StatsBase.coef
 ```@docs
 coef

@@ -1,4 +1,3 @@
-
 mutable struct RandRBEDS
     n::Int
     sequence::Vector
@@ -26,17 +25,17 @@ end
 Random dataset generation for bioequivalence.
 
 #  Parameters
-    * n: number of subjects
-    * sequence: distribution in sequences [1,1] means 1:1, [1,3] - 1:4 etc.
-    * design: desin matrix, each line is a sequence, each column - periods, cell - formulation id
-    * inter: inter-subject variance vector for G matrix (length 3)
-    * intra: intra-subject variance vector for R matrix (length 2)
-    * intercept: intercept effect value
-    * seqcoef: coefficients of sequences (length(sequence) == length(seqcoef) == size(design, 1))
-    * periodcoef: coefficients of periods (length(periodcoef) == size(design, 2))
-    * formcoef: coeficients of formulations
-    * dropobs: number of randomly dropped subjects
-    * seed: seed for random
+* n: number of subjects
+* sequence: distribution in sequences [1,1] means 1:1, [1,3] - 1:4 etc.
+* design: desin matrix, each line is a sequence, each column - periods, cell - formulation id
+* inter: inter-subject variance vector for G matrix (length 3)
+* intra: intra-subject variance vector for R matrix (length 2)
+* intercept: intercept effect value
+* seqcoef: coefficients of sequences (length(sequence) == length(seqcoef) == size(design, 1))
+* periodcoef: coefficients of periods (length(periodcoef) == size(design, 2))
+* formcoef: coeficients of formulations
+* dropobs: number of randomly dropped subjects
+* seed: seed for random
 
 Multivariate normal disribution:
 
@@ -135,4 +134,15 @@ function randrbeds(n::Int, sequence::Vector,
         deleterows!(subjds, sort!(dellist))
     end
     return subjds
+end
+
+function randrbeds(task::RandRBEDS)
+    return randrbeds(task.n, task.sequence, task.design,
+                    task.inter, task.intra,
+                    task.intercept, task.seqcoef, task.periodcoef, task.formcoef,
+                    task.dropsubj, task.dropobs, task.seed)
+end
+
+
+function simulation()
 end

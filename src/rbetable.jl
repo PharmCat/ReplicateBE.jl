@@ -1,7 +1,26 @@
 #Tables structure
+"""
+Include types for parameter tables:
 
+* EffectTable
+* ContrastTable
+* EstimateTable
+"""
 abstract type RBETable end
 
+"""
+```julia
+struct EffectTable <: RBETable
+    name::Tuple{Vararg}   # Name
+    est::Tuple{Vararg}    # Estimate
+    se::Tuple{Vararg}     # Etandard error
+    f::Tuple{Vararg}      # F value
+    df::Tuple{Vararg}     # Degree of freedom
+    t::Tuple{Vararg}      # t value
+    p::Tuple{Vararg}      # p value
+end
+```
+"""
 struct EffectTable <: RBETable
     name::Tuple{Vararg}
     est::Tuple{Vararg}
@@ -15,6 +34,17 @@ struct EffectTable <: RBETable
         new(Tuple(name), Tuple(est), Tuple(se), Tuple(f), Tuple(df), Tuple(t), Tuple(p))
     end
 end
+"""
+```julia
+struct ContrastTable <: RBETable
+    name::Vector   # Name
+    f::Vector      # F value
+    ndf::Vector    # Denom degree of freedom
+    df::Vector     # Degree of freedom
+    p::Vector      # p value
+end
+```
+"""
 struct ContrastTable <: RBETable
     name::Vector
     f::Vector
@@ -25,6 +55,21 @@ struct ContrastTable <: RBETable
         new(name, f, ndf, df, p)
     end
 end
+"""
+```julia
+struct EstimateTable <: RBETable
+    name::Vector   # Name
+    est::Vector    # Estimate
+    se::Vector     # Etandard error
+    df::Vector     # Degree of freedom
+    t::Vector      # t value
+    p::Vector      # p value
+    ll::Vector     # Confidece interval lower bound
+    ul::Vector     # Confidece interval upper bound
+    alpha::Real    # Confidece interval alpha level
+end
+```
+"""
 struct EstimateTable <: RBETable
     name::Vector
     est::Vector

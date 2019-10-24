@@ -1,4 +1,7 @@
 #Design structure
+"""
+Describes of trial design.
+"""
 struct Design
     obs::Int
     subj::Int

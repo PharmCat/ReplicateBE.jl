@@ -8,6 +8,12 @@ Return contrast table for L matrix.
 F = \\frac{\\beta'L'(LCL')^{-1}L\\beta}{rank(LCL')}
 ```
 
+where
+
+```math
+C = \\sum_{i=1}^{n} X_i'V_i^{-1}X_i
+```
+
 DF for one-dimetion case:
 
 ```math
@@ -18,8 +24,7 @@ where ``A = 2H``
 
 where ``g = \\triangledown _{\\theta}(LC^{-1}L')``
 
-DF for multi-dimention case:
-
+DF for multi-dimention case see Schaalje et al 2002.
 
 """
 function contrast(rbe::RBE, L::Matrix; numdf = 0, name = "Contrast", memopt = true)::ContrastTable
@@ -56,17 +61,23 @@ estimate = L\\beta
 ```
 
 ```math
-se = \\sqrt{LCL'}
+SE = \\sqrt{LCL'}
 ```
 
 ```math
-t = estimate/se
+t = estimate / SE
 ```
 
 For ```df = :sat```:
 
 ```math
 df = \\frac{2(LCL')^{2}}{g'Ag}
+```
+
+where
+
+```math
+C = \\sum_{i=1}^{n} X_i'V_i^{-1}X_i
 ```
 
 where ``A = 2H``
@@ -82,7 +93,7 @@ df = N - rank(ZX)
 CI estimate is:
 
 ```math
-CI = stimate ± t(alpha, df)*se 
+CI = stimate ± t(alpha, df)*SE
 ```
 """
 function estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = true, alpha = 0.05)

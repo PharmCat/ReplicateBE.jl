@@ -44,8 +44,8 @@ MODEL  Y = SEQ PER TRT/ DDFM=SATTERTH;
 RANDOM  TRT/TYPE=FA0(2) SUB=SUBJ G;
 REPEATED/GRP=TRT SUB=SUBJ;
 ESTIMATE 'T vs. R' TRT 1 -1/CL ALPHA=0.1;
-Statement TYPE=CSH also can be used to match the model described above.
 ```
+Statement TYPE=CSH also can be used to match the model described above.
 
 In matrix notation a mixed effect model can be represented as:
 

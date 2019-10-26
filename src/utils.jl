@@ -93,7 +93,7 @@ df = N - rank(ZX)
 CI estimate is:
 
 ```math
-CI = stimate ± t(alpha, df)*SE
+CI = estimate ± t(alpha, df)*SE
 ```
 """
 function estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = true, alpha = 0.05)

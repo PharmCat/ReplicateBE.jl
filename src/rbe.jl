@@ -392,7 +392,7 @@ Compute confidence intervals for coefficients, with confidence level ```level```
 ```df = :df3``` or ```df = :cont```: DF (contain) = N - rank(ZX).
 
 ```math
-CI = stimate ± t(alpha, df)*SE
+CI = estimate ± t(alpha, df)*SE
 ```
 
 """

@@ -157,4 +157,4 @@ simulation(100000)
  7104.944474 seconds (9.51 G allocations: 2.230 TiB, 44.90% gc time)
 0.04939
 ```
- Cofinence interval (95%) for power: 0.048047 - 0.050733. No statistically significant difference found.
+ Confidence interval (95%) for power: 0.048047 - 0.050733. No statistically significant difference found.

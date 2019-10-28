@@ -183,11 +183,11 @@ function rbe(df; dvar::Symbol,
 
     #θ[5] can not be more than 1.0
     if θ[5] >= 1.0
-        θ[5] = 1.0 - eps()
         if !twostep && !postopt
             @warn "ρ is more than 1.0, and no twostep or postopt used. Results may be incorrect, use twostep = true or postopt = true"
         end
         if postopt
+            θ[5] = 1.0 - eps()
             O  = optimize(od, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θ,  Fminbox(method), Optim.Options(g_tol=g_tol, x_tol=x_tol, f_tol=f_tol))
             θ  = copy(Optim.minimizer(O))
             remlv = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memalloc)
@@ -198,9 +198,11 @@ function rbe(df; dvar::Symbol,
     H           = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, x, β), θ)
     dH          = det(H)
 
-
-    H[5,:]     .= eps()
-    H[:,5]     .= eps()
+    if θ[5] >= 1.0 - eps()
+        θ[5]        = 1.0
+        H[5,:]     .= 0
+        H[:,5]     .= 0
+    end
 
     #Secondary parameters calculation
     A           = 2*pinv(H)

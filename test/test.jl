@@ -51,32 +51,36 @@ end
     ci = confint(be, 0.1; expci = true)[end]
     @test ci[1]                             ≈  0.831853  atol=1E-4
     @test ci[2]                             ≈  1.000517  atol=1E-4
+    #SPSS show -2REML = 15.013102
     @test ReplicateBE.reml2(be)             ≈ 13.441805425068509   atol=1E-5
     @test ReplicateBE.stderror(be)[end]     ≈ 0.05486050426851888   atol=1E-5
     be = ReplicateBE.rbe!(df1, dvar = :logAUC, subject = :id, formulation = :formulation, period = :period, sequence = :sequence)
     ci = confint(be, 0.1; expci = true)[end]
-    #@test ci[1]                             ≈ 0.994909084986253 atol=1E-4
-    #@test ci[2]                             ≈ 1.079473264081974 atol=1E-4
+    @test ci[1]                             ≈ 0.993140 atol=1E-5
+    @test ci[2]                             ≈ 1.081396 atol=1E-5
     @test ReplicateBE.reml2(be)             ≈ -49.71856515650643   atol=1E-5
     @test ReplicateBE.stderror(be)[end]     ≈ 0.024308218717669812   atol=1E-5
 end
 
 @testset "  #2                                             " begin
     be = ReplicateBE.rbe!(df2, dvar = :logAUC, subject = :id, formulation = :formulation, period = :period, sequence = :sequence)
+    #SPSS -2REML 45.242642
+    @test ReplicateBE.reml2(be)             ≈ 45.242642227970045 atol=1E-5
     ci = confint(be, 0.1; expci = true)[end]
-    @test ci[1]                             ≈  0.9819173624303988 atol=1E-4
-    @test ci[2]                             ≈  1.387034130727021 atol=1E-4
+    @test ci[1]                             ≈  0.9819173624303978 atol=1E-5
+    @test ci[2]                             ≈  1.38703413072702 atol=1E-5
 end
 
 @testset "  #3                                             " begin
     be = ReplicateBE.rbe!(df3, dvar = :logCmax, subject = :id, formulation = :formulation, period = :period, sequence = :sequence)
     ci = confint(be, 0.1; expci = true, inv = true)[end]
-    #@test ci[1]  ≈   0.5810225885280289 atol=1E-4
-    #@test ci[2]  ≈   0.7549434322747091 atol=1E-4
+    @test ci[1]                             ≈   0.580131 atol=1E-5
+    @test ci[2]                             ≈   0.756104  atol=1E-5
     be = ReplicateBE.rbe!(df3, dvar = :logAUC, subject = :id, formulation = :formulation, period = :period, sequence = :sequence)
     ci = confint(be, 0.1; expci = true, inv = true)[end]
-    @test ci[1]  ≈  0.8417474030979498 atol=1E-4
-    @test ci[2]  ≈  0.9717955188690252 atol=1E-4
+    #SPSS not positive Hessian
+    @test ci[1]                             ≈  0.8417474030979498 atol=1E-5  #0.841779
+    @test ci[2]                             ≈  0.9717955188690252 atol=1E-5  #0.971759
 end
 
 @testset "  #4 QA 1 Bioequivalence 2x2x4, UnB, NC Dataset  " begin
@@ -91,20 +95,21 @@ end
     @test be.fixed.se[6] ≈    0.04650123700721 atol=1E-5
     @test be.fixed.f[6]  ≈    9.78552229238432 atol=1E-5
     @test be.fixed.df[6] ≈  208.08115303672898 atol=1E-5
-    @test ci[end][1] ≈    1.071047105  atol=1E-5
-    @test ci[end][2] ≈    1.248935873  atol=1E-5
+    @test ci[end][1]     ≈    1.071047105  atol=1E-5
+    @test ci[end][2]     ≈    1.248935873  atol=1E-5
 end
 
 #Patterson SD, Jones B. Viewpoint: observations on scaled average bioequivalence. Pharm Stat. 2012; 11(1): 1–7. doi:10.1002/pst.498
 @testset "  #5 Patterson 2012 doi:10.1002/pst.498 AUC      " begin
-    #REML 321.44995530 - SAS STOP!
+    #SAS  REML 321.44995530 - SAS STOP!
+    #SPSS REML 314.221769
     #df = CSV.read(IOBuffer(be5)) |> DataFrame
     df5[!,:var1] = float.(df5[!,:var1])
     be = ReplicateBE.rbe!(df5, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     ci = ReplicateBE.confint(be, 0.1, expci = true, inv = true)
     @test be.reml                           ≈  314.2217688405106 atol=1E-5
-    @test ci[end][1]                        ≈    1.1875472284034538 atol=1E-5
-    @test ci[end][2]                        ≈    1.5854215760408064 atol=1E-5
+    @test ci[end][1]                        ≈  1.1875472284034538 atol=1E-5 #1.187496 SPSS
+    @test ci[end][2]                        ≈  1.5854215760408064 atol=1E-5 #1.585490 SPSS
     #119-159%
 end
 
@@ -119,9 +124,9 @@ end
     be = ReplicateBE.rbe!(df6, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     ci = confint(be, 0.1, expci = true, inv = true)
     @test ReplicateBE.reml2(be)  ≈  329.25749377843033 atol=1E-5
-    @test be.fixed.f[end]  ≈  2.399661661708039 atol=1E-5
-    @test ci[end][1] ≈    0.8748570105 atol=1E-5
-    @test ci[end][2] ≈    1.0050266337 atol=1E-5
+    @test be.fixed.f[end]        ≈  2.399661661708039 atol=1E-5
+    @test ci[end][1]             ≈  0.8748570105 atol=1E-5
+    @test ci[end][2]             ≈  1.0050266337 atol=1E-5
 end
 
 @testset "  #  Utils test                                  " begin
@@ -171,8 +176,11 @@ end
     #TRTR/RTRT
     rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10001)
     be  = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
-    @test ReplicateBE.reml2(be)           ≈ 164.61336006747743   atol=1E-5
+    @test ReplicateBE.reml2(be)             ≈ 164.61336006747743   atol=1E-5
     @test ReplicateBE.stderror(be)[end]     ≈ 0.120162             atol=1E-5
+    ci = confint(be, 0.1, expci = true)
+    @test ci[end][1]                        ≈  0.800182 atol=1E-5
+    @test ci[end][2]                        ≈  1.208955 atol=1E-5
     #DF contain 46
     #DF contain form 44
     #2

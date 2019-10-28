@@ -195,19 +195,25 @@ function rbe(df; dvar::Symbol,
     end
     #Get Hessian matrix (H) with ForwardDiff
     #H           = Optim.trace(O)[end].metadata["h(x)"]
+    #if θ[5] >= 1.0 - eps() θ[5] = 1.0 end
     H           = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, x, β), θ)
     dH          = det(H)
 
+    #=
     if θ[5] >= 1.0 - eps()
         θ[5]        = 1.0
         H[5,:]     .= 0
         H[:,5]     .= 0
     end
+    =#
 
     #Secondary parameters calculation
     A           = 2*pinv(H)
-    #A[5,:]     .= 0
-    #A[:,5]     .= 0
+    if θ[5] >= 1.0 - eps()
+        θ[5]        = 1.0
+        A[5,:]     .= 0
+        A[:,5]     .= 0
+    end
     C           = cmat(Xv, Zv, iVv, θ)
     se          = Array{Float64, 1}(undef, p)
     F           = Array{Float64, 1}(undef, p)
@@ -513,7 +519,15 @@ end
 #-------------------------------------------------------------------------------
 function Base.show(io::IO, rbe::RBE)
     rcoef = coefnames(rbe.rmodel);
-    println(io, "Bioequivalence Linear Mixed Effect Model (status: $(Optim.converged(rbe.optim) ? "converged" : "not converged"))")
+    println(io, "Bioequivalence Linear Mixed Effect Model (status: $(Optim.converged(rbe.optim) ? "converged" : printstyled(io, "not converged"; color = :red)))")
+    if rbe.detH <= 0.0
+        printstyled(io, "Hessian not positive!"; color = :yellow)
+        println(io, "")
+    end
+    if rbe.θ[end] == 1.0
+        printstyled(io, "Rho is 1.0 and removed from covariance matrix!"; color = :yellow)
+        println(io, "")
+    end
     println(io, "")
     println(io, "-2REML: $(round(rbe.reml, sigdigits=6))    REML: $(round(-rbe.reml/2, sigdigits=6))")
     println(io, "")
@@ -533,10 +547,10 @@ function Base.show(io::IO, rbe::RBE)
     println(io, "")
 
     println(io, "Confidence intervals(90%):")
-    ci = confint(rbe, 0.1, expci = true, inv = false)
+    ci = confint(rbe, 0.1, expci = true, inv = true)
     println(io, rcoef[1], " / ", rcoef[2])
     println(io, round(ci[end][1]*100, digits=4), " - ", round(ci[end][2]*100, digits=4), " (%)")
-    ci = confint(rbe, 0.1, expci = true, inv = true)
+    ci = confint(rbe, 0.1, expci = true, inv = false)
     println(io, rcoef[2], " / ", rcoef[1])
     print(io, round(ci[end][1]*100, digits=4), " - ", round(ci[end][2]*100, digits=4), " (%)")
 end #─┼┴┬│

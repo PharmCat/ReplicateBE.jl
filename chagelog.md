@@ -3,7 +3,7 @@
     * validation
     * test procedures
     * rho & df problem solved
-    
+    * fix text output
 
 - v0.2.0
 

@@ -1,3 +1,10 @@
+- v1.0.0
+
+    * validation
+    * test procedures
+    * rho & df problem solved
+    
+
 - v0.2.0
 
     * bugfix

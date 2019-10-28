@@ -91,8 +91,8 @@ end
     @test be.fixed.se[6] ≈    0.04650123700721 atol=1E-5
     @test be.fixed.f[6]  ≈    9.78552229238432 atol=1E-5
     @test be.fixed.df[6] ≈  208.08115303672898 atol=1E-5
-    @test ci[end][1] ≈    1.07104135588792 atol=1E-5
-    @test ci[end][2] ≈    1.24894237034602 atol=1E-5
+    @test ci[end][1] ≈    1.071047105  atol=1E-5
+    @test ci[end][2] ≈    1.248935873  atol=1E-5
 end
 
 #Patterson SD, Jones B. Viewpoint: observations on scaled average bioequivalence. Pharm Stat. 2012; 11(1): 1–7. doi:10.1002/pst.498
@@ -120,8 +120,8 @@ end
     ci = confint(be, 0.1, expci = true, inv = true)
     @test ReplicateBE.reml2(be)  ≈  329.25749377843033 atol=1E-5
     @test be.fixed.f[end]  ≈  2.399661661708039 atol=1E-5
-    #@test ci[end][1] ≈    0.8754960202413755 atol=1E-5
-    #@test ci[end][2] ≈    1.0042930817939983 atol=1E-5
+    @test ci[end][1] ≈    0.8748570105 atol=1E-5
+    @test ci[end][2] ≈    1.0050266337 atol=1E-5
 end
 
 @testset "  #  Utils test                                  " begin

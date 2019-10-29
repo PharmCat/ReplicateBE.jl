@@ -167,6 +167,7 @@ end
 
 
 function simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l = log(0.8), u = log(1.25), seed = 0)
+    task.seed = 0
     rng = MersenneTwister()
     if seed == 0  Random.seed!(rng) else Random.seed!(seed) end
     seeds = rand(UInt32, num)
@@ -174,6 +175,8 @@ function simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l 
     err   = 0
     cnt   = 0
     printstyled(io, "Start...\n"; color = :green)
+    println(io, "Simulation seed: $(seed)")
+    println(io, "Task hash: $(hash(task))")
     for i = 1:num
         try
             task.seed = seeds[i]
@@ -184,8 +187,8 @@ function simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l 
             ul        = be.fixed.est[end] + q*be.fixed.se[end]
             #!
             if verbose
-                if !optstat(be) printstyled(io, "Iteration: $i, seed $(seeds[i]): unconverged! \n"; color = :red) end
-                if be.detH <= 0 printstyled(io, "Iteration: $i, seed $(seeds[i]): Hessian not positive defined! \n"; color = :red) end
+                if !optstat(be) printstyled(io, "Iteration: $i, seed $(seeds[i]): unconverged! \n"; color = :yellow) end
+                if be.detH <= 0 printstyled(io, "Iteration: $i, seed $(seeds[i]): Hessian not positive defined! \n"; color = :yellow) end
             end
             if ll > l && ul < u
                 #println(io, "Seed $(task.seed) LL $(ll) UL $(ul)")
@@ -202,7 +205,7 @@ function simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l 
             n += 1
         catch
             err += 1
-            println(io, "Error $(err)!")
+            printstyled(io, "Iteration: $i, seed $(seeds[i]): $(err): ERROR! \n"; color = :red)
         end
     end
     return cnt/num

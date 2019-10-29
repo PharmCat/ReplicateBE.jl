@@ -166,14 +166,14 @@ function randrbeds(task::RandRBEDS)
 end
 
 
-function simulation(task::RandRBEDS; io = stdout, num = 100, l = log(0.8), u = log(1.25), seed = 0)
+function simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l = log(0.8), u = log(1.25), seed = 0)
     rng = MersenneTwister()
     if seed == 0  Random.seed!(rng) else Random.seed!(seed) end
     seeds = rand(UInt32, num)
     n     = 0
     err   = 0
     cnt   = 0
-    println(io, "Start...")
+    printstyled(io, "Start...\n"; color = :green)
     for i = 1:num
         try
             task.seed = seeds[i]
@@ -183,6 +183,10 @@ function simulation(task::RandRBEDS; io = stdout, num = 100, l = log(0.8), u = l
             ll        = be.fixed.est[end] - q*be.fixed.se[end]
             ul        = be.fixed.est[end] + q*be.fixed.se[end]
             #!
+            if verbose
+                if !optstat(be) printstyled(io, "Iteration: $i, seed $(seeds[i]): unconverged! \n"; color = :red) end
+                if be.detH <= 0 printstyled(io, "Iteration: $i, seed $(seeds[i]): Hessian not positive defined! \n"; color = :red) end
+            end
             if ll > l && ul < u
                 #println(io, "Seed $(task.seed) LL $(ll) UL $(ul)")
                 cnt += 1

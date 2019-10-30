@@ -350,6 +350,12 @@ Return the standard errors for the coefficients of the model.
 ```math
 se = \\sqrt{LCL'}
 ```
+
+where
+
+```math
+C = \\sum_{i=1}^{n} X_i'V_i^{-1}X_i
+```
 """
 function StatsBase.stderror(rbe::RBE)
     return collect(rbe.fixed.se)

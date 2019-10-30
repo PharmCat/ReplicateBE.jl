@@ -1,5 +1,7 @@
 ## Examples
 
+### Bioequivalence example
+
 ```julia
 using CSV, DataFrames, ReplicateBE, StatsBase
 
@@ -29,7 +31,7 @@ df=CSV.read(IOBuffer("""subject,sequence,period,formulation,var
 
 #Execute BE
 
-be = ReplicateBE.rbe!(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+be = rbe!(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
 
 #Get fixed effect object
 
@@ -59,3 +61,9 @@ reml2(be)
 
 design(be)
 ```
+
+### Random dataset generation
+
+
+
+### Simulation

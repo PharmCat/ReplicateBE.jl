@@ -2,7 +2,11 @@
 """
     contrast(rbe::RBE, L::Matrix; numdf = 1, name = "Contrast", memopt = true)::ContrastTable
 
-Return contrast table for L matrix.
+Return contrast table for L matrix. Table include:
+* F
+* NumDF
+* DF
+* P|f|
 
 ```math
 F = \\frac{\\beta'L'(LCL')^{-1}L\\beta}{rank(LCL')}
@@ -26,6 +30,11 @@ where ``g = \\triangledown _{\\theta}(LC^{-1}L')``
 
 DF for multi-dimention case see Schaalje et al 2002.
 
+p value calculated with:
+
+```julia
+pval    = ccdf(FDist(numdf, df), F)
+```
 """
 function contrast(rbe::RBE, L::Matrix; numdf = 0, name = "Contrast", memopt = true)::ContrastTable
     β       = coef(rbe)
@@ -54,7 +63,14 @@ end
 """
     estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = true, alpha = 0.05)
 
-Return estimate table for L 1xp matrix.
+Return estimate table for L 1xp matrix. Table include:
+* estimate value
+* SE
+* DF
+* t
+* P|t|
+* CI Upper
+* CI Lower
 
 ```math
 estimate = L\\beta
@@ -94,6 +110,12 @@ CI estimate is:
 
 ```math
 CI = estimate ± t(alpha, df)*SE
+```
+
+Example of L matrix if length of fixed effect vector is 6, estimate for 4-th value:
+
+```julia
+L = [0 0 0 1 0 0]
 ```
 """
 function estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = true, alpha = 0.05)

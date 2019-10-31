@@ -208,6 +208,10 @@ end
     be  = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
     @test ReplicateBE.reml2(be)             ≈ 178.85707596709256   atol=1E-5
     @test ReplicateBE.stderror(be)[end]     ≈ 0.1126566088472447   atol=1E-5
+    ci = confint(be, 0.1, expci = true)
+    
+    @test ci[end][1]                        ≈ 0.901150701434849    atol=1E-5  #SPSS 0.900982
+    @test ci[end][2]                        ≈ 1.3260902090001896   atol=1E-5  #     1.326338
 
     #5
     #TRRT/RTTR/TTRR/RRTT

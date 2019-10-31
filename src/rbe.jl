@@ -39,6 +39,7 @@ struct RBE
     design::Design
     factors::Array{Symbol, 1}       #Factor list
     θ0::Array{Float64, 1}           #Initial variance paramethers
+    vlm::Real
     θ::Tuple{Vararg{Float64}}       #Final variance paramethers
     reml::Float64                   #-2REML
     fixed::EffectTable
@@ -95,20 +96,13 @@ function rbe(df; dvar::Symbol,
     store_trace = false, extended_trace = false, show_trace = false,
     memopt = true,
     init = [],
-    twostep = true,
-    postopt = false)
+    postopt = false, vlm = 1.0, rhoadj = false)
 
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
     if !(eltype(df[!,dvar]) <: Real)
         @warn "Responce variable ∉ Real!"
     end
 
-    #should not change initial DS
-    #categorical!(df, subject);
-    #categorical!(df, formulation);
-    #categorical!(df, period);
-    #categorical!(df, sequence);
-    #sort!(df, [subject, formulation, period])
     Xf  = @eval(@formula($dvar ~ $sequence + $period + $formulation))
     Zf  = @eval(@formula($dvar ~ 0 + $formulation))
     MF  = ModelFrame(Xf, df)
@@ -118,7 +112,7 @@ function rbe(df; dvar::Symbol,
     Z   = ModelMatrix(RMF).m
     p   = rank(X)
     zxr = rank(ModelMatrix(ModelFrame(@eval(@formula($dvar ~ $sequence + $period + $subject*$formulation)), df)).m)
-    y   = df[:, dvar]                                                            #Dependent variable
+    y   = df[:, dvar]                                                           #Dependent variable
     #Make pre located arrays with matrices for each subject
     Xv, Zv, yv = sortsubjects(df, subject, X, Z, y)
     n  = length(Xv)
@@ -140,9 +134,13 @@ function rbe(df; dvar::Symbol,
     qro   = qr(X)
     β     = inv(qro.R)*qro.Q'*y
     #Calculate initial variance
-    iv = initvar(df, dvar, formulation, subject)
-    if iv[1] < iv[3] || iv[2] < iv[3] iv[1] = iv[2] = 2*iv[3] end
-    θvec0 = [iv[3], iv[3], iv[1]-iv[3], iv[2]-iv[3], 0.501]
+    if length(init) == 5
+        θvec0 = init
+    else
+        iv = initvar(df, dvar, formulation, subject)
+        if iv[1] < iv[3] || iv[2] < iv[3] iv[1] = iv[2] = 2*iv[3] end
+        θvec0 = rvarlink([iv[3], iv[3], iv[1]-iv[3], iv[2]-iv[3], 0.8], vlm)
+    end
     #Prelocatiom for G, R, V, V⁻¹ matrices
     G     = zeros(2, 2)
     Rv    = Array{Array{Float64,2}, 1}(undef, n)
@@ -151,69 +149,28 @@ function rbe(df; dvar::Symbol,
     matvecz!(Rv, Zv)
     matvecz!(Vv, Zv)
     matvecz!(iVv, Zv)
-    #First step optimization (pre-optimization)
-    od = OnceDifferentiable(x -> -2*reml(yv, Zv, p, Xv, x, β; memopt = memopt), θvec0; autodiff = :forward)
-    method = BFGS(linesearch = LineSearches.HagerZhang(), alphaguess = LineSearches.InitialStatic())
-    #method = optm
-    #method = ConjugateGradient()
-    #method = NelderMead()
+
     limeps  = eps()
     pO      = nothing
-    if twostep
-        pO = optimize(od, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-1))
-    #pO = optimize(remlf,  [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θvec0,  Fminbox(method), Optim.Options(g_tol = 1e-3))
-        θ  = Optim.minimizer(pO)
-    else
-        #@warn "First optimization step failed. Start step two with initial θ..."
-        θ  = θvec0
-    end
-    #Final optimization
-    #Provide gradient function for Optim
-    #Not used yet
-    #g!(storage, θx) = copyto!(storage, ForwardDiff.gradient(x -> -2*reml(yv, Zv, p, Xv, x, β), θx))
-    #REML function for optimization
-    td = TwiceDifferentiable(x -> -2*remlb(yv, Zv, p, Xv, x, β; memopt = memopt), θvec0; autodiff = :forward)
-    #remlfb(x) = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, x, β, memc, memc2, memc3, memc4)
-    #@timeit to "o2" O  = optimize(remlfb, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
-    O  = optimize(td, θ, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
-    θ  = copy(Optim.minimizer(O))
+    td      = TwiceDifferentiable(x -> -2*remlb(yv, Zv, p, Xv, varlink(x, vlm), β; memopt = memopt), θvec0; autodiff = :forward)
+    O       = optimize(td, θvec0, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
+    θ       = Optim.minimizer(O)
     #Get reml
-    #remlv = -2*reml(yv, Zv, p, Xv, θ, β)
-    remlv = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memalloc)
-
-    #θ[5] can not be more than 1.0
-    if θ[5] >= 1.0
-        if !twostep && !postopt
-            @warn "ρ is more than 1.0, and no twostep or postopt used. Results may be incorrect, use twostep = true or postopt = true"
-        end
-        if postopt
-            θ[5] = 1.0 - eps()
-            O  = optimize(od, [limeps, limeps, limeps, limeps, limeps], [Inf, Inf, Inf, Inf, 1.0], θ,  Fminbox(method), Optim.Options(g_tol=g_tol, x_tol=x_tol, f_tol=f_tol))
-            θ  = copy(Optim.minimizer(O))
-            remlv = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memalloc)
-        end
+    remlv   = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, varlink(θ, vlm), β, memalloc)
+    #Post optimization
+    if postopt
+        pO     = O
+        od     = OnceDifferentiable(x -> -2*reml(yv, Zv, p, Xv, varlink(x, vlm), β; memopt = memopt), θvec0; autodiff = :forward)
+        method = BFGS(linesearch = LineSearches.HagerZhang(), alphaguess = LineSearches.InitialStatic())
+        O      = optimize(od, [-Inf, -Inf, -Inf, -Inf, -Inf], [Inf, Inf, Inf, Inf, Inf], θ,  Fminbox(method), Optim.Options(g_tol=g_tol, x_tol=x_tol, f_tol=f_tol))
+        θ      = copy(Optim.minimizer(O))
+        remlv  = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, varlink(θ, vlm), β, memalloc)
     end
     #Get Hessian matrix (H) with ForwardDiff
-    #H           = Optim.trace(O)[end].metadata["h(x)"]
-    #if θ[5] >= 1.0 - eps() θ[5] = 1.0 end
-    H           = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, x, β), θ)
+    H           = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, varlink(x, vlm), β), θ)
     dH          = det(H)
-
-    #=
-    if θ[5] >= 1.0 - eps()
-        θ[5]        = 1.0
-        H[5,:]     .= 0
-        H[:,5]     .= 0
-    end
-    =#
-
     #Secondary parameters calculation
     A           = 2*pinv(H)
-    if θ[5] >= 1.0 - eps()
-        θ[5]        = 1.0
-        A[5,:]     .= 0
-        A[:,5]     .= 0
-    end
     C           = cmat(Xv, Zv, iVv, θ)
     se          = Array{Float64, 1}(undef, p)
     F           = Array{Float64, 1}(undef, p)
@@ -230,7 +187,7 @@ function rbe(df; dvar::Symbol,
         #Lβ      = L*β
         F[i]    = β'*L'*inv(lcl)*L*β/lclr                                       #F[i]    = (L*β)'*inv(L*C*L')*(L*β)/lclr
         #lclg    = lclgf(L, Lt, Xv, Zv, x; memopt = memopt)
-        g       = ForwardDiff.gradient(x -> lclgf(L, Lt, Xv, Zv, x; memopt = memopt), θ)
+        g       = ForwardDiff.gradient(x -> lclgf(L, Lt, Xv, Zv, varlink(x, vlm); memopt = memopt), θ)
         df[i]   = max(1, 2*((lcl)[1])^2/(g'*(A)*g))
         t[i]    = ((L*β)/se[i])[1]
         pval[i] = ccdf(TDist(df[i]), abs(t[i]))*2
@@ -250,13 +207,13 @@ function rbe(df; dvar::Symbol,
         if lclr ≥ 2
             vm  = Array{Float64, 1}(undef, lclr)
             for i = 1:lclr
-                g        = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', Xv, Zv, x; memopt = memopt), θ)
+                g        = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', Xv, Zv, varlink(x, vlm); memopt = memopt), θ)
                 dfi      = 2*((L[i:i,:]*C*L[i:i,:]')[1])^2/(g'*(A)*g)
                 vm[i]    = dfi/(dfi-2)
             end
             dfi = 2*sum(vm)/(sum(vm)-lclr)
         else
-            g   = ForwardDiff.gradient(x -> lclgf(L, L', Xv, Zv, x; memopt = memopt), θ)
+            g   = ForwardDiff.gradient(x -> lclgf(L, L', Xv, Zv, varlink(x, vlm); memopt = memopt), θ)
             dfi = 2*((lcl)[1])^2/(g'*(A)*g)
         end
         df[i]   = max(1, dfi)
@@ -270,7 +227,7 @@ function rbe(df; dvar::Symbol,
     termmodelleveln(MF, formulation),
     sbf,
     p, zxr)
-    return RBE(MF, RMF, design, fac, θvec0, Tuple(θ), remlv, fixed, typeiii, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
+    return RBE(MF, RMF, design, fac, θvec0, vlm, Tuple(θ), remlv, fixed, typeiii, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
 end #END OF rbe()
 """
 This function apply following code for each factor before executing:
@@ -294,8 +251,7 @@ function rbe!(df; dvar::Symbol,
     store_trace = false, extended_trace = false, show_trace = false,
     memopt = true,
     init = [],
-    twostep = true,
-    postopt = false)
+    postopt = false, vlm = 1.0, rhoadj = false)
 
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
     if !(eltype(df[!,dvar]) <: Real)
@@ -312,7 +268,19 @@ function rbe!(df; dvar::Symbol,
     return rbe(df, dvar=dvar, subject=subject, formulation=formulation, period=period, sequence=sequence,
     g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, iterations=iterations,
     store_trace=store_trace, extended_trace=extended_trace, show_trace=show_trace,
-    memopt=memopt, init=init, twostep=twostep, postopt=postopt)
+    memopt=memopt, init=init, postopt=postopt, vlm = vlm, rhoadj = rhoadj)
+end
+
+function varlink(θ, m)
+    θl      = similar(θ)
+    θl[1:4] = exp.(θ[1:4])
+    θl[5]    = 1/(1 + exp(θ[5]*m))
+    return θl
+end
+function rvarlink(θ, m)
+    θ[1:4]  = log.(θ[1:4])
+    θ[5]    = log(1/θ[5]-1)/m
+    return θ
 end
 #-------------------------------------------------------------------------------
 #returm -2REML
@@ -519,12 +487,13 @@ end
 #-------------------------------------------------------------------------------
 function Base.show(io::IO, rbe::RBE)
     rcoef = coefnames(rbe.rmodel);
+    θ     = varlink(collect(rbe.θ), rbe.vlm)
     println(io, "Bioequivalence Linear Mixed Effect Model (status: $(Optim.converged(rbe.optim) ? "converged" : printstyled(io, "not converged"; color = :red)))")
     if rbe.detH <= 0.0
         printstyled(io, "Hessian not positive!"; color = :yellow)
         println(io, "")
     end
-    if rbe.θ[end] == 1.0
+    if θ[end] >= 1.0 - eps()
         printstyled(io, "Rho is 1.0 and removed from covariance matrix!"; color = :yellow)
         println(io, "")
     end
@@ -535,15 +504,15 @@ function Base.show(io::IO, rbe::RBE)
     println(io, rbe.fixed)
     println(io, "Intra-individual variation:")
 
-    printmatrix(io,[rcoef[1] round(rbe.θ[1], sigdigits=6) "CVᵂ:" round(geocv(rbe.θ[1]), sigdigits=6);
-                    rcoef[2] round(rbe.θ[2], sigdigits=6) "CVᵂ:" round(geocv(rbe.θ[2]), sigdigits=6)])
+    printmatrix(io,[rcoef[1] round(θ[1], sigdigits=6) "CVᵂ:" round(geocv(θ[1]), sigdigits=6);
+                    rcoef[2] round(θ[2], sigdigits=6) "CVᵂ:" round(geocv(θ[2]), sigdigits=6)])
     println(io, "")
 
     println(io, "Inter-individual variation:")
 
-    printmatrix(io,[rcoef[1] round(rbe.θ[3], sigdigits=6) "";
-                    rcoef[2] round(rbe.θ[4], sigdigits=6) "";
-                    "ρ:"     round(rbe.θ[5], sigdigits=6) "Cov: $(round(sqrt(rbe.θ[4]*rbe.θ[3])*rbe.θ[5], sigdigits=6))"])
+    printmatrix(io,[rcoef[1] round(θ[3], sigdigits=6) "";
+                    rcoef[2] round(θ[4], sigdigits=6) "";
+                    "ρ:"     round(θ[5], sigdigits=6) "Cov: $(round(sqrt(θ[4]*θ[3])*θ[5], sigdigits=6))"])
     println(io, "")
 
     println(io, "Confidence intervals(90%):")

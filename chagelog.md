@@ -4,6 +4,8 @@
     * test procedures
     * rho & df problem solved
     * fix text output
+    * twostep deprecated
+    * varlink() - optimization with logVar & sigmoid rho
 
 - v0.2.0
 

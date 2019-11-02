@@ -10,7 +10,29 @@ mutable struct RandRBEDS
     formcoef::Vector
     dropsubj::Float64
     dropobs::Int
-    dataset::DataFrame
+    seed
+    function RandRBEDS(;n=24, sequence=[1,1],
+        design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
+        inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2],
+        intercept = 0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0],
+        dropsubj = 0, dropobs::Int = 0, seed = 0)
+        new(n, sequence,
+            design,
+            inter, intra,
+            intercept, seqcoef, periodcoef, formcoef,
+            dropsubj, dropobs, seed)::RandRBEDS
+    end
+    function RandRBEDS(n::Int, sequence::Vector,
+        design::Matrix,
+        θinter::Vector, θintra::Vector,
+        intercept::Real, seqcoef::Vector, periodcoef::Vector, formcoef::Vector,
+        dropsubj::Float64, dropobs::Int, seed)
+        new(n, sequence,
+            design,
+            θinter, θintra,
+            intercept, seqcoef, periodcoef, formcoef,
+            dropsubj, dropobs, seed)::RandRBEDS
+    end
 end
 
 """
@@ -55,7 +77,7 @@ function randrbeds(;n=24, sequence=[1,1],
     design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
     inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2],
     intercept = 0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0],
-    dropsubj = 0.0, dropobs::Int = 0, seed::Int = 0)
+    dropsubj = 0.0, dropobs::Int = 0, seed = 0)
     return randrbeds(n, sequence, design, inter, intra, intercept, seqcoef, periodcoef, formcoef, dropsubj, dropobs, seed)
 end
 
@@ -75,7 +97,7 @@ function randrbeds(n::Int, sequence::Vector,
     design::Matrix,
     θinter::Vector, θintra::Vector,
     intercept::Real, seqcoef::Vector, periodcoef::Vector, formcoef::Vector,
-    dropsubj::Float64, dropobs::Int, seed::Int)
+    dropsubj::Float64, dropobs::Int, seed)
 
     rng = MersenneTwister()
     if seed == 0  Random.seed!(rng) else Random.seed!(seed) end
@@ -144,5 +166,47 @@ function randrbeds(task::RandRBEDS)
 end
 
 
-function simulation()
+function simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l = log(0.8), u = log(1.25), seed = 0)
+    task.seed = 0
+    rng = MersenneTwister()
+    if seed == 0  Random.seed!(rng) else Random.seed!(seed) end
+    seeds = rand(UInt32, num)
+    n     = 0
+    err   = 0
+    cnt   = 0
+    printstyled(io, "Start...\n"; color = :green)
+    println(io, "Simulation seed: $(seed)")
+    println(io, "Task hash: $(hash(task))")
+    for i = 1:num
+        try
+            task.seed = seeds[i]
+            rds       = ReplicateBE.randrbeds(task)
+            be        = ReplicateBE.rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+            q         = quantile(TDist(be.fixed.df[end]), 0.95)
+            ll        = be.fixed.est[end] - q*be.fixed.se[end]
+            ul        = be.fixed.est[end] + q*be.fixed.se[end]
+            #!
+            if verbose
+                if !optstat(be) printstyled(io, "Iteration: $i, seed $(seeds[i]): unconverged! \n"; color = :yellow) end
+                if be.detH <= 0 printstyled(io, "Iteration: $i, seed $(seeds[i]): Hessian not positive defined! \n"; color = :yellow) end
+            end
+            if ll > l && ul < u
+                #println(io, "Seed $(task.seed) LL $(ll) UL $(ul)")
+                cnt += 1
+            end
+            #!
+            if n > 1000
+                println(io, "Iteration: $i")
+                println(io, "Mem: $(Sys.free_memory()/2^20)")
+                println(io, "Pow: $(cnt/i)")
+                println(io, "-------------------------------")
+                n = 0
+            end
+            n += 1
+        catch
+            err += 1
+            printstyled(io, "Iteration: $i, seed $(seeds[i]): $(err): ERROR! \n"; color = :red)
+        end
+    end
+    return cnt/num
 end

@@ -12,7 +12,6 @@ Mixed model solution for replicate designed bioequivalence study. This can be us
 [![Latest docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://pharmcat.github.io/ReplicateBE.jl/latest/)
 [![doi](https://img.shields.io/badge/doi-10.13140%2FRG.2.2.27418.39363-blue)](https://doi.org/10.13140/RG.2.2.27418.39363)
 
-http://doi.org/10.13140/RG.2.2.27418.39363
 Install:
 ```
 using Pkg; Pkg.add("ReplicateBE")

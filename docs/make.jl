@@ -15,5 +15,8 @@ makedocs(modules=[ReplicateBE],
         "Api" => "api.md"
     ])
 
+deploydocs(
+    repo    = "github.com/PharmCat/ReplicateBE.jl.git"
+    )
 #https://github.com/PharmCat/ReplicateBE.jl/blob/master/docs/
 #https://github.com/PharmCat/ReplicateBE.jl/blob/master/docs/

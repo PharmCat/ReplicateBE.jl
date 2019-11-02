@@ -24,6 +24,13 @@ include("testdata.jl")
     ci = confint(be, 0.1; expci = true, inv = true, df = :contw)
     @test ci[end][1]            ≈  0.9080640550377563 atol=1E-5
     @test ci[end][2]            ≈  1.2901696108459495 atol=1E-5
+    ci = confint(be; level = 0.90)
+    @test ci[end][1]            ≈  -0.25791330363201714 atol=1E-5
+    @test ci[end][2]            ≈   0.09957997029868393 atol=1E-5
+    ci = confint(be, 0.1, df = :cont)
+    @test ci[end][1]            ≈  -0.24721576677454637 atol=1E-5
+    @test ci[end][2]            ≈   0.088882433441213 atol=1E-5
+    @test dof(be)[end]          ≈   5.463110799437906 atol=1E-5
 
     be = ReplicateBE.rbe!(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10, memopt = false);
     @test be.fixed.est[6] == e1
@@ -419,4 +426,24 @@ end
     @test ci[end][1]                        ≈ 0.854985             atol=1E-5
     @test ci[end][2]                        ≈ 1.293459             atol=1E-5
 
+end
+
+@testset "  #  Simulation                                  " begin
+    io = IOBuffer()
+    task = ReplicateBE.RandRBEDS(
+        ;
+        n = 12,
+        sequence = [1, 1],
+        design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
+        inter = [0.05, 0.04, 0.6],
+        intra = [0.02, 0.02],
+        intercept = 1.0,
+        seqcoef = [0.0, 0.0],
+        periodcoef = [0.0, 0.0, 0.0, 0.0],
+        formcoef = [0.0, log(0.8)],
+        seed = 10001,
+        dropobs = 2,
+    )
+    pow = ReplicateBE.simulation(task; io = io, num = 10, seed = 1234)
+    @test pow == 0.1
 end

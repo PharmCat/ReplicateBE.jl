@@ -9,7 +9,7 @@ Mixed model solution for replicate designed bioequivalence study. This can be us
 [![GitHub version](https://badge.fury.io/gh/PharmCat%2FReplicateBE.jl.svg)](https://badge.fury.io/gh/PharmCat%2FReplicateBE.jl)
 [![Build Status](https://api.travis-ci.com/PharmCat/ReplicateBE.jl.svg?branch=master)](https://travis-ci.com/PharmCat/ReplicateBE.jl)
 [![codecov](https://codecov.io/gh/PharmCat/ReplicateBE.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/PharmCat/ReplicateBE.jl)
-[![Latest docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://pharmcat.github.io/ReplicateBE.jl/build/)
+[![Latest docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://pharmcat.github.io/ReplicateBE.jl/latest/)
 [![doi](https://img.shields.io/badge/doi-10.13140%2FRG.2.2.27418.39363-blue)](https://doi.org/10.13140/RG.2.2.27418.39363)
 
 http://doi.org/10.13140/RG.2.2.27418.39363

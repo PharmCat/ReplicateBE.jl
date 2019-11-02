@@ -1,4 +1,4 @@
-**Beta version!** This program comes with absolutely no warranty. No liability is accepted for any loss and risk to public health resulting from use of this software.
+**Public validated Beta version!** This program comes with absolutely no warranty. No liability is accepted for any loss and risk to public health resulting from use of this software.
 
 <p align="center">
   <img src="https://github.com/PharmCat/ReplicateBE.jl/blob/master/docs/ReplicateBE-LogoNoSpace.png">
@@ -10,7 +10,9 @@ Mixed model solution for replicate designed bioequivalence study. This can be us
 [![Build Status](https://api.travis-ci.com/PharmCat/ReplicateBE.jl.svg?branch=master)](https://travis-ci.com/PharmCat/ReplicateBE.jl)
 [![codecov](https://codecov.io/gh/PharmCat/ReplicateBE.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/PharmCat/ReplicateBE.jl)
 [![Latest docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://pharmcat.github.io/ReplicateBE.jl/build/)
+[![doi](https://img.shields.io/badge/doi-10.13140%2FRG.2.2.27418.39363-blue)](https://doi.org/10.13140/RG.2.2.27418.39363)
 
+http://doi.org/10.13140/RG.2.2.27418.39363
 Install:
 ```
 using Pkg; Pkg.add("ReplicateBE")
@@ -116,13 +118,22 @@ Best acknowledgments to D.Sc. in Physical and Mathematical Sciences Anastasia Sh
 
 ## References
 
-- LINDSTROM & J.; BATES, M. (1988). Newton—Raphson and EM Algorithms for Linear Mixed-Effects Models for Repeated-Measures Data. Journal of the American Statistical Association. 83. 1014. 10.1080/01621459.1988.10478693.
-- Gurka, Matthew. (2006). Selecting the Best Linear Mixed Model under REML. The American Statistician. 60. 19-26. 10.1198/000313006X90396.
-- Wolfinger, Russ. (1993). Covariance structure selection in general mixed models. Communications in Statistics-simulation and Computation - COMMUN STATIST-SIMULAT COMPUT. 22. 1079-1106. 10.1080/03610919308813143.
-- R Henderson, C. (1984). Application of Linear Models in Animal Breeding.
-- Giesbrecht, F.G. & Burns, Joseph. (1985). Two-Stage Analysis Based on a Mixed Model: Large-Sample Asymptotic Theory and Small-Sample Simulation Results. Biometrics. 41. 10.2307/2530872.
-- G. Kenward, Michael & Roger, James. (1997). Small Sample Inference for Fixed Effects From Restricted Maximum Likelihood. Biometrics. 53. 983-97. 10.2307/2533558.
-- Wright, Stephen, and Jorge Nocedal (2006) "Numerical optimization." Springer
+* FDA Guidance for Industry: Statistical Approaches to Establishing Bioequivalence, 2001
+* Fletcher, Roger (1987), Practical methods of optimization (2nd ed.), New York: John Wiley & Sons, ISBN 978-0-471-91547-8
+* Giesbrecht, F. G., and Burns, J. C. (1985), "Two-Stage Analysis Based on a Mixed Model: Large-sample Asymptotic Theory and Small-Sample Simulation Results," Biometrics, 41, 853-862.
+* Gurka, Matthew. (2006). Selecting the Best Linear Mixed Model under REML. The American Statistician. 60. 19-26. 10.1198/000313006X90396.
+* Henderson, C. R., et al. “The Estimation of Environmental and Genetic Trends from Records Subject to Culling.” Biometrics, vol. 15, no. 2, 1959, pp. 192–218. JSTOR, www.jstor.org/stable/2527669.
+* Hrong-Tai Fai & Cornelius (1996) Approximate F-tests of multiple degree of freedom hypotheses in generalized least squares analyses of unbalanced split-plot experiments, Journal of Statistical Computation and Simulation, 54:4, 363-378, DOI: 10.1080/00949659608811740
+* Jennrich, R., & Schluchter, M. (1986). Unbalanced Repeated-Measures Models with Structured Covariance Matrices. Biometrics, 42(4), 805-820. doi:10.2307/2530695
+* Laird, Nan M., and James H. Ware. “Random-Effects Models for Longitudinal Data.” Biometrics, vol. 38, no. 4, 1982, pp. 963–974. JSTOR, www.jstor.org/stable/2529876.
+* Lindstrom & J.; Bates, M. (1988). Newton—Raphson and EM Algorithms for Linear Mixed-Effects Models for Repeated-Measures Data. Journal of the American Statistical Association. 83. 1014. 10.1080/01621459.1988.10478693.
+* Mogensen et al., (2018). Optim: A mathematical optimization package for Julia. Journal of Open Source Software, 3(24), 615,doi: 10.21105/joss.00615
+* Patterson, S. D. and Jones, B. (2002), Bioequivalence and the pharmaceutical industry. Pharmaceut. Statist., 1: 83-95. doi:10.1002/pst.15
+* Revels, Jarrett & Lubin, Miles & Papamarkou, Theodore. (2016). Forward-Mode Automatic Differentiation in Julia.
+* Schaalje GB, McBride JB, Fellingham GW. Adequacy of approximations to distributions of test statistics in complex mixed linear models. J Agric Biol Environ Stat. 2002;7:512–24.
+* Van Peer, A. (2010), Variability and Impact on Design of Bioequivalence Studies. Basic & Clinical Pharmacology & Toxicology, 106: 146-153. doi:10.1111/j.1742-7843.2009.00485.x
+* Wolfinger et al., (1994) Computing gaussian likelihoods and their derivatives for general linear mixed models doi: 10.1137/0915079
+* Wright, Stephen, and Jorge Nocedal (2006) "Numerical optimization." Springer
 
 Author: Vladimir Arnautov aka PharmCat
 Copyright © 2019 Vladimir Arnautov <mail@pharmcat.net>

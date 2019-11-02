@@ -1,6 +1,5 @@
 ## Structures
 
-
 ### ReplicateBE.RBE
 ```@docs
 ReplicateBE.RBE

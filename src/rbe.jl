@@ -77,8 +77,8 @@ Mixed model fitting function for replicate bioequivalence without data preparati
 Mixed model in matrix form:
 
 ```math
-y = X\\beta+Zu+\\epsilon
-```math
+y = X\\beta + Zu + \\epsilon
+```
 
 
 with covariance matrix for each subject:
@@ -295,8 +295,7 @@ end
 
 Returm -2logREML for rbe model
 
-```math
-
+```
 logREML(\\theta,\\beta) = -\\frac{N-p}{2} - \\frac{1}{2}\\sum_{i=1}^nlog|V_{i}|-
 
 -\\frac{1}{2}log|\\sum_{i=1}^nX_i'V_i^{-1}X_i|-\\frac{1}{2}\\sum_{i=1}^n(y_i - X_{i}\\beta)'V_i^{-1}(y_i - X_{i}\\beta)
@@ -324,6 +323,12 @@ Return the standard errors for the coefficients of the model.
 
 ```math
 se = \\sqrt{LCL'}
+```
+
+where
+
+```math
+C = \\sum_{i=1}^{n} X_i'V_i^{-1}X_i
 ```
 """
 function StatsBase.stderror(rbe::RBE)
@@ -360,14 +365,14 @@ Compute confidence intervals for coefficients, with confidence level ```level```
 
 ```expci = true```: return exponented CI.
 
-```inv = true```: return ```-estimate ± t*se```
+```inv = true```: return ```-estimate ± t(alpha, df)*SE```
 
 ```df = :sat```: use Satterthwaite DF approximation.
 
 ```df = :df3``` or ```df = :cont```: DF (contain) = N - rank(ZX).
 
 ```math
-CI = stimate ± t(alpha, df)*se
+CI = estimate ± t(alpha, df)*SE
 ```
 
 """

@@ -9,6 +9,7 @@
         design::Design                  #Design description
         factors::Array{Symbol, 1}       #Factor list
         θ0::Array{Float64, 1}           #Initial variance paramethers
+        vlm::Real
         θ::Tuple{Vararg{Float64}}       #Final variance paramethers
         reml::Float64                   #-2REML
         fixed::EffectTable              #Fixed Effect table
@@ -96,13 +97,13 @@ function rbe(df; dvar::Symbol,
     store_trace = false, extended_trace = false, show_trace = false,
     memopt = true,
     init = [],
-    postopt = false, vlm = 1.0, rhoadj = false)
-
+    postopt = false, vlm = 1.0)
+    #Check
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
     if !(eltype(df[!,dvar]) <: Real)
         @warn "Responce variable ∉ Real!"
     end
-
+    #Model
     Xf  = @eval(@formula($dvar ~ $sequence + $period + $formulation))
     Zf  = @eval(@formula($dvar ~ 0 + $formulation))
     MF  = ModelFrame(Xf, df)
@@ -149,8 +150,7 @@ function rbe(df; dvar::Symbol,
     matvecz!(Rv, Zv)
     matvecz!(Vv, Zv)
     matvecz!(iVv, Zv)
-
-    limeps  = eps()
+    #Optimization
     pO      = nothing
     td      = TwiceDifferentiable(x -> -2*remlb(yv, Zv, p, Xv, varlink(x, vlm), β; memopt = memopt), θvec0; autodiff = :forward)
     O       = optimize(td, θvec0, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
@@ -184,9 +184,7 @@ function rbe(df; dvar::Symbol,
         lcl     = L*C*Lt                                                        #lcl     = L*C*L'
         lclr    = rank(lcl)
         se[i]   = sqrt((lcl)[1])
-        #Lβ      = L*β
         F[i]    = β'*L'*inv(lcl)*L*β/lclr                                       #F[i]    = (L*β)'*inv(L*C*L')*(L*β)/lclr
-        #lclg    = lclgf(L, Lt, Xv, Zv, x; memopt = memopt)
         g       = ForwardDiff.gradient(x -> lclgf(L, Lt, Xv, Zv, varlink(x, vlm); memopt = memopt), θ)
         df[i]   = max(1, 2*((lcl)[1])^2/(g'*(A)*g))
         t[i]    = ((L*β)/se[i])[1]
@@ -251,7 +249,7 @@ function rbe!(df; dvar::Symbol,
     store_trace = false, extended_trace = false, show_trace = false,
     memopt = true,
     init = [],
-    postopt = false, vlm = 1.0, rhoadj = false)
+    postopt = false, vlm = 1.0)
 
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
     if !(eltype(df[!,dvar]) <: Real)
@@ -268,7 +266,7 @@ function rbe!(df; dvar::Symbol,
     return rbe(df, dvar=dvar, subject=subject, formulation=formulation, period=period, sequence=sequence,
     g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, iterations=iterations,
     store_trace=store_trace, extended_trace=extended_trace, show_trace=show_trace,
-    memopt=memopt, init=init, postopt=postopt, vlm = vlm, rhoadj = rhoadj)
+    memopt=memopt, init=init, postopt=postopt, vlm = vlm)
 end
 
 function varlink(θ, m)

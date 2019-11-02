@@ -285,7 +285,7 @@ end
 """
     reml2(rbe::RBE, θ::Array{Float64, 1})
 
-Returm -2REML for rbe model
+Returm -2logREML for rbe model with θ variance vector.
 """
 function reml2(rbe::RBE, θ::Array{Float64, 1})
     return -2*reml(rbe.yv, rbe.Zv, rank(ModelMatrix(rbe.model).m), rbe.Xv, θ, coef(rbe))
@@ -295,8 +295,8 @@ end
 
 Returm -2logREML for rbe model
 
-```
-logREML(\\theta,\\beta) = -\\frac{N-p}{2} - \\frac{1}{2}\\sum_{i=1}^nlog|V_{i}|-
+```math
+-2logREML(\\theta,\\beta) = -\\frac{N-p}{2} - \\frac{1}{2}\\sum_{i=1}^nlog|V_{i}|-
 
 -\\frac{1}{2}log|\\sum_{i=1}^nX_i'V_i^{-1}X_i|-\\frac{1}{2}\\sum_{i=1}^n(y_i - X_{i}\\beta)'V_i^{-1}(y_i - X_{i}\\beta)
 ```

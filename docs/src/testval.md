@@ -32,10 +32,17 @@ Generated datasets made with *randrbeds* function with fixed seed (could be repr
   * 21 TRR/RTR/RRT
   * 22 TRR/RTR
 
+### 36 subject unbalanced dataset
+
+  * 23 TRTR/RTRT
+  * 24 TRT/RTR
+
 ### Special cases
 
     * 101 SP1: TRTR/RTRT 1024 subjects, 2000 dropped observations
     * 102 SP2: TRT/RTR 4096 subjects, 2000 dropped observations (total 10288 observations)
+
+Datasets can be found [here](https://github.com/PharmCat/ReplicateBE.jl/tree/master/validation/csv).
 
 SP1 output:
 ```
@@ -73,7 +80,7 @@ formulation: T / formulation: R
 106.673 - 115.1083 (%)
 ```
 
-SP1 output:    
+SP2 output:    
 ```
 rds = ReplicateBE.randrbeds(;n=4096, sequence=[1,4], design = ["T" "R" "T"; "R" "T" "R"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.9], intercept = 1.0, seqcoef = [10.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 1.0], dropobs = 2000, seed = 10102)
 be = ReplicateBE.rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)

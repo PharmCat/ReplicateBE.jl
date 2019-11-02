@@ -1,10 +1,5 @@
 ## Structures
 
-### ReplicateBE.RBE
-```@docs
-ReplicateBE.RBE
-```
-
 ### ReplicateBE.ContrastTable
 ```@docs
 ReplicateBE.ContrastTable

@@ -6,6 +6,8 @@
     * fix text output
     * twostep deprecated
     * varlink() - optimization with logVar & sigmoid rho
+    * rho initial value fix
+    * simulation object
 
 - v0.2.0
 

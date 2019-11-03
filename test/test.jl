@@ -444,6 +444,6 @@ end
         seed = 10001,
         dropobs = 2,
     )
-    pow = ReplicateBE.simulation(task; io = io, num = 10, seed = 1234)
-    @test pow == 0.1
+    pow = ReplicateBE.simulation(task; io = io, num = 10, seed = 1234, verbose = true)
+    @test pow.result == 0.1
 end

@@ -96,7 +96,7 @@ function rbe(df; dvar::Symbol,
     store_trace = false, extended_trace = false, show_trace = false,
     memopt = true,
     init = [],
-    postopt = false, vlm = 1.0)
+    postopt = false, vlm = 0.8, maxopttry = 50, rhoadjstep = 0.15)
     #Check
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
     if !(eltype(df[!,dvar]) <: Real)
@@ -139,7 +139,7 @@ function rbe(df; dvar::Symbol,
     else
         iv = initvar(df, dvar, formulation, subject)
         if iv[1] < iv[3] || iv[2] < iv[3] iv[1] = iv[2] = 2*iv[3] end
-        θvec0 = rvarlink([iv[3], iv[3], iv[1]-iv[3], iv[2]-iv[3], 0.8], vlm)
+        θvec0 = rvarlink([iv[3], iv[3], iv[1]-iv[3], iv[2]-iv[3], 0.05], vlm)
     end
     #Prelocatiom for G, R, V, V⁻¹ matrices
     G     = zeros(2, 2)
@@ -152,7 +152,21 @@ function rbe(df; dvar::Symbol,
     #Optimization
     pO      = nothing
     td      = TwiceDifferentiable(x -> -2*remlb(yv, Zv, p, Xv, varlink(x, vlm), β; memopt = memopt), θvec0; autodiff = :forward)
-    O       = optimize(td, θvec0, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
+    opttry  = true
+    optnum  = 0
+    while opttry
+        try
+            O       = optimize(td, θvec0, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
+            opttry  = false
+        catch
+            θvec0[5] = θvec0[5] - rhoadjstep
+        end
+        optnum += 1
+        if optnum > maxopttry
+            opttry = false
+            throw(ErrorException("Initial values faild! Iteration $(optnum), θvec0[5] = $(θvec0[5])."))
+        end
+    end
     θ       = Optim.minimizer(O)
     #Get reml
     remlv   = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, varlink(θ, vlm), β, memalloc)
@@ -248,7 +262,7 @@ function rbe!(df; dvar::Symbol,
     store_trace = false, extended_trace = false, show_trace = false,
     memopt = true,
     init = [],
-    postopt = false, vlm = 1.0)
+    postopt = false, vlm = 1.0, maxopttry = 50, rhoadjstep = 0.15)
 
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
     if !(eltype(df[!,dvar]) <: Real)
@@ -265,7 +279,7 @@ function rbe!(df; dvar::Symbol,
     return rbe(df, dvar=dvar, subject=subject, formulation=formulation, period=period, sequence=sequence,
     g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, iterations=iterations,
     store_trace=store_trace, extended_trace=extended_trace, show_trace=show_trace,
-    memopt=memopt, init=init, postopt=postopt, vlm = vlm)
+    memopt=memopt, init=init, postopt=postopt, vlm = vlm, maxopttry = maxopttry, rhoadjstep = rhoadjstep)
 end
 
 function varlink(θ, m)
@@ -486,7 +500,7 @@ function Base.show(io::IO, rbe::RBE)
         println(io, "")
     end
     if θ[end] >= 1.0 - eps()
-        printstyled(io, "Rho is 1.0 and removed from covariance matrix!"; color = :yellow)
+        printstyled(io, "Rho ~ 1.0!"; color = :yellow)
         println(io, "")
     end
     println(io, "")

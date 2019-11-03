@@ -46,44 +46,44 @@ typeiii(be)
 
 Output example:
 ```
-Bioequivalence Linear Mixed Effect Model
+Bioequivalence Linear Mixed Effect Model (status: converged)
 
--2REML: 164.613    REML: -82.3067
+-2REML: -0.601424    REML: 0.300712
 
 Fixed effect:
-─────────────────────────────────────────────────────────────────────────────────────────
-Effect           Value        SE         F           DF        t           P|t|
-─────────────────────────────────────────────────────────────────────────────────────────
-(Intercept)      1.27158      0.191994   43.8645     26.6243   6.62303     4.47193e-7*
-sequence: TRTR   -0.114458    0.242518   0.222743    30.4503   -0.471956   0.640323
-period: 2        0.035864     0.139526   0.0660707   83.1868   0.257042    0.797781
-period: 3        0.0168505    0.100284   0.0282329   41.619    0.168027    0.867376      
-period: 4        0.0552216    0.139526   0.156642    83.1868   0.39578     0.693281
-formulation: T   -0.0165797   0.120162   0.0190378   62.661    -0.137978   0.890701      
-─────────────────────────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────────────────────────────────
+Effect           Value         SE          F           DF        t           P|t|
+────────────────────────────────────────────────────────────────────────────────────────────
+(Intercept)      0.837662      0.0730539   131.477     23.7461   11.4664     3.64555e-11*
+sequence: TRTR   -0.00822695   0.0797954   0.0106297   21.6306   -0.103101   0.918833
+period: 2        -0.158494     0.069985    5.12879     29.8748   -2.26468    0.0309502*
+period: 3        -0.086574     0.0402901   4.61719     36.8539   -2.14877    0.0382916*     
+period: 4        -0.0751173    0.0709083   1.12224     31.1119   -1.05936    0.297592
+formulation: T   0.167381      0.0646594   6.70111     22.1822   2.58865     0.016697*      
+────────────────────────────────────────────────────────────────────────────────────────────
 Intra-individual variation:
-formulation: R  0.187712   CVᵂ: 0.454407
-formulation: T  0.0889289   CVᵂ: 0.304964
+formulation: R   0.0193395   
+formulation: T   0.014546
 
 Inter-individual variation:
-formulation: R  0.318313
-formulation: T  0.422413
-Cov:  0.266255
+formulation: R   0.0480968
+formulation: T   0.0581718
+ρ:               0.247863   Cov: 0.0131107
 
 Confidence intervals(90%):
 formulation: R / formulation: T
-80.4773 - 120.2059 (%)
+75.7017 - 94.5169 (%)
 formulation: T / formulation: R
-83.1906 - 124.2586 (%)
+105.8011 - 132.0975 (%)
 ```
 
 # Validation
 
-Validation information: [here](https://pharmcat.github.io/ReplicateBE.jl/build/testval/)
+Validation information: [here](https://pharmcat.github.io/ReplicateBE.jl/latest/testval/)
 
 # Basic methods
 
-All API docs see [here](https://pharmcat.github.io/ReplicateBE.jl/build/api/).
+All API docs see [here](https://pharmcat.github.io/ReplicateBE.jl/latest/api/).
 
 # Random Dataset
 
@@ -109,7 +109,7 @@ Generate DataFrame with random multivariate data. Where:
 
 ## Structures
 
-Struct information see [here](https://pharmcat.github.io/ReplicateBE.jl/build/struct/).
+Struct information see [here](https://pharmcat.github.io/ReplicateBE.jl/latest/struct/).
 
 ## Acknowledgments
 

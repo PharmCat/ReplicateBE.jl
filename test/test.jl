@@ -8,8 +8,6 @@ using Test, CSV, DataFrames, StatsBase
 include("testdata.jl")
 
 @testset "  Basic mixed model test                         " begin
-    #df = CSV.read(IOBuffer(minibe)) |> DataFrame
-    #df[!,:var] = float.(df[!,:var])
     be = ReplicateBE.rbe!(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     e1 = be.fixed.est[6]
     @test be.fixed.est[6]       ≈  -0.0791666 atol=1E-5
@@ -96,7 +94,6 @@ end
     #REML 530.14451303
     #SE 0.04650
     #DF 208
-    #df = CSV.read(IOBuffer(be4)) |> DataFrame
     df4[!,:var1] = float.(df4[!,:var1])
     be = ReplicateBE.rbe!(df4, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     ci = ReplicateBE.confint(be, 0.1, expci = true, inv = true)
@@ -112,7 +109,6 @@ end
 @testset "  #5 Patterson 2012 doi:10.1002/pst.498 AUC      " begin
     #SAS  REML 321.44995530 - SAS STOP!
     #SPSS REML 314.221769
-    #df = CSV.read(IOBuffer(be5)) |> DataFrame
     df5[!,:var1] = float.(df5[!,:var1])
     be = ReplicateBE.rbe!(df5, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     ci = ReplicateBE.confint(be, 0.1, expci = true)
@@ -128,7 +124,6 @@ end
     #SE 0.04153
     #DF 62
     #F 2.40
-    #df = CSV.read(IOBuffer(be6)) |> DataFrame
     df6[!,:var1] = float.(df6[!,:var1])
     be = ReplicateBE.rbe!(df6, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     ci = confint(be, 0.1, expci = true)
@@ -139,7 +134,6 @@ end
 end
 
 @testset "  #  Utils test                                  " begin
-    #df = CSV.read(IOBuffer(be6)) |> DataFrame
     be = ReplicateBE.rbe!(df6, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     @test ReplicateBE.contrast(be, [0 0 0 0 0 1]).f[1]  ≈ 2.3996616631488368 atol=1E-5
     @test ReplicateBE.estimate(be, [0 0 0 0 0 1]).est[1] ≈ 0.06434039007812514 atol=1E-5
@@ -158,14 +152,11 @@ end
     @test ReplicateBE.fixed(be)[1,2]   ≈ 4.4215751512542125     atol=1E-5
     @test ReplicateBE.typeiii(be)[1,2] ≈ 4.968210074464397      atol=1E-5
     @test ReplicateBE.optstat(be)
-    #@test ReplicateBE.theta(be)[end]   ≈ 0.9802882310955287     atol=1E-5
 
-    #@test dof(be)[end]         ≈ 207.65104847136425     atol=1E-5
     @test nobs(be)             == 64
     @test coef(be)[end]                ≈ 0.06434039007812514    atol=1E-5
     @test stderror(be)[end]            ≈ 0.041534470947138996   atol=1E-5
-    #@test confint(be)[end][1]  ≈ -0.01754291069544353   atol=1E-5
-    #@test confint(be)[end][2]  ≈ 0.14622369085169434    atol=1E-5
+
 end
 
 @testset "  #  Random DataSet test                         " begin
@@ -359,7 +350,6 @@ end
     @test ci[end][1]                        ≈ 0.878355738329916   atol=1E-5
     @test ci[end][2]                        ≈ 1.1975977027952331   atol=1E-5
     #DF contain 34
-    #DF contain form 85 (85) 46+43-3-1
     #19
     #TRR/RTT
     rds = ReplicateBE.randrbeds(;n=48, sequence=[1,2], design = ["T" "R" "R"; "R" "T" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 0.0], dropobs = 20, seed = 10019)
@@ -382,7 +372,6 @@ end
     @test ci[end][1]                        ≈ 0.7865283528654503             atol=1E-5
     @test ci[end][2]                        ≈ 1.6924035882963178             atol=1E-5
     #DF contain 20
-    #DF contain form 50 (47) 30 + 25 - 4 - 1
     #21
     #TRR/RTR/RRT
     rds = ReplicateBE.randrbeds(;n=48, sequence=[1,2,3], design = ["T" "R" "R"; "R" "T" "R"; "R" "R" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 0.0], dropobs = 20, seed = 10021)
@@ -394,7 +383,6 @@ end
     @test ci[end][1]                        ≈ 0.8296448401676422             atol=1E-5
     @test ci[end][2]                        ≈ 1.14767886003498             atol=1E-5
     #DF contain 35
-    #DF contain form 83 (81)
     #22
     #TRR/RTR
     rds = ReplicateBE.randrbeds(;n=48, sequence=[1,2], design = ["T" "R" "R"; "R" "T" "R"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 0.0], dropobs = 20, seed = 10022)
@@ -406,7 +394,6 @@ end
     @test ci[end][1]                        ≈ 0.90656475483436             atol=1E-5
     @test ci[end][2]                        ≈ 1.3053853980517822             atol=1E-5
     #DF contain 32
-    #DF contain form 87 (86) 47 + 43 - 2 - 1
 
     # Unbalanced by sequences
     #23

@@ -62,16 +62,16 @@ struct RBE
 end
 
 """
-
-    rbe(df; dvar::Symbol,
-        subject::Symbol,
-        formulation::Symbol,
-        period::Symbol,
-        sequence::Symbol,
-        g_tol::Float64 = 1e-8, x_tol::Float64 = 0.0, f_tol::Float64 = 0.0, iterations::Int = 100,
-        store_trace = false, extended_trace = false, show_trace = false,
-        memopt = true)
-
+```julia
+rbe(df; dvar::Symbol,
+    subject::Symbol,
+    formulation::Symbol,
+    period::Symbol,
+    sequence::Symbol,
+    g_tol::Float64 = 1e-8, x_tol::Float64 = 0.0, f_tol::Float64 = 0.0, iterations::Int = 100,
+    store_trace = false, extended_trace = false, show_trace = false,
+    memopt = true)
+```
 Mixed model fitting function for replicate bioequivalence without data preparation (apply categorical! for each factor and sort! to dataframe).
 
 Mixed model in matrix form:
@@ -79,7 +79,6 @@ Mixed model in matrix form:
 ```math
 y = X\\beta + Zu + \\epsilon
 ```
-
 
 with covariance matrix for each subject:
 
@@ -296,7 +295,7 @@ end
 Returm -2logREML for rbe model
 
 ```math
--2logREML(\\theta,\\beta) = -\\frac{N-p}{2} - \\frac{1}{2}\\sum_{i=1}^nlog|V_{i}|-
+logREML(\\theta,\\beta) = -\\frac{N-p}{2} - \\frac{1}{2}\\sum_{i=1}^nlog|V_{i}|-\n
 
 -\\frac{1}{2}log|\\sum_{i=1}^nX_i'V_i^{-1}X_i|-\\frac{1}{2}\\sum_{i=1}^n(y_i - X_{i}\\beta)'V_i^{-1}(y_i - X_{i}\\beta)
 ```
@@ -357,19 +356,21 @@ function StatsBase.dof(rbe::RBE)
 end
 #Confidence interval
 """
-    confint(obj::RBE; level::Real=0.95, expci::Bool = false, inv::Bool = false, df = :sat)
+```julia
+confint(obj::RBE; level::Real=0.95, expci::Bool = false, inv::Bool = false, df = :sat)
+```
 
 Compute confidence intervals for coefficients, with confidence level ```level``` (by default 95%).
 
 # Arguments
 
-```expci = true```: return exponented CI.
+* ```expci = true```: return exponented CI.
 
-```inv = true```: return ```-estimate ± t(alpha, df)*SE```
+* ```inv = true```: return ```-estimate ± t(alpha, df)*SE```
 
-```df = :sat```: use Satterthwaite DF approximation.
+* ```df = :sat```: use Satterthwaite DF approximation.
 
-```df = :df3``` or ```df = :cont```: DF (contain) = N - rank(ZX).
+* ```df = :df3``` or ```df = :cont```: DF (contain) = N - rank(ZX).
 
 ```math
 CI = estimate ± t(alpha, df)*SE
@@ -424,7 +425,8 @@ end
 """
     theta(rbe::RBE)
 
-Return theta (θ) vector (vector of variation parameters from optimization procedure).
+Return raw theta (θ) vector (vector of variation parameters from optimization procedure).
+Before aplying link function.
 """
 function theta(rbe::RBE)
     return collect(rbe.θ)
@@ -440,23 +442,8 @@ end
 """
     design(rbe::RBE)::Design
 
-Return design information object, where:
+Return design information object.
 
-```julia
-    struct Design
-        obs::Int          # Number of observations
-        subj::Int         # Number of statistica independent subjects
-        sqn::Int          # Number of sequences
-        pn::Int           # Number of periods
-        fn::Int           # Number of formulations
-        sbf::Vector{Int}  # Subjects in each formulation level
-        rankx::Int        # Rank of fixed effect matrix
-        rankxz::Int       # Rank of XZ (fixed+random) effect matrix
-        df2::Int          # subj - sqn         (Robust DF)
-        df3::Int          # obs  - rankxz      (Contain DF for sequence and period)
-        df4::Int          # obs  - rankxz + p
-    end
-```
 """
 function design(rbe::RBE)::Design
     return rbe.design
@@ -474,7 +461,7 @@ end
 
 Return TYPE III table.
 
-see contrast
+(see contrast)
 """
 function typeiii(rbe::RBE)
     return rbe.typeiii
@@ -483,6 +470,8 @@ end
     optstat(rbe::RBE)
 
 Return optimization status.
+* true - converged
+* false - not converged
 """
 function optstat(rbe::RBE)
     return Optim.converged(rbe.optim)

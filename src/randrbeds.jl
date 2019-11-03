@@ -1,3 +1,23 @@
+"""
+Random dataset task.
+
+```julia
+mutable struct RandRBEDS
+    n::Int                       # Subjects number
+    sequence::Vector             # Sequence distribution vector
+    design::Matrix               # Design matrix
+    inter::Vector                # Intersubject variance part
+    intra::Vector                # Intrasubject variance part
+                                 # Fixed effect:
+    intercept::Real              # Intercept
+    seqcoef::Vector              # Sequence
+    periodcoef::Vector           # Period
+    formcoef::Vector             # Formulation
+    dropobs::Int                 # Drop observations
+    seed                         # Seed
+end
+```
+"""
 mutable struct RandRBEDS
     n::Int
     sequence::Vector
@@ -8,7 +28,7 @@ mutable struct RandRBEDS
     seqcoef::Vector
     periodcoef::Vector
     formcoef::Vector
-    dropsubj::Float64
+    dropsubj::Float64                #Deprecated
     dropobs::Int
     seed
     function RandRBEDS(;n=24, sequence=[1,1],
@@ -82,6 +102,8 @@ function randrbeds(;n=24, sequence=[1,1],
 end
 
 """
+Another way to use:
+
 ```julia
     randrbeds(n::Int, sequence::Vector,
         design::Matrix,
@@ -89,9 +111,6 @@ end
         intercept::Real, seqcoef::Vector, periodcoef::Vector, formcoef::Vector,
         dropsubj::Float64, dropobs::Int, seed::Int)
 ```
-
-Simple interface.
-
 """
 function randrbeds(n::Int, sequence::Vector,
     design::Matrix,
@@ -157,7 +176,13 @@ function randrbeds(n::Int, sequence::Vector,
     end
     return subjds
 end
+"""
+Using with RandRBEDS object:
 
+```julia
+randrbeds(task::RandRBEDS)
+```
+"""
 function randrbeds(task::RandRBEDS)
     return randrbeds(task.n, task.sequence, task.design,
                     task.inter, task.intra,
@@ -165,7 +190,13 @@ function randrbeds(task::RandRBEDS)
                     task.dropsubj, task.dropobs, task.seed)
 end
 
+"""
+Simulation.
 
+```julia
+simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l = log(0.8), u = log(1.25), seed = 0)
+```
+"""
 function simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l = log(0.8), u = log(1.25), seed = 0)
     task.seed = 0
     rng = MersenneTwister()

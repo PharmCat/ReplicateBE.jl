@@ -19,3 +19,8 @@ ReplicateBE.EffectTable
 ```@docs
 ReplicateBE.EstimateTable
 ```
+
+### ReplicateBE.RandRBEDS
+```@docs
+ReplicateBE.RandRBEDS
+```

@@ -5,7 +5,7 @@
     ndf::Vector    # Denom degree of freedom
     df::Vector     # Degree of freedom
     p::Vector      # p value
-end</code></pre></div></div><a class="source-link" target="_blank" href="https://github.com/PharmCat/ReplicateBE.jl/blob/a705c37bbef08403caf2021ae9577af169a8f87c/src/rbetable.jl#L37-L47">source</a></section><h3><a class="nav-anchor" id="ReplicateBE.Design-1" href="#ReplicateBE.Design-1">ReplicateBE.Design</a></h3><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="ReplicateBE.Design" href="#ReplicateBE.Design"><code>ReplicateBE.Design</code></a> — <span class="docstring-category">Type</span>.</div><div><div><p>Describes of trial design.</p></div></div><a class="source-link" target="_blank" href="https://github.com/PharmCat/ReplicateBE.jl/blob/a705c37bbef08403caf2021ae9577af169a8f87c/src/design.jl#L2-L4">source</a></section><h3><a class="nav-anchor" id="ReplicateBE.EffectTable-1" href="#ReplicateBE.EffectTable-1">ReplicateBE.EffectTable</a></h3><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="ReplicateBE.EffectTable" href="#ReplicateBE.EffectTable"><code>ReplicateBE.EffectTable</code></a> — <span class="docstring-category">Type</span>.</div><div><div><pre><code class="language-julia">struct EffectTable &lt;: RBETable
+end</code></pre></div></div><a class="source-link" target="_blank" href="https://github.com/PharmCat/ReplicateBE.jl/blob/fe65382040696d3abca7fee3c3047c65acbc8bb9/src/rbetable.jl#L37-L47">source</a></section><h3><a class="nav-anchor" id="ReplicateBE.Design-1" href="#ReplicateBE.Design-1">ReplicateBE.Design</a></h3><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="ReplicateBE.Design" href="#ReplicateBE.Design"><code>ReplicateBE.Design</code></a> — <span class="docstring-category">Type</span>.</div><div><div><p>Describes of trial design.</p></div></div><a class="source-link" target="_blank" href="https://github.com/PharmCat/ReplicateBE.jl/blob/fe65382040696d3abca7fee3c3047c65acbc8bb9/src/design.jl#L2-L4">source</a></section><h3><a class="nav-anchor" id="ReplicateBE.EffectTable-1" href="#ReplicateBE.EffectTable-1">ReplicateBE.EffectTable</a></h3><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="ReplicateBE.EffectTable" href="#ReplicateBE.EffectTable"><code>ReplicateBE.EffectTable</code></a> — <span class="docstring-category">Type</span>.</div><div><div><pre><code class="language-julia">struct EffectTable &lt;: RBETable
     name::Tuple{Vararg}   # Name
     est::Tuple{Vararg}    # Estimate
     se::Tuple{Vararg}     # Etandard error
@@ -13,7 +13,7 @@ end</code></pre></div></div><a class="source-link" target="_blank" href="https:/
     df::Tuple{Vararg}     # Degree of freedom
     t::Tuple{Vararg}      # t value
     p::Tuple{Vararg}      # p value
-end</code></pre></div></div><a class="source-link" target="_blank" href="https://github.com/PharmCat/ReplicateBE.jl/blob/a705c37bbef08403caf2021ae9577af169a8f87c/src/rbetable.jl#L11-L23">source</a></section><h3><a class="nav-anchor" id="ReplicateBE.EstimateTable-1" href="#ReplicateBE.EstimateTable-1">ReplicateBE.EstimateTable</a></h3><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="ReplicateBE.EstimateTable" href="#ReplicateBE.EstimateTable"><code>ReplicateBE.EstimateTable</code></a> — <span class="docstring-category">Type</span>.</div><div><div><pre><code class="language-julia">struct EstimateTable &lt;: RBETable
+end</code></pre></div></div><a class="source-link" target="_blank" href="https://github.com/PharmCat/ReplicateBE.jl/blob/fe65382040696d3abca7fee3c3047c65acbc8bb9/src/rbetable.jl#L11-L23">source</a></section><h3><a class="nav-anchor" id="ReplicateBE.EstimateTable-1" href="#ReplicateBE.EstimateTable-1">ReplicateBE.EstimateTable</a></h3><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="ReplicateBE.EstimateTable" href="#ReplicateBE.EstimateTable"><code>ReplicateBE.EstimateTable</code></a> — <span class="docstring-category">Type</span>.</div><div><div><pre><code class="language-julia">struct EstimateTable &lt;: RBETable
     name::Vector   # Name
     est::Vector    # Estimate
     se::Vector     # Etandard error
@@ -23,4 +23,17 @@ end</code></pre></div></div><a class="source-link" target="_blank" href="https:/
     ll::Vector     # Confidece interval lower bound
     ul::Vector     # Confidece interval upper bound
     alpha::Real    # Confidece interval alpha level
-end</code></pre></div></div><a class="source-link" target="_blank" href="https://github.com/PharmCat/ReplicateBE.jl/blob/a705c37bbef08403caf2021ae9577af169a8f87c/src/rbetable.jl#L58-L72">source</a></section><footer><hr/><a class="previous" href="../testval/"><span class="direction">Previous</span><span class="title">Validation</span></a><a class="next" href="../api/"><span class="direction">Next</span><span class="title">Api</span></a></footer></article></body></html>
+end</code></pre></div></div><a class="source-link" target="_blank" href="https://github.com/PharmCat/ReplicateBE.jl/blob/fe65382040696d3abca7fee3c3047c65acbc8bb9/src/rbetable.jl#L58-L72">source</a></section><h3><a class="nav-anchor" id="ReplicateBE.RandRBEDS-1" href="#ReplicateBE.RandRBEDS-1">ReplicateBE.RandRBEDS</a></h3><section class="docstring"><div class="docstring-header"><a class="docstring-binding" id="ReplicateBE.RandRBEDS" href="#ReplicateBE.RandRBEDS"><code>ReplicateBE.RandRBEDS</code></a> — <span class="docstring-category">Type</span>.</div><div><div><p>Random dataset task.</p><pre><code class="language-julia">mutable struct RandRBEDS
+    n::Int                       # Subjects number
+    sequence::Vector             # Sequence distribution vector
+    design::Matrix               # Design matrix
+    inter::Vector                # Intersubject variance part
+    intra::Vector                # Intrasubject variance part
+                                 # Fixed effect:
+    intercept::Real              # Intercept
+    seqcoef::Vector              # Sequence
+    periodcoef::Vector           # Period
+    formcoef::Vector             # Formulation
+    dropobs::Int                 # Drop observations
+    seed                         # Seed
+end</code></pre></div></div><a class="source-link" target="_blank" href="https://github.com/PharmCat/ReplicateBE.jl/blob/fe65382040696d3abca7fee3c3047c65acbc8bb9/src/randrbeds.jl#L1-L20">source</a></section><footer><hr/><a class="previous" href="../testval/"><span class="direction">Previous</span><span class="title">Validation</span></a><a class="next" href="../api/"><span class="direction">Next</span><span class="title">Api</span></a></footer></article></body></html>

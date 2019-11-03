@@ -55,6 +55,12 @@ mutable struct RandRBEDS
     end
 end
 
+struct RBEDSSimResult
+    seed
+    num
+    seeds
+    result
+end
 """
 ```julia
     randrbeds(;n=24, sequence=[1,1],
@@ -205,9 +211,11 @@ function simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l 
     n     = 0
     err   = 0
     cnt   = 0
-    printstyled(io, "Start...\n"; color = :green)
-    println(io, "Simulation seed: $(seed)")
-    println(io, "Task hash: $(hash(task))")
+    if verbose
+        printstyled(io, "Start...\n"; color = :green)
+        println(io, "Simulation seed: $(seed)")
+        println(io, "Task hash: $(hash(task))")
+    end
     for i = 1:num
         try
             task.seed = seeds[i]
@@ -239,5 +247,11 @@ function simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l 
             printstyled(io, "Iteration: $i, seed $(seeds[i]): $(err): ERROR! \n"; color = :red)
         end
     end
-    return cnt/num
+    return RBEDSSimResult(seed, num, seeds, cnt/num)
+end
+
+function Base.show(io::IO, obj::RBEDSSimResult)
+    println(io, "Seed: $(obj.seed)")
+    println(io, "Number: $(obj.num)")
+    println(io, "Result: $(obj.result)")
 end

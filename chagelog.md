@@ -8,6 +8,7 @@
     * varlink() - optimization with logVar & sigmoid rho
     * rho initial value fix
     * simulation object
+    * documuntation
 
 - v0.2.0
 

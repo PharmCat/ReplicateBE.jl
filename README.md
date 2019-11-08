@@ -79,7 +79,7 @@ formulation: T / formulation: R
 
 # Validation
 
-Validation information: [here](https://pharmcat.github.io/ReplicateBE.jl/latest/testval/)
+Validation information: [here](https://pharmcat.github.io/ReplicateBE.jl/latest/testval/), validation results you can find in [table](https://github.com/PharmCat/ReplicateBE.jl/blob/master/validation/validation_results_table.csv).
 
 # Basic methods
 

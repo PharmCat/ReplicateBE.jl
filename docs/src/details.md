@@ -170,7 +170,7 @@ ReplicateBE was developed to get mixed model solution to bioequivalence clinical
 
 ### Discussion
 
-ReplicateBE not designed for modeling in a general purpose, but can be used in situation with similar structure. In part of datasets ReplicateBE showed better optimization result as SPSS. Also ReplicateBE based on direct inversing of variance-covarance matrix V, so computation of ``V^(-1)`` may be time expensive if size of matrix is big. This does not happen in bioequivalence study where size of ``V`` is no more 4 (4 periods). But in general this can be serious disadvantage. This situation can be avoided using sweep based transformations (Wolfinger et al., 1994). In ReplicateBE variance structure strictly denoted and can’t be changed, but it can be a target in package developing path. In ReplicateBE Satterthwaite degree of freedom (DF) not equal with SAS/SPSS DF estimate in part of datasets.
+ReplicateBE not designed for modeling in a general purpose, but can be used in situation with similar structure. In part of datasets ReplicateBE showed better optimization result as SPSS. Also ReplicateBE based on direct inversing of variance-covarance matrix V, so computation of ``V^{-1}`` may be time expensive if size of matrix is big. This does not happen in bioequivalence study where size of ``V`` is no more 4 (4 periods). But in general this can be serious disadvantage. This situation can be avoided using sweep based transformations (Wolfinger et al., 1994). In ReplicateBE variance structure strictly denoted and can’t be changed, but it can be a target in package developing path. In ReplicateBE Satterthwaite degree of freedom (DF) not equal with SAS/SPSS DF estimate in part of datasets.
 
 ### Acknowledgments
 

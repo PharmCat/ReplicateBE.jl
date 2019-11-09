@@ -3,7 +3,7 @@ name = "ReplicateBE"
 uuid = "671d9d50-c343-11e9-1a9c-fdd992682823"
 keywords = ["bioequivalence", "mixedmodel"]
 desc = "Mixed model solution for replicate designed bioequivalence study."
-version = "0.2.0"
+version = "1.0.0"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"

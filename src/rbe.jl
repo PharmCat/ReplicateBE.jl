@@ -70,7 +70,9 @@ rbe(df; dvar::Symbol,
     sequence::Symbol,
     g_tol::Float64 = 1e-8, x_tol::Float64 = 0.0, f_tol::Float64 = 0.0, iterations::Int = 100,
     store_trace = false, extended_trace = false, show_trace = false,
-    memopt = true)
+    memopt = true,
+    init = [],
+    postopt = false, vlm = 0.8, maxopttry = 50, rhoadjstep = 0.15)
 ```
 Mixed model fitting function for replicate bioequivalence without data preparation (apply categorical! for each factor and sort! to dataframe).
 
@@ -86,6 +88,26 @@ with covariance matrix for each subject:
 V_{i} = Z_{i}GZ_i'+R_{i}
 ```
 
+Keywords:
+
+* dvar - variable
+* subject - subject factor
+* formulation
+* period
+* sequence
+* g_tol = 1e-8
+* x_tol = 0.0
+* f_tol = 0.0
+* iterations = 100 - maximum iteration for optimization
+* store_trace = false
+* extended_trace = false
+* show_trace = false
+* memopt = true - memory optimization (function cache)
+* init = [] - initial variance paremeters
+* postopt = false - post optimization
+* vlm = 0.8 - "link function" coefficient
+* maxopttry = 50 - maximum attempts to optimize
+* rhoadjstep = 0.15 - adjustment value for rho after optimization fail
 """
 function rbe(df; dvar::Symbol,
     subject::Symbol,

@@ -1,4 +1,4 @@
-**Public validated Beta version!** This program comes with absolutely no warranty. No liability is accepted for any loss and risk to public health resulting from use of this software.
+This program comes with absolutely no warranty. No liability is accepted for any loss and risk to public health resulting from use of this software.
 
 <p align="center">
   <img src="https://github.com/PharmCat/ReplicateBE.jl/blob/master/docs/ReplicateBE-LogoNoSpace.png">
@@ -87,25 +87,7 @@ All API docs see [here](https://pharmcat.github.io/ReplicateBE.jl/latest/api/).
 
 # Random Dataset
 
-Random dataset function is made for generation validation datasets and simulation data.  
-
-```
-randrbeds(;n=24, sequence=[1,1],
-    design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
-    inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2],
-    intercept = 0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 0)
-```
-Generate DataFrame with random multivariate data. Where:
-
- - n - Subject number;
- - sequence - sequence subject distribution, [1,1] is equal 1:1, [1,2] - 1:2, [2,3,5] - 2:3:5 ets.;
- - design - design matrix (sXp, where s - number of sequences, p - number of period), cells contains formulation label;
- - inter - Inter-subject variation vector for G matrix: [σ₁, σ₂, ρ], where σ₁, σ₂ - formulation inter-subject variance,  ρ - covariance coefficient;
- - intra - Intra-subject variation vector for R matrix:[σ₁, σ₂], where σ₁, σ₂ - formulation intra-subject variance;
- - intercept - model intercept value;
- - seqcoef - model sequence coefficient values (additive): length = s (number of sequences);
- - periodcoef - model period coefficient values (additive): length = p (number of periods);
- - formcoef - model formulation coefficient values (additive): length = 2;
+Random dataset function is made for generation validation datasets and simulation data.  Description [here](https://pharmcat.github.io/ReplicateBE.jl/latest/syntax/).
 
 ## Structures
 

@@ -247,7 +247,7 @@ function simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l 
             printstyled(io, "Iteration: $i, seed $(seeds[i]): $(err): ERROR! \n"; color = :red)
         end
     end
-    return RBEDSSimResult(seed, num, seeds, cnt/num)
+    return RBEDSSimResult(seed, num, seeds, cnt/(num - err))
 end
 
 function Base.show(io::IO, obj::RBEDSSimResult)

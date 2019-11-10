@@ -174,7 +174,7 @@ simulation(100000)
 
  #### v1.0.0
 
- ```julia
+ ```
  task = ReplicateBE.RandRBEDS(;n=24,
  sequence=[1,2], design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
  inter=[0.05, 0.04, 0.6], intra=[0.02, 0.04],
@@ -190,7 +190,7 @@ simulation(100000)
  Result: 0.05078660225829358
  CI: Estimate: 0.05079 (0.04943 - 0.05215)
 
- ```julia
+ ```
  task = ReplicateBE.RandRBEDS(;n=24,
  sequence=[1,2], design = ["T" "R" "T"; "R" "T" "R"],
  inter=[0.05, 0.04, 0.4], intra=[0.02, 0.04],

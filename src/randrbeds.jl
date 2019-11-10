@@ -67,23 +67,26 @@ end
         design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
         inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2],
         intercept = 0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0],
-        dropsubj = 0.0, dropobs::Int = 0, seed::Int = 0)
+        dropobs::Int = 0, seed::Int = 0)
 ```
 
 Random dataset generation for bioequivalence.
 
-#  Parameters
-* n: number of subjects
-* sequence: distribution in sequences [1,1] means 1:1, [1,3] - 1:4 etc.
-* design: desin matrix, each line is a sequence, each column - periods, cell - formulation id
-* inter: inter-subject variance vector for G matrix (length 3)
-* intra: intra-subject variance vector for R matrix (length 2)
-* intercept: intercept effect value
-* seqcoef: coefficients of sequences (length(sequence) == length(seqcoef) == size(design, 1))
-* periodcoef: coefficients of periods (length(periodcoef) == size(design, 2))
-* formcoef: coeficients of formulations
-* dropobs: number of randomly dropped subjects
-* seed: seed for random
+#  Keywords
+
+* ``n=24`` - number of subjects;
+* ``sequence = [1,1]`` -  distribution in sequences [1,1] means 1:1, [1,3] - 1:4 etc.;
+* ``design = ["T" "R" "T" "R"; "R" "T" "R" "T"]`` - desin matrix, each line is a sequence, each column - periods, cell - formulation id;
+* ``inter=[0.5, 0.4, 0.9]`` - inter-subject variance vector for G matrix (length 3): [σ₁, σ₂, ρ], where σ₁, σ₂ - formulation inter-subject variance,  ρ - covariance coefficient;
+* ``intra=[0.1, 0.2]`` - intra-subject variance vector for R matrix (length 2): [σ₁, σ₂], where σ₁, σ₂ - formulation intra-subject variance for each formulation;
+* ``intercept = 0`` - intercept effect value;
+* ``seqcoef = [0.0, 0.0]`` - coefficients of sequences, additive (length(sequence) == length(seqcoef) == size(design, 1));
+* ``periodcoef = [0.0, 0.0, 0.0, 0.0]`` - coefficients of periods, additive  (length(periodcoef) == size(design, 2));
+* ``formcoef = [0.0, 0.0]`` -  coefficients of formulations, additive ;
+* ``dropobs = 0`` number of randomly dropped observations;
+* ``seed = 0`` - seed for random number generator (0 - random seed).
+
+
 
 Multivariate normal disribution:
 
@@ -197,11 +200,25 @@ function randrbeds(task::RandRBEDS)
 end
 
 """
-Simulation.
-
 ```julia
 simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l = log(0.8), u = log(1.25), seed = 0)
 ```
+
+Count successful BE outcomes.
+
+# Parameters
+
+* task -  RandRBEDS object
+
+# Keywords
+
+* ``io = stdout`` - text output
+* ``verbose = false`` - print messages to io
+* ``num = 100`` - number of simulations
+* ``l = log(0.8)`` - lower bound
+* ``u = log(1.25)`` - upper bound
+* ``seed = 0`` - seed for random number generator (0 - random seed)
+
 """
 function simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l = log(0.8), u = log(1.25), seed = 0)
     task.seed = 0

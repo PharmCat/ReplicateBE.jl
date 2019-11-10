@@ -176,6 +176,22 @@ ReplicateBE was developed to get mixed model solution to bioequivalence clinical
 
 ReplicateBE not designed for modeling in a general purpose, but can be used in situation with similar structure. In part of datasets ReplicateBE showed better optimization result as SPSS. Also ReplicateBE based on direct inversing of variance-covarance matrix V, so computation of ``V^{-1}`` may be time expensive if size of matrix is big. This does not happen in bioequivalence study where size of ``V`` is no more 4 (4 periods). But in general this can be serious disadvantage. This situation can be avoided using sweep based transformations (Wolfinger et al., 1994). In ReplicateBE variance structure strictly denoted and can’t be changed, but it can be a target in package developing path. In ReplicateBE Satterthwaite degree of freedom (DF) estimate is equal with SAS/SPSS DF estimate for full-replicated basic bioequivalence balanced and unbalanced datasets (2x4x2, 2x3x2), and can be unequal in datasets with dropouts, results for half-replicated designs or 2x4x4 designs can be found in validation results table. For some designs less than 0.1% of dataset can't be analyzed in version v1.0.0 with default setting. In this cases advanced settings can be used to avoid this problems. This cases don't lead to wrong data or wrong results because model throw error and stop.   
 
+### Development and version description
+
+Version format: ``X.Y.Z``
+
+* ``0.0.Z`` - alpha release, not ready for publics deploy;
+* ``0.Y.Z`` - beta release, ready for publics deploy and testing;
+* ``1.0.0`` - publics release with stable API and description of validation procedures, can be unstable or validation program can cover not all package functionality;
+* ``1.1.0`` - stable public release;
+
+
+When ``Z`` changed - bugfix or minor changes, not affect on API.
+
+When ``Y`` changed - minor patch, may include changes in functionality, but not include breaking changes.
+
+When ``X`` changed - major release, may include breaking changes.
+
 ### Acknowledgments
 
 D.Sc. in Physical and Mathematical Sciences Anastasia Shitova a.shitova@qayar.ru

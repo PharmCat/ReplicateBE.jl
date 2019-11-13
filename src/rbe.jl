@@ -535,13 +535,13 @@ function Base.show(io::IO, rbe::RBE)
     println(io, "")
     println(io, "Fixed effect:")
     println(io, rbe.fixed)
-    println(io, "Intra-individual variation:")
+    println(io, "Intra-individual variance:")
 
-    printmatrix(io,[rcoef[1] round(θ[1], sigdigits=6) "CVᵂ:" round(geocv(θ[1]), sigdigits=6);
-                    rcoef[2] round(θ[2], sigdigits=6) "CVᵂ:" round(geocv(θ[2]), sigdigits=6)])
+    printmatrix(io,[rcoef[1] round(θ[1], sigdigits=6) "CVᵂ:" round(geocv(θ[1])*100, digits=2) "%";
+                    rcoef[2] round(θ[2], sigdigits=6) "CVᵂ:" round(geocv(θ[2])*100, digits=2)] "%")
     println(io, "")
 
-    println(io, "Inter-individual variation:")
+    println(io, "Inter-individual variance:")
 
     printmatrix(io,[rcoef[1] round(θ[3], sigdigits=6) "";
                     rcoef[2] round(θ[4], sigdigits=6) "";
@@ -551,8 +551,8 @@ function Base.show(io::IO, rbe::RBE)
     println(io, "Confidence intervals(90%):")
     ci = confint(rbe, 0.1, expci = true, inv = true)
     println(io, rcoef[1], " / ", rcoef[2])
-    println(io, round(ci[end][1]*100, digits=4), " - ", round(ci[end][2]*100, digits=4), " (%)")
+    println(io, "Ratio: $(round(exp(-coef(rbe)[end])*100, digits=2)), CI: ", round(ci[end][1]*100, digits=2), " - ", round(ci[end][2]*100, digits=2), " (%)")
     ci = confint(rbe, 0.1, expci = true, inv = false)
     println(io, rcoef[2], " / ", rcoef[1])
-    print(io, round(ci[end][1]*100, digits=4), " - ", round(ci[end][2]*100, digits=4), " (%)")
+    print(io,"Ratio: $(round(exp(coef(rbe)[end])*100, digits=2)), CI: ", round(ci[end][1]*100, digits=2), " - ", round(ci[end][2]*100, digits=2), " (%)")
 end #─┼┴┬│

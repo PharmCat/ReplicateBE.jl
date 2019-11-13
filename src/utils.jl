@@ -261,7 +261,7 @@ function printmatrix(io::IO, m::Matrix)
     sm = string.(m)
     lv = maximum(length.(m), dims = 1)
     for r = 1:size(sm, 1)
-        for c = 1:size(sm, 1)
+        for c = 1:size(sm, 2)
             print(io, addspace(sm[r,c], lv[c] - length(sm[r,c]))*"   ")
         end
         println(io, "")

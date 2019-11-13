@@ -538,7 +538,7 @@ function Base.show(io::IO, rbe::RBE)
     println(io, "Intra-individual variance:")
 
     printmatrix(io,[rcoef[1] round(θ[1], sigdigits=6) "CVᵂ:" round(geocv(θ[1])*100, digits=2) "%";
-                    rcoef[2] round(θ[2], sigdigits=6) "CVᵂ:" round(geocv(θ[2])*100, digits=2)] "%")
+                    rcoef[2] round(θ[2], sigdigits=6) "CVᵂ:" round(geocv(θ[2])*100, digits=2) "%"])
     println(io, "")
 
     println(io, "Inter-individual variance:")

@@ -211,24 +211,25 @@ function rbe(df; dvar::Symbol,
         end
 
     end
-    θ       = Optim.minimizer(O)
-    #Get reml
-    remlv   = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, varlink(θ, vlm), β, memalloc)
+    θ          = Optim.minimizer(O)
+
     #Post optimization
     if postopt
         pO     = O
         od     = OnceDifferentiable(x -> -2*reml(yv, Zv, p, Xv, varlink(x, vlm), β; memopt = memopt), θ; autodiff = :forward)
         method = BFGS(linesearch = LineSearches.HagerZhang(), alphaguess = LineSearches.InitialStatic())
         O      = optimize(od, [-Inf, -Inf, -Inf, -Inf, -Inf], [Inf, Inf, Inf, Inf, Inf], θ,  Fminbox(method), Optim.Options(g_tol=g_tol, x_tol=x_tol, f_tol=f_tol))
-        θ      = copy(Optim.minimizer(O))
-        remlv  = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, varlink(θ, vlm), β, memalloc)
+        θ      = Optim.minimizer(O)
     end
+
+    #Get reml
+    remlv       = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, varlink(θ, vlm), β, memalloc)
     #Get Hessian matrix (H) with ForwardDiff
     H           = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, varlink(x, vlm), β), θ)
     dH          = det(H)
     #Secondary parameters calculation
     A           = 2*pinv(H)
-    C           = cmat(Xv, Zv, iVv, θ)
+    C           = cmat(Xv, Zv, iVv, varlink(θ, vlm))
     se          = Array{Float64, 1}(undef, p)
     F           = Array{Float64, 1}(undef, p)
     df          = Array{Float64, 1}(undef, p)
@@ -263,7 +264,7 @@ function rbe(df; dvar::Symbol,
             vm  = Array{Float64, 1}(undef, lclr)
             for i = 1:lclr
                 g        = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', Xv, Zv, varlink(x, vlm); memopt = memopt), θ)
-                dfi      = 2*((L[i:i,:]*C*L[i:i,:]')[1])^2/(g'*(A)*g)
+                dfi      = 2*((L[i:i,:]*C*L[i:i,:]')[1])^2/(g'*A*g)
                 vm[i]    = dfi/(dfi-2)
             end
             dfi = 2*sum(vm)/(sum(vm)-lclr)

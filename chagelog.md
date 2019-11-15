@@ -1,3 +1,7 @@
+- v1.0.2 (hotfix 2)
+    * cmat fix
+    * cosmetics
+
 - v1.0.1 (hotfix)
     * increase stability
     * simulation stability

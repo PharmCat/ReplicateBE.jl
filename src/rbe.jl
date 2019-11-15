@@ -119,16 +119,29 @@ function rbe(df; dvar::Symbol,
     formulation::Symbol,
     period::Symbol,
     sequence::Symbol,
-    g_tol::Float64 = 1e-8, x_tol::Float64 = 0.0, f_tol::Float64 = 0.0, iterations::Int = 100,
+    g_tol::Float64 = 1e-12, x_tol::Float64 = 0.0, f_tol::Float64 = 0.0, iterations::Int = 100,
     store_trace = false, extended_trace = false, show_trace = false,
     memopt = true,
     init = [],
-    postopt = false, vlm = 0.8, maxopttry = 50, rhoadjstep = 0.15)
+    postopt = false, vlm = 1.0, maxopttry = 50, rhoadjstep = 0.15)
     #Check
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
     if !(eltype(df[!,dvar]) <: Real)
         @warn "Responce variable ∉ Real!"
     end
+    if !(typeof(df[!,subject]) <: CategoricalArray)
+        @warn "Subject variable not Categorical, use rbe!()!"
+    end
+    if !(typeof(df[!,formulation]) <: CategoricalArray)
+        @warn "Formulation variable not Categorical, use rbe!()!"
+    end
+    if !(typeof(df[!,period]) <: CategoricalArray)
+        @warn "Period variable not Categorical, use rbe!()!"
+    end
+    if !(typeof(df[!,sequence]) <: CategoricalArray)
+        @warn "Sequence variable not Categorical, use rbe!()!"
+    end
+
     #Model
     Xf  = @eval(@formula($dvar ~ $sequence + $period + $formulation))
     Zf  = @eval(@formula($dvar ~ 0 + $formulation))
@@ -165,9 +178,10 @@ function rbe(df; dvar::Symbol,
         θvec0 = init
     else
         iv = initvar(df, dvar, formulation, subject)
-        if iv[1] < iv[3] || iv[2] < iv[3] iv[1] = iv[2] = 2*iv[3] end
-        θvec0 = rvarlink([iv[3], iv[3], iv[1]-iv[3], iv[2]-iv[3], 0.05], vlm)
+        iv = iv .+ eps()
+        θvec0 = [iv[3], iv[3], iv[1], iv[2], 0.05]
     end
+    θvec0 = rvarlink(θvec0, vlm)
     #Prelocatiom for G, R, V, V⁻¹ matrices
     G     = zeros(2, 2)
     Rv    = Array{Array{Float64,2}, 1}(undef, n)
@@ -181,18 +195,21 @@ function rbe(df; dvar::Symbol,
     td      = TwiceDifferentiable(x -> -2*remlb(yv, Zv, p, Xv, varlink(x, vlm), β; memopt = memopt), θvec0; autodiff = :forward)
     opttry  = true
     optnum  = 0
+    rng     = MersenneTwister(hash(θvec0))
     while opttry
         try
             O       = optimize(td, θvec0, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
             opttry  = false
         catch
+            θvec0 = rvarlink(varlink(θvec0, vlm) .+ (rand(rng)-0.5)/10 .* varlink(θvec0, vlm) .+ eps(), vlm)
             θvec0[5] = θvec0[5] - rhoadjstep
         end
         optnum += 1
         if optnum > maxopttry
             opttry = false
-            throw(ErrorException("Initial values faild! Iteration $(optnum), θvec0[5] = $(θvec0[5])."))
+            throw(ErrorException("Optimization faild! Iteration $(optnum), θvec = $(θvec0)"))
         end
+
     end
     θ       = Optim.minimizer(O)
     #Get reml
@@ -200,7 +217,7 @@ function rbe(df; dvar::Symbol,
     #Post optimization
     if postopt
         pO     = O
-        od     = OnceDifferentiable(x -> -2*reml(yv, Zv, p, Xv, varlink(x, vlm), β; memopt = memopt), θvec0; autodiff = :forward)
+        od     = OnceDifferentiable(x -> -2*reml(yv, Zv, p, Xv, varlink(x, vlm), β; memopt = memopt), θ; autodiff = :forward)
         method = BFGS(linesearch = LineSearches.HagerZhang(), alphaguess = LineSearches.InitialStatic())
         O      = optimize(od, [-Inf, -Inf, -Inf, -Inf, -Inf], [Inf, Inf, Inf, Inf, Inf], θ,  Fminbox(method), Optim.Options(g_tol=g_tol, x_tol=x_tol, f_tol=f_tol))
         θ      = copy(Optim.minimizer(O))
@@ -265,7 +282,7 @@ function rbe(df; dvar::Symbol,
     termmodelleveln(MF, formulation),
     sbf,
     p, zxr)
-    return RBE(MF, RMF, design, fac, θvec0, vlm, Tuple(θ), remlv, fixed, typeiii, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
+    return RBE(MF, RMF, design, fac, varlink(θvec0, vlm), vlm, Tuple(varlink(θ, vlm)), remlv, fixed, typeiii, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
 end #END OF rbe()
 """
 This function apply following code for each factor before executing:
@@ -285,7 +302,7 @@ function rbe!(df; dvar::Symbol,
     formulation::Symbol,
     period::Symbol,
     sequence::Symbol,
-    g_tol::Float64 = 1e-8, x_tol::Float64 = 0.0, f_tol::Float64 = 0.0, iterations::Int = 100,
+    g_tol::Float64 = 1e-12, x_tol::Float64 = 0.0, f_tol::Float64 = 0.0, iterations::Int = 100,
     store_trace = false, extended_trace = false, show_trace = false,
     memopt = true,
     init = [],
@@ -296,13 +313,19 @@ function rbe!(df; dvar::Symbol,
         @warn "Responce variable ∉ Real!"
         df[!,dvar] = float.(df[!,dvar])
     end
-
-    categorical!(df, subject);
-    categorical!(df, formulation);
-    categorical!(df, period);
-    categorical!(df, sequence);
+    if !(typeof(df[!,subject]) <: CategoricalArray)
+        categorical!(df, subject);
+    end
+    if !(typeof(df[!,formulation]) <: CategoricalArray)
+        categorical!(df, formulation);
+    end
+    if !(typeof(df[!,period]) <: CategoricalArray)
+        categorical!(df, period);
+    end
+    if !(typeof(df[!,sequence]) <: CategoricalArray)
+        categorical!(df, sequence);
+    end
     sort!(df, [subject, formulation, period])
-
     return rbe(df, dvar=dvar, subject=subject, formulation=formulation, period=period, sequence=sequence,
     g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, iterations=iterations,
     store_trace=store_trace, extended_trace=extended_trace, show_trace=show_trace,
@@ -520,7 +543,7 @@ end
 #-------------------------------------------------------------------------------
 function Base.show(io::IO, rbe::RBE)
     rcoef = coefnames(rbe.rmodel);
-    θ     = varlink(collect(rbe.θ), rbe.vlm)
+    θ     = theta(rbe)
     println(io, "Bioequivalence Linear Mixed Effect Model (status: $(Optim.converged(rbe.optim) ? "converged" : printstyled(io, "not converged"; color = :red)))")
     if rbe.detH <= 0.0
         printstyled(io, "Hessian not positive!"; color = :yellow)

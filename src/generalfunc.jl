@@ -198,7 +198,7 @@ end
 """
     REML estimation with β recalculation
 """
-function remlb(yv, Zv, p, Xv, θvec, β; memopt::Bool = true)
+function remlb(yv, Zv, p, Xv, θvec, β; memopt::Bool = true, backval = [])
     maxobs    = maximum(length.(yv))
     #some memory optimizations to reduse allocations
     mXviV     = Array{Array{eltype(θvec), 2}, 1}(undef, maxobs)
@@ -251,6 +251,10 @@ function remlb(yv, Zv, p, Xv, θvec, β; memopt::Bool = true)
     for i = 1:n
         @inbounds r    = yv[i] - Xv[i]*βt
         @inbounds θ3  += r'*iVv[i]*r
+    end
+
+    if length(backval) == length(θvec)
+        copy!(backval, θvec)
     end
     return   -(θ1 + logdet(θ2) + θ3 + c)/2
 end
@@ -323,23 +327,14 @@ function initvar(df, dv, fac, sbj)
     u  = unique(df[:, sbj])
     f  = unique(df[:, fac])
     fv = Array{Float64, 1}(undef, 0)
+    sb = Array{Float64, 1}(undef, 0)
     for i in f
-        fvd = Array{Float64, 1}(undef, 0)
-        v = findall(x->x==i, df[:, fac])
-        for r in v
-            push!(fvd, df[r, dv])
-        end
-        if length(fvd) > 1 push!(fv, var(fvd)) end
+        push!(fv,var(df[df[!, fac] .== i, dv]))
     end
-    sv = Array{Float64, 1}(undef, 0)
     for i in u
-        fvd = Array{Float64, 1}(undef, 0)
-        v   = findall(x->x==i, df[:, sbj])
-        for r in v
-            push!(fvd, df[r, dv])
-        end
-        if length(fvd) > 1 push!(sv, var(fvd)) end
+        sv = var(df[df[!, sbj] .== i, dv])
+        if sv > 0 push!(sb, sv) end
     end
-    push!(fv, mean(filter!(x -> x !== NaN, sv)))
+    push!(fv, mean(sb))
     return fv
 end

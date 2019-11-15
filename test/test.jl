@@ -135,8 +135,11 @@ end
 
 @testset "  #  Utils test                                  " begin
     be = ReplicateBE.rbe!(df6, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
-    @test ReplicateBE.contrast(be, [0 0 0 0 0 1]).f[1]  ≈ 2.3996616631488368 atol=1E-5
-    @test ReplicateBE.estimate(be, [0 0 0 0 0 1]).est[1] ≈ 0.06434039007812514 atol=1E-5
+    @test ReplicateBE.contrast(be, [0 0 0 0 0 1]).f[1]   ≈ 2.3996616631488368 atol=1E-5
+    estt = ReplicateBE.estimate(be, [0 0 0 0 0 1])
+    @test estt.est[1]                                    ≈ 0.06434039007812514 atol=1E-5
+    @test estt.df[1]                                     ≈ 62.0                atol=1E-5
+    @test estt.ul[1]                                     ≈ 0.14736661447650518 atol=1E-5
 
     lsmean = ReplicateBE.lsm(be, [0 0 0 0 0 1])
     @test lsmean[1][1] ≈ 0.0643403 atol=1E-5

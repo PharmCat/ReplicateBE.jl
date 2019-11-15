@@ -126,9 +126,11 @@ function randrbeds(n::Int, sequence::Vector,
     θinter::Vector, θintra::Vector,
     intercept::Real, seqcoef::Vector, periodcoef::Vector, formcoef::Vector,
     dropsubj::Float64, dropobs::Int, seed)
-
-    rng = MersenneTwister()
-    if seed == 0  Random.seed!(rng) else Random.seed!(seed) end
+    if seed != 0
+        rng = MersenneTwister(seed)
+    else
+        rng = MersenneTwister()
+    end
 
     r = n/sum(sequence)
     sn = Array{Int, 1}(undef, length(sequence))
@@ -162,17 +164,16 @@ function randrbeds(n::Int, sequence::Vector,
         Mv[i] = zeros(pnum) .+ intercept .+ seqcoef[i] + periodcoef + Zv[i]*formcoef
     end
 
-    subjds = DataFrame(subject = String[], formulation = String[], period = String[], sequence = String[], var = Float64[])
+    subjds = DataFrame(subject = Int[], formulation = String[], period = Int[], sequence = String[], var = Float64[])
     subj = 1
     subjmx = Array{Any, 2}(undef, pnum, 5)
     for i = 1:sqnum
-        mvnorm = MvNormal(PDMat(Vv[i]))
         for sis = 1:sn[i]
-            subjmx[:, 1] .= string(subj)
-            subjmx[:, 2]  = string.(design[i,:])
-            subjmx[:, 3]  = string.(collect(1:pnum))
+            subjmx[:, 1] .= subj
+            subjmx[:, 2]  = design[i,:]
+            subjmx[:, 3]  = collect(1:pnum)
             subjmx[:, 4] .= sqname[i]
-            subjmx[:, 5]  = rand(MvNormal(PDMat(Vv[i]))) + Mv[i]
+            subjmx[:, 5]  = rand(rng, MvNormal(PDMat(Vv[i]))) + Mv[i]
             subj += 1
             for c = 1:pnum
                 push!(subjds, subjmx[c, :])
@@ -180,9 +181,13 @@ function randrbeds(n::Int, sequence::Vector,
         end
     end
     if dropobs > 0 && dropobs < size(subjds, 1)
-        dellist = sample(1:size(subjds, 1), dropobs, replace = false)
+        dellist = sample(rng, 1:size(subjds, 1), dropobs, replace = false)
         deleterows!(subjds, sort!(dellist))
     end
+    categorical!(subjds, :subject);
+    categorical!(subjds, :formulation);
+    categorical!(subjds, :period);
+    categorical!(subjds, :sequence);
     return subjds
 end
 """
@@ -222,32 +227,51 @@ Count successful BE outcomes.
 """
 function simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l = log(0.8), u = log(1.25), seed = 0)
     task.seed = 0
-    rng = MersenneTwister()
-    if seed == 0  Random.seed!(rng) else Random.seed!(seed) end
-    seeds = rand(UInt32, num)
+    #rng = MersenneTwister()
+    if isa(seed, Array)
+        seeds = seed
+    else
+        if seed != 0
+            rng = MersenneTwister(seed)
+        else
+            rng = MersenneTwister()
+        end
+        seeds = Array{UInt32, 1}(undef, num)
+        for i = 1:num
+            seeds[i] = rand(rng, UInt32)
+        end
+    end
+
     n     = 0
     err   = 0
     cnt   = 0
     if verbose
         printstyled(io, "Start...\n"; color = :green)
+        if isa(seed, Array)
+            println(io, "Simulation seed: Array")
+        else
         println(io, "Simulation seed: $(seed)")
+        end
         println(io, "Task hash: $(hash(task))")
     end
+
     for i = 1:num
+        task.seed = seeds[i]
+        rds       = randrbeds(task)
         try
-            task.seed = seeds[i]
-            rds       = ReplicateBE.randrbeds(task)
-            be        = ReplicateBE.rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+
+            be        = rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
             q         = quantile(TDist(be.fixed.df[end]), 0.95)
             ll        = be.fixed.est[end] - q*be.fixed.se[end]
             ul        = be.fixed.est[end] + q*be.fixed.se[end]
             #!
             if verbose
-                if !optstat(be) printstyled(io, "Iteration: $i, seed $(seeds[i]): unconverged! \n"; color = :yellow) end
-                if be.detH <= 0 printstyled(io, "Iteration: $i, seed $(seeds[i]): Hessian not positive defined! \n"; color = :yellow) end
+                if !optstat(be) printstyled(io, "Iteration: ", i, ", seed ", seeds[i], ": unconverged! \n"; color = :yellow) end
+                if be.detH <= 0
+                    printstyled(io, "Iteration: ", i, ", seed ", seeds[i], ": Hessian not positive defined! \n"; color = :yellow)
+                end
             end
             if ll > l && ul < u
-                #println(io, "Seed $(task.seed) LL $(ll) UL $(ul)")
                 cnt += 1
             end
             #!
@@ -259,15 +283,22 @@ function simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l 
                 n = 0
             end
             n += 1
+
         catch
             err += 1
             printstyled(io, "Iteration: $i, seed $(seeds[i]): $(err): ERROR! \n"; color = :red)
         end
+
     end
     return RBEDSSimResult(seed, num, seeds, cnt/(num - err))
 end
 
 function Base.show(io::IO, obj::RBEDSSimResult)
+    if isa(obj.seed, Array)
+        println(io, "Simulation seed: Array")
+    else
+        println(io, "Seed: $(obj.seed)")
+    end
     println(io, "Seed: $(obj.seed)")
     println(io, "Number: $(obj.num)")
     println(io, "Result: $(obj.result)")

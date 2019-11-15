@@ -166,7 +166,7 @@ end
     @test rds[1, :sequence] == "TRTR"
     @test rds[1:4, :formulation] == ["T", "R", "T", "R"]
     @test rds[93:96, :formulation] == ["R", "T", "R", "T"]
-    @test rds[5:8, :period] == ["1", "2", "3", "4"]
+    @test rds[5:8, :period] == [1, 2, 3, 4]
     rds = ReplicateBE.randrbeds(dropobs = 6)
     @test size(rds)[1] == 90
 end
@@ -441,5 +441,5 @@ end
         dropobs = 2,
     )
     pow = ReplicateBE.simulation(task; io = io, num = 10, seed = 1234, verbose = true)
-    @test pow.result == 0.1
+    @test pow.result == 0.0
 end

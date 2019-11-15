@@ -24,7 +24,7 @@ DF for one-dimetion case:
 df = \\frac{2(LCL')^{2}}{g'Ag}
 ```
 
-where ``A = 2H``
+where ``A = -2H``
 
 where ``g = \\triangledown _{\\theta}(LC^{-1}L')``
 
@@ -41,7 +41,7 @@ function contrast(rbe::RBE, L::Matrix; numdf = 0, name = "Contrast", memopt = tr
     lcl     = L*rbe.C*L'
     lclr    = rank(lcl)
     F       = β'*L'*inv(lcl)*L*β/lclr
-    θ       = theta(rbe)
+    θ       = rvarlink(theta(rbe), rbe.vlm)
 
     if numdf == 0 numdf = rank(L) end
 
@@ -96,7 +96,7 @@ where
 C = \\sum_{i=1}^{n} X_i'V_i^{-1}X_i
 ```
 
-where ``A = 2H``
+where ``A = -2H``
 
 where ``g = \\triangledown _{\\theta}(LC^{-1}L')``
 
@@ -126,7 +126,7 @@ function estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = tr
     se      = sqrt((lcl)[1])
     #F       = β'*L'*inv(lcl)*L*β/lclr
     if df == :sat
-        θ       = theta(rbe)
+        θ       = rvarlink(theta(rbe), rbe.vlm)
         g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, varlink(x, rbe.vlm); memopt = memopt), θ)
         df      = 2*((lcl)[1])^2/(g'*(rbe.A)*g)
     elseif df == :cont

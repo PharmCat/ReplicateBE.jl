@@ -93,4 +93,44 @@ formulation: T / formulation: R
 end
 
 simulation(100000)</code></pre><p>Rusults:</p><pre><code class="language-none"> 7104.944474 seconds (9.51 G allocations: 2.230 TiB, 44.90% gc time)
-0.04939</code></pre><p>Confidence interval (95%) for power: 0.048047 - 0.050733. No statistically significant difference found.</p><h4><a class="nav-anchor" id="v1.0.0-1" href="#v1.0.0-1">v1.0.0</a></h4><p>```  task = ReplicateBE.RandRBEDS(;n=24,  sequence=[1,2], design = [&quot;T&quot; &quot;R&quot; &quot;T&quot; &quot;R&quot;; &quot;R&quot; &quot;T&quot; &quot;R&quot; &quot;T&quot;],  inter=[0.05, 0.04, 0.6], intra=[0.02, 0.04],  intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0],  formcoef = [0.0, log(0.8)], seed = 0, dropobs = 0)</p><p>@time result =  ReplicateBE.simulation(task; num = 100000, seed = 730795390628834530, verbose = true)  ```</p><p>1837.914923 seconds (3.99 G allocations: 1.092 TiB, 9.91% gc time)  Seed: 730795390628834530  Number: 100000  Result: 0.05078660225829358  CI: Estimate: 0.05079 (0.04943 - 0.05215)</p><p>```  task = ReplicateBE.RandRBEDS(;n=24,  sequence=[1,2], design = [&quot;T&quot; &quot;R&quot; &quot;T&quot;; &quot;R&quot; &quot;T&quot; &quot;R&quot;],  inter=[0.05, 0.04, 0.4], intra=[0.02, 0.04],  intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0],  formcoef = [0.0, log(0.8)], seed = 0, dropobs = 0)</p><p>@time result =  ReplicateBE.simulation(task; num = 100000, seed = 730795390628834530, verbose = true)  ```</p><p>1638.566348 seconds (3.77 G allocations: 907.478 GiB, 9.77% gc time)  Seed: 730795390628834530  Number: 100000  Result: 0.04997148203368122  CI: Estimate: 0.04997 (0.04862 - 0.05132)</p><footer><hr/><a class="previous" href="../details/"><span class="direction">Previous</span><span class="title">Details</span></a><a class="next" href="../struct/"><span class="direction">Next</span><span class="title">Structures</span></a></footer></article></body></html>
+0.04939</code></pre><p>Confidence interval (95%) for power: 0.048047 - 0.050733. No statistically significant difference found.</p><h4><a class="nav-anchor" id="v1.0.0-1" href="#v1.0.0-1">v1.0.0</a></h4><pre><code class="language-none"> task = ReplicateBE.RandRBEDS(;n=24,
+ sequence=[1,2], design = [&quot;T&quot; &quot;R&quot; &quot;T&quot; &quot;R&quot;; &quot;R&quot; &quot;T&quot; &quot;R&quot; &quot;T&quot;],
+ inter=[0.05, 0.04, 0.6], intra=[0.02, 0.04],
+ intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0],
+ formcoef = [0.0, log(0.8)], seed = 0, dropobs = 0)
+
+ @time result =  ReplicateBE.simulation(task; num = 100000, seed = 730795390628834530, verbose = true)
+ ```
+
+ 1837.914923 seconds (3.99 G allocations: 1.092 TiB, 9.91% gc time)
+
+ Seed: 730795390628834530
+
+ Number: 100000
+
+ Result: 0.05078660225829358
+
+ CI: Estimate: 0.05079 (0.04943 - 0.05215)
+
+ ```
+ task = ReplicateBE.RandRBEDS(;n=24,
+ sequence=[1,2], design = [&quot;T&quot; &quot;R&quot; &quot;T&quot;; &quot;R&quot; &quot;T&quot; &quot;R&quot;],
+ inter=[0.05, 0.04, 0.4], intra=[0.02, 0.04],
+ intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0],
+ formcoef = [0.0, log(0.8)], seed = 0, dropobs = 0)
+
+ @time result =  ReplicateBE.simulation(task; num = 100000, seed = 730795390628834530, verbose = true)
+ ```
+
+ 1638.566348 seconds (3.77 G allocations: 907.478 GiB, 9.77% gc time)
+
+ Seed: 730795390628834530
+
+ Number: 100000
+
+ Result: 0.04997148203368122
+
+ CI: Estimate: 0.04997 (0.04862 - 0.05132)
+
+ #### version v1.0.1
+</code></pre><p>task = ReplicateBE.RandRBEDS(;n=24,  sequence=[1,2], design = [&quot;T&quot; &quot;R&quot; &quot;T&quot; &quot;R&quot;; &quot;R&quot; &quot;T&quot; &quot;R&quot; &quot;T&quot;],  inter=[0.05, 0.04, 0.5], intra=[0.02, 0.04],  intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0],  formcoef = [0.0, log(0.8)], seed = 0, dropobs = 0)</p><p>result =  ReplicateBE.simulation(task; num = 1000000, seed = 656468377477, verbose = true)  ``` Seed: 656468377477</p><p>Number: 1000000</p><p>Result: 0.050228</p><p>CI: Estimate: 0.0502 (0.0498 - 0.0507)</p><footer><hr/><a class="previous" href="../details/"><span class="direction">Previous</span><span class="title">Details</span></a><a class="next" href="../struct/"><span class="direction">Next</span><span class="title">Structures</span></a></footer></article></body></html>

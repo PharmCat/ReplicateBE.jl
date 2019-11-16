@@ -109,7 +109,7 @@ V_{i} = Z_{i}GZ_i'+R_{i}
 * memopt = true - memory optimization (function cache)
 * init = [] - initial variance paremeters
 * postopt = false - post optimization
-* vlm = 0.8 - "link function" coefficient
+* vlm = 1.0 - "link function" coefficient
 * maxopttry = 50 - maximum attempts to optimize
 * rhoadjstep = 0.15 - adjustment value for rho after optimization fail
 
@@ -490,8 +490,7 @@ end
 """
     theta(rbe::RBE)
 
-Return raw theta (θ) vector (vector of variation parameters from optimization procedure).
-Before aplying link function.
+Return theta (θ) vector (vector of variation parameters from optimization procedure).
 """
 function theta(rbe::RBE)
     return collect(rbe.θ)
@@ -508,7 +507,6 @@ end
     design(rbe::RBE)::Design
 
 Return design information object.
-
 """
 function design(rbe::RBE)::Design
     return rbe.design

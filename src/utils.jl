@@ -24,7 +24,7 @@ DF for one-dimetion case:
 df = \\frac{2(LCL')^{2}}{g'Ag}
 ```
 
-where ``A = -2H``
+where ``A = 2H^{-1}``
 
 where ``g = \\triangledown _{\\theta}(LC^{-1}L')``
 
@@ -96,7 +96,7 @@ where
 C = \\sum_{i=1}^{n} X_i'V_i^{-1}X_i
 ```
 
-where ``A = -2H``
+where ``A = 2H^{-1}``
 
 where ``g = \\triangledown _{\\theta}(LC^{-1}L')``
 

@@ -116,7 +116,7 @@ Where L is a vector of known constant, C – variance-covariance matrix of fixed
 
 ReplicateBE was validated with 6 reference public datasets, 25 generated datasets and simulation study. ReplicateBE is compliant to SAS/SPSS, values checked: REML estimate, variance components estimate, fixed effect estimate, standard error of fixed effect estimate. Validation procedures included in package test procedure and perform each time when new version released or can be done at any time on user machine. Validation results (REML & 90% CI) table can be found [here](https://github.com/PharmCat/ReplicateBE.jl/tree/master/validation).
 
-ReplicateBE include simulation utility, that based on generation multivariate distributed datasets. This can be used not only in purpose of the package diagnostics, but also in purpose of sample size estimation ets. Simulation using version 0.1.4 was performed with 100000 iterations. Confidence interval (95%) for type I error (alpha) is 0.048047 - 0.050733. No statistically significant difference found with acceptable rate (0.05) found.
+ReplicateBE include simulation utility, that based on generation multivariate distributed datasets. This can be used not only in purpose of the package diagnostics, but also in purpose of sample size estimation ets. Simulation using version 0.1.4 was performed with 100000 iterations. Confidence interval (95%) for type I error (alpha) is 0.048047 - 0.050733. No statistically significant difference found with acceptable rate (0.05) found. Other simulation results can be found [here](https://pharmcat.github.io/ReplicateBE.jl/latest/testval/#Simulation-study-1).
 
 Testing procedures cover approximately [![codecov](https://codecov.io/gh/PharmCat/ReplicateBE.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/PharmCat/ReplicateBE.jl) of code, and perform for each release on Travis CI platform: [![Build Status](https://api.travis-ci.com/PharmCat/ReplicateBE.jl.svg?branch=master)](https://travis-ci.com/PharmCat/ReplicateBE.jl).
 
@@ -144,28 +144,30 @@ Bioequivalence Linear Mixed Effect Model (status: converged)
 -2REML: 329.257    REML: -164.629
 
 Fixed effect:
-───────────────────────────────────────────────────────────────────────────────────────────
+──────────────────────────────────────────────────────────────────────────────────────────────────────
 Effect           Value         SE          F          DF        t           P|t|
-───────────────────────────────────────────────────────────────────────────────────────────
-(Intercept)      4.42158       0.119232    1375.21    68.9135   37.0838     2.90956e-47*
-sequence: 2      0.360591      0.161776    4.96821    63.0139   2.22895     0.0293917*
-period: 2        0.027051      0.0533388   0.257206   159.645   0.507155    0.612746
-period: 3        -0.00625777   0.0561037   0.012441   199.483   -0.111539   0.911301
-period: 4        0.036742      0.0561037   0.428886   199.483   0.654894    0.51329
-formulation: 2   0.0643404     0.0415345   2.39966    207.651   1.54908     0.122884
-───────────────────────────────────────────────────────────────────────────────────────────
-Intra-individual variation:
-formulation: 1   0.108629
-formulation: 2   0.0783544
-Inter-individual variation:
+──────────────────────────────────────────────────────────────────────────────────────────────────────
+(Intercept)      4.42158       0.119232    1375.21    68.6064   37.0838     4.0203900000000003e-47*
+sequence: 2      0.360591      0.161776    4.96821    62.0      2.22895     0.0294511*
+period: 2        0.027051      0.0533388   0.257206   122.73    0.507155    0.612956
+period: 3        -0.00625777   0.0561037   0.012441   153.634   -0.111539   0.911334
+period: 4        0.036742      0.0561037   0.428886   153.634   0.654894    0.513515
+formulation: 2   0.0643404     0.0415345   2.39966    62.0      1.54908     0.126451
+──────────────────────────────────────────────────────────────────────────────────────────────────────
+Intra-individual variance:
+formulation: 1   0.108629   CVᵂ:   33.87   %
+formulation: 2   0.0783544   CVᵂ:   28.55   %
+
+Inter-individual variance:
 formulation: 1   0.377846
 formulation: 2   0.421356
 ρ:               0.980288   Cov: 0.391143
+
 Confidence intervals(90%):
 formulation: 1 / formulation: 2
-99.5725 - 114.221 (%)
+Ratio: 93.77, CI: 87.49 - 100.5 (%)
 formulation: 2 / formulation: 1
-87.5496 - 100.4293 (%)
+Ratio: 106.65, CI: 99.5 - 114.3 (%)
 ```
 
 ### Results
@@ -174,7 +176,7 @@ ReplicateBE was developed to get mixed model solution to bioequivalence clinical
 
 ### Discussion
 
-ReplicateBE not designed for modeling in a general purpose, but can be used in situation with similar structure. In part of datasets ReplicateBE showed better optimization result as SPSS. Also ReplicateBE based on direct inversing of variance-covarance matrix V, so computation of ``V^{-1}`` may be time expensive if size of matrix is big. This does not happen in bioequivalence study where size of ``V`` is no more 4 (4 periods). But in general this can be serious disadvantage. This situation can be avoided using sweep based transformations (Wolfinger et al., 1994). In ReplicateBE variance structure strictly denoted and can’t be changed, but it can be a target in package developing path. In ReplicateBE Satterthwaite degree of freedom (DF) estimate is equal with SAS/SPSS DF estimate for full-replicated basic bioequivalence balanced and unbalanced datasets (2x4x2, 2x3x2), and can be unequal in datasets with dropouts, results for half-replicated designs or 2x4x4 designs can be found in validation results table. For some designs less than 0.1% of dataset can't be analyzed in version v1.0.0 with default setting. In this cases advanced settings can be used to avoid this problems. This cases don't lead to wrong data or wrong results because model throw error and stop.   
+ReplicateBE not designed for modeling in a general purpose, but can be used in situation with similar structure. In part of datasets ReplicateBE showed better optimization result as SPSS. Also ReplicateBE based on direct inversing of variance-covarance matrix V, so computation of ``V^{-1}`` may be time expensive if size of matrix is big. This does not happen in bioequivalence study where size of ``V`` is no more 4 (4 periods). But in general this can be serious disadvantage. This situation can be avoided using sweep based transformations (Wolfinger et al., 1994). In ReplicateBE variance structure strictly denoted and can’t be changed, but it can be a target in package developing path. In ReplicateBE Satterthwaite degree of freedom (DF) estimate is equal with SAS/SPSS DF estimate for full-replicated basic bioequivalence balanced and unbalanced datasets (2x2x4, 2x2x3), and can be unequal in datasets with dropouts, results for half-replicated designs (2x3x3) or 2x4x4 designs can be found in validation results table.  
 
 ### Development and version description
 

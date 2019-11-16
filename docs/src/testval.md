@@ -185,9 +185,13 @@ simulation(100000)
  ```
 
  1837.914923 seconds (3.99 G allocations: 1.092 TiB, 9.91% gc time)
+
  Seed: 730795390628834530
+
  Number: 100000
+
  Result: 0.05078660225829358
+
  CI: Estimate: 0.05079 (0.04943 - 0.05215)
 
  ```
@@ -201,7 +205,30 @@ simulation(100000)
  ```
 
  1638.566348 seconds (3.77 G allocations: 907.478 GiB, 9.77% gc time)
+
  Seed: 730795390628834530
+
  Number: 100000
+
  Result: 0.04997148203368122
+
  CI: Estimate: 0.04997 (0.04862 - 0.05132)
+
+ #### version v1.0.1
+
+```
+ task = ReplicateBE.RandRBEDS(;n=24,
+ sequence=[1,2], design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
+ inter=[0.05, 0.04, 0.5], intra=[0.02, 0.04],
+ intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0],
+ formcoef = [0.0, log(0.8)], seed = 0, dropobs = 0)
+
+ result =  ReplicateBE.simulation(task; num = 1000000, seed = 656468377477, verbose = true)
+ ```
+Seed: 656468377477
+
+Number: 1000000
+
+Result: 0.050228
+
+CI: Estimate: 0.0502 (0.0498 - 0.0507)

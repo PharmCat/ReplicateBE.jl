@@ -1,10 +1,5 @@
 ## Structures
 
-### ReplicateBE.RBE
-```@docs
-ReplicateBE.RBE
-```
-
 ### ReplicateBE.ContrastTable
 ```@docs
 ReplicateBE.ContrastTable
@@ -23,4 +18,9 @@ ReplicateBE.EffectTable
 ### ReplicateBE.EstimateTable
 ```@docs
 ReplicateBE.EstimateTable
+```
+
+### ReplicateBE.RandRBEDS
+```@docs
+ReplicateBE.RandRBEDS
 ```

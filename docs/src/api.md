@@ -60,6 +60,11 @@ ReplicateBE.estimate
 ReplicateBE.fixed
 ```
 
+### ReplicateBE.optstat
+```@docs
+ReplicateBE.optstat
+```
+
 ### ReplicateBE.randrbeds
 ```@docs
 ReplicateBE.randrbeds
@@ -68,6 +73,16 @@ ReplicateBE.randrbeds
 ### ReplicateBE.reml2
 ```@docs
 ReplicateBE.reml2
+```
+
+### ReplicateBE.simulation
+```@docs
+ReplicateBE.simulation
+```
+
+### ReplicateBE.theta
+```@docs
+ReplicateBE.theta
 ```
 
 ### ReplicateBE.typeiii

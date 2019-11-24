@@ -1,4 +1,4 @@
-**Public validated Beta version!** This program comes with absolutely no warranty. No liability is accepted for any loss and risk to public health resulting from use of this software.
+This program comes with absolutely no warranty. No liability is accepted for any loss and risk to public health resulting from use of this software.
 
 <p align="center">
   <img src="https://github.com/PharmCat/ReplicateBE.jl/blob/master/docs/ReplicateBE-LogoNoSpace.png">
@@ -9,10 +9,9 @@ Mixed model solution for replicate designed bioequivalence study. This can be us
 [![GitHub version](https://badge.fury.io/gh/PharmCat%2FReplicateBE.jl.svg)](https://badge.fury.io/gh/PharmCat%2FReplicateBE.jl)
 [![Build Status](https://api.travis-ci.com/PharmCat/ReplicateBE.jl.svg?branch=master)](https://travis-ci.com/PharmCat/ReplicateBE.jl)
 [![codecov](https://codecov.io/gh/PharmCat/ReplicateBE.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/PharmCat/ReplicateBE.jl)
-[![Latest docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://pharmcat.github.io/ReplicateBE.jl/build/)
+[![Latest docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://pharmcat.github.io/ReplicateBE.jl/latest/)
 [![doi](https://img.shields.io/badge/doi-10.13140%2FRG.2.2.27418.39363-blue)](https://doi.org/10.13140/RG.2.2.27418.39363)
 
-http://doi.org/10.13140/RG.2.2.27418.39363
 Install:
 ```
 using Pkg; Pkg.add("ReplicateBE")
@@ -47,70 +46,52 @@ typeiii(be)
 
 Output example:
 ```
-Bioequivalence Linear Mixed Effect Model
+Bioequivalence Linear Mixed Effect Model (status: converged)
 
--2REML: 164.613    REML: -82.3067
+-2REML: 329.257    REML: -164.629
 
 Fixed effect:
-─────────────────────────────────────────────────────────────────────────────────────────
-Effect           Value        SE         F           DF        t           P|t|
-─────────────────────────────────────────────────────────────────────────────────────────
-(Intercept)      1.27158      0.191994   43.8645     26.6243   6.62303     4.47193e-7*
-sequence: TRTR   -0.114458    0.242518   0.222743    30.4503   -0.471956   0.640323
-period: 2        0.035864     0.139526   0.0660707   83.1868   0.257042    0.797781
-period: 3        0.0168505    0.100284   0.0282329   41.619    0.168027    0.867376      
-period: 4        0.0552216    0.139526   0.156642    83.1868   0.39578     0.693281
-formulation: T   -0.0165797   0.120162   0.0190378   62.661    -0.137978   0.890701      
-─────────────────────────────────────────────────────────────────────────────────────────
-Intra-individual variation:
-formulation: R  0.187712   CVᵂ: 0.454407
-formulation: T  0.0889289   CVᵂ: 0.304964
+──────────────────────────────────────────────────────────────────────────────────────────────────────
+Effect           Value         SE          F          DF        t           P|t|
+──────────────────────────────────────────────────────────────────────────────────────────────────────
+(Intercept)      4.42158       0.119232    1375.21    68.6064   37.0838     4.0203900000000003e-47*
+sequence: 2      0.360591      0.161776    4.96821    62.0      2.22895     0.0294511*
+period: 2        0.027051      0.0533388   0.257206   122.73    0.507155    0.612956
+period: 3        -0.00625777   0.0561037   0.012441   153.634   -0.111539   0.911334
+period: 4        0.036742      0.0561037   0.428886   153.634   0.654894    0.513515
+formulation: 2   0.0643404     0.0415345   2.39966    62.0      1.54908     0.126451
+──────────────────────────────────────────────────────────────────────────────────────────────────────
+Intra-individual variance:
+formulation: 1   0.108629   CVᵂ:   33.87   %
+formulation: 2   0.0783544   CVᵂ:   28.55   %
 
-Inter-individual variation:
-formulation: R  0.318313
-formulation: T  0.422413
-Cov:  0.266255
+Inter-individual variance:
+formulation: 1   0.377846
+formulation: 2   0.421356
+ρ:               0.980288   Cov: 0.391143
 
 Confidence intervals(90%):
-formulation: R / formulation: T
-80.4773 - 120.2059 (%)
-formulation: T / formulation: R
-83.1906 - 124.2586 (%)
+formulation: 1 / formulation: 2
+Ratio: 93.77, CI: 87.49 - 100.5 (%)
+formulation: 2 / formulation: 1
+Ratio: 106.65, CI: 99.5 - 114.3 (%)
 ```
 
 # Validation
 
-Validation information: [here](https://pharmcat.github.io/ReplicateBE.jl/build/testval/)
+Validation information: [here](https://pharmcat.github.io/ReplicateBE.jl/latest/testval/), validation results you can find in [table](https://github.com/PharmCat/ReplicateBE.jl/blob/master/validation/validation_results_table.csv).
 
 # Basic methods
 
-All API docs see [here](https://pharmcat.github.io/ReplicateBE.jl/build/api/).
+All API docs see [here](https://pharmcat.github.io/ReplicateBE.jl/latest/api/).
 
 # Random Dataset
 
-Random dataset function is made for generation validation datasets and simulation data.  
-
-```
-randrbeds(;n=24, sequence=[1,1],
-    design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
-    inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2],
-    intercept = 0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 0)
-```
-Generate DataFrame with random multivariate data. Where:
-
- - n - Subject number;
- - sequence - sequence subject distribution, [1,1] is equal 1:1, [1,2] - 1:2, [2,3,5] - 2:3:5 ets.;
- - design - design matrix (sXp, where s - number of sequences, p - number of period), cells contains formulation label;
- - inter - Inter-subject variation vector for G matrix: [σ₁, σ₂, ρ], where σ₁, σ₂ - formulation inter-subject variance,  ρ - covariance coefficient;
- - intra - Intra-subject variation vector for R matrix:[σ₁, σ₂], where σ₁, σ₂ - formulation intra-subject variance;
- - intercept - model intercept value;
- - seqcoef - model sequence coefficient values (additive): length = s (number of sequences);
- - periodcoef - model period coefficient values (additive): length = p (number of periods);
- - formcoef - model formulation coefficient values (additive): length = 2;
+Random dataset function is made for generation validation datasets and simulation data.  Description [here](https://pharmcat.github.io/ReplicateBE.jl/latest/syntax/).
 
 ## Structures
 
-Struct information see [here](https://pharmcat.github.io/ReplicateBE.jl/build/struct/).
+Struct information see [here](https://pharmcat.github.io/ReplicateBE.jl/latest/struct/).
 
 ## Acknowledgments
 

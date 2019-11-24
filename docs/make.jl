@@ -1,7 +1,8 @@
 using Documenter, ReplicateBE
 
-makedocs(modules=[ReplicateBE],
-    sitename="ReplicateBE",
+makedocs(
+    modules = [ReplicateBE],
+    sitename = "ReplicateBE",
     authors = "Vladimir Arnautov",
     linkcheck = false,
     doctest = false,
@@ -12,8 +13,10 @@ makedocs(modules=[ReplicateBE],
         "Details" => "details.md",
         "Validation" => "testval.md",
         "Structures" => "struct.md",
-        "Api" => "api.md"
-    ])
+        "Api" => "api.md",
+    ],
+)
 
+deploydocs(repo = "github.com/PharmCat/ReplicateBE.jl.git")
 #https://github.com/PharmCat/ReplicateBE.jl/blob/master/docs/
 #https://github.com/PharmCat/ReplicateBE.jl/blob/master/docs/

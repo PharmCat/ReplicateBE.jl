@@ -1,4 +1,16 @@
-- v1.0.0
+- v1.0.2 (hotfix 2)
+    * cmat fix
+    * cosmetics
+
+- v1.0.1 (hotfix)
+    * increase stability
+    * simulation stability
+    * change default options: g_tol = 1e-12
+    * vlm = 1.0 in rbe() & rbe!()
+    * initvar() changes
+    * theta() - return final estimates
+
+- v1.0.0 (unstable)
 
     * validation
     * test procedures
@@ -6,6 +18,9 @@
     * fix text output
     * twostep deprecated
     * varlink() - optimization with logVar & sigmoid rho
+    * rho initial value fix
+    * simulation object
+    * documuntation
 
 - v0.2.0
 

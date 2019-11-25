@@ -123,7 +123,9 @@ function rbe(df; dvar::Symbol,
     store_trace = false, extended_trace = false, show_trace = false,
     memopt = true,
     init = [],
-    postopt = false, vlm = 1.0, maxopttry = 50, rhoadjstep = 0.15)
+    postopt = false, vlm = 1.0, maxopttry = 100, rhoadjstep = 0.15,
+    rholink = :psigmoid,
+    singlim = 1e-10)
     #Check
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
     if !(eltype(df[!,dvar]) <: Real)
@@ -179,8 +181,24 @@ function rbe(df; dvar::Symbol,
     else
         iv = initvar(df, dvar, formulation, subject)
         iv = iv .+ eps()
-        θvec0 = [iv[3], iv[3], iv[1], iv[2], 0.05]
+        θvec0 = [iv[3], iv[3], iv[1], iv[2], 0.5]
     end
+
+    #Variance link function
+    if rholink == :psigmoid
+        varlink  = (x, y) ->  varlinkmap(x, 1:4, 5,  vlink,  z -> rholinkpsigmoid(z, y))
+        rvarlink = (x, y) ->  varlinkmap(x, 1:4, 5,  vlinkr, z -> rholinkpsigmoidr(z, y))
+    elseif rholink == :sigmoid
+        varlink  = (x, y) ->  varlinkmap(x, 1:4, 5,  vlink,  z -> rholinksigmoid(z, y))
+        rvarlink = (x, y) ->  varlinkmap(x, 1:4, 5,  vlinkr, z -> rholinksigmoidr(z, y))
+    elseif rholink == :arctgsigmoid
+        varlink  = (x, y) ->  varlinkmap(x, 1:4, 5,  vlink,  z -> rholinksigmoid2(z, y))
+        rvarlink = (x, y) ->  varlinkmap(x, 1:4, 5,  vlinkr, z -> rholinksigmoidr2(z, y))
+    else
+        varlink  = (x, y) ->  varlinkmap(x, 1:4, 5,  vlink,  z -> rholinkpsigmoid(z, y))
+        rvarlink = (x, y) ->  varlinkmap(x, 1:4, 5,  vlinkr, z -> rholinkpsigmoidr(z, y))
+    end
+
     θvec0 = rvarlink(θvec0, vlm)
     #Prelocatiom for G, R, V, V⁻¹ matrices
     G     = zeros(2, 2)
@@ -201,8 +219,10 @@ function rbe(df; dvar::Symbol,
             O       = optimize(td, θvec0, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
             opttry  = false
         catch
-            θvec0 = rvarlink(varlink(θvec0, vlm) .+ (rand(rng)-0.5)/10 .* varlink(θvec0, vlm) .+ eps(), vlm)
-            θvec0[5] = θvec0[5] - rhoadjstep
+
+            θvec0 = rvarlink(abs.(varlink(θvec0, vlm) .+ (rand(rng)-0.5)/20 .* varlink(θvec0, vlm) .+ eps()), vlm)[1:4]
+            push!(θvec0, rand(rng))
+            #θvec0[5] = θvec0[5] - rhoadjstep
         end
         optnum += 1
         if optnum > maxopttry
@@ -221,15 +241,20 @@ function rbe(df; dvar::Symbol,
         O      = optimize(od, [-Inf, -Inf, -Inf, -Inf, -Inf], [Inf, Inf, Inf, Inf, Inf], θ,  Fminbox(method), Optim.Options(g_tol=g_tol, x_tol=x_tol, f_tol=f_tol))
         θ      = Optim.minimizer(O)
     end
-
+    θ = varlink(θ, vlm)
     #Get reml
-    remlv       = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, varlink(θ, vlm), β, memalloc)
+    remlv       = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memalloc)
     #Get Hessian matrix (H) with ForwardDiff
-    H           = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, varlink(x, vlm), β), θ)
+    H           = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, x, β), θ)
+    if abs(θ[5]) > 1 - singlim
+        θ[5]    = 1.0
+        H[:,5] .= 0
+        H[5,:] .= 0
+    end
     dH          = det(H)
     #Secondary parameters calculation
-    A           = 2*pinv(H)
-    C           = cmat(Xv, Zv, iVv, varlink(θ, vlm))
+    A           = 2 * pinv(H)
+    C           = cmat(Xv, Zv, iVv, θ)
     se          = Array{Float64, 1}(undef, p)
     F           = Array{Float64, 1}(undef, p)
     df          = Array{Float64, 1}(undef, p)
@@ -243,7 +268,7 @@ function rbe(df; dvar::Symbol,
         lclr    = rank(lcl)
         se[i]   = sqrt((lcl)[1])
         F[i]    = β'*L'*inv(lcl)*L*β/lclr                                       #F[i]    = (L*β)'*inv(L*C*L')*(L*β)/lclr
-        g       = ForwardDiff.gradient(x -> lclgf(L, Lt, Xv, Zv, varlink(x, vlm); memopt = memopt), θ)
+        g       = ForwardDiff.gradient(x -> lclgf(L, Lt, Xv, Zv, x; memopt = memopt), θ)
         df[i]   = max(1, 2*((lcl)[1])^2/(g'*(A)*g))
         t[i]    = ((L*β)/se[i])[1]
         pval[i] = ccdf(TDist(df[i]), abs(t[i]))*2
@@ -263,13 +288,13 @@ function rbe(df; dvar::Symbol,
         if lclr ≥ 2
             vm  = Array{Float64, 1}(undef, lclr)
             for i = 1:lclr
-                g        = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', Xv, Zv, varlink(x, vlm); memopt = memopt), θ)
+                g        = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', Xv, Zv, x; memopt = memopt), θ)
                 dfi      = 2*((L[i:i,:]*C*L[i:i,:]')[1])^2/(g'*A*g)
                 vm[i]    = dfi/(dfi-2)
             end
             dfi = 2*sum(vm)/(sum(vm)-lclr)
         else
-            g   = ForwardDiff.gradient(x -> lclgf(L, L', Xv, Zv, varlink(x, vlm); memopt = memopt), θ)
+            g   = ForwardDiff.gradient(x -> lclgf(L, L', Xv, Zv, x; memopt = memopt), θ)
             dfi = 2*((lcl)[1])^2/(g'*(A)*g)
         end
         df[i]   = max(1, dfi)
@@ -283,7 +308,7 @@ function rbe(df; dvar::Symbol,
     termmodelleveln(MF, formulation),
     sbf,
     p, zxr)
-    return RBE(MF, RMF, design, fac, varlink(θvec0, vlm), vlm, Tuple(varlink(θ, vlm)), remlv, fixed, typeiii, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
+    return RBE(MF, RMF, design, fac, varlink(θvec0, vlm), vlm, Tuple(θ), remlv, fixed, typeiii, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
 end #END OF rbe()
 """
 This function apply following code for each factor before executing:
@@ -307,7 +332,9 @@ function rbe!(df; dvar::Symbol,
     store_trace = false, extended_trace = false, show_trace = false,
     memopt = true,
     init = [],
-    postopt = false, vlm = 1.0, maxopttry = 50, rhoadjstep = 0.15)
+    postopt = false, vlm = 1.0, maxopttry = 50, rhoadjstep = 0.15,
+    rholink = :psigmoid,
+    singlim = 1e-6)
 
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
     if !(eltype(df[!,dvar]) <: Real)
@@ -330,19 +357,8 @@ function rbe!(df; dvar::Symbol,
     return rbe(df, dvar=dvar, subject=subject, formulation=formulation, period=period, sequence=sequence,
     g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, iterations=iterations,
     store_trace=store_trace, extended_trace=extended_trace, show_trace=show_trace,
-    memopt=memopt, init=init, postopt=postopt, vlm = vlm, maxopttry = maxopttry, rhoadjstep = rhoadjstep)
-end
-
-function varlink(θ, m)
-    θl      = similar(θ)
-    θl[1:4] = exp.(θ[1:4])
-    θl[5]    = 1/(1 + exp(θ[5]*m))
-    return θl
-end
-function rvarlink(θ, m)
-    θ[1:4]  = log.(θ[1:4])
-    θ[5]    = log(1/θ[5]-1)/m
-    return θ
+    memopt=memopt, init=init, postopt=postopt, vlm = vlm, maxopttry = maxopttry, rhoadjstep = rhoadjstep,
+    rholink = rholink, singlim = singlim)
 end
 #-------------------------------------------------------------------------------
 #returm -2REML

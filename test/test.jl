@@ -99,7 +99,7 @@ end
     ci = ReplicateBE.confint(be, 0.1, expci = true, inv = true)
     @test be.reml  ≈  530.1445137281626  atol=1E-5
     @test be.fixed.se[6] ≈    0.04650123700721 atol=1E-5
-    @test be.fixed.f[6]  ≈    9.78552229238432 atol=1E-5
+    @test be.fixed.f[6]  ≈    9.78552229238432 atol=1E-4
     @test be.fixed.df[6] ≈  208.08115303672898 atol=1E-2
     @test ci[end][1]     ≈    1.071047105  atol=1E-5
     @test ci[end][2]     ≈    1.248935873  atol=1E-5

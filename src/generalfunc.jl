@@ -317,3 +317,52 @@ function initvar(df, dv, fac, sbj)
     push!(fv, mean(sb))
     return fv
 end
+#------------------------------------------------------------------------------
+#=
+function varlink(θ, m)
+    θl      = similar(θ)
+    θl[1:4] = exp.(θ[1:4])
+    θl[5]    = 1/(1 + exp(θ[5]*m))
+    return θl
+end
+function rvarlink(θ, m)
+    θl      = similar(θ)
+    θ1[1:4]  = log.(θ[1:4])
+    θ1[5]    = log(1/θ[5]-1)/m
+    return θ1
+end
+=#
+function vlink(σ)
+    exp(σ)
+end
+function vlinkr(σ)
+    log(σ)
+end
+
+function rholinkpsigmoid(ρ, m)
+    return 1/(1 + exp(ρ*m))
+end
+function rholinkpsigmoidr(ρ, m)
+    return log(1/ρ-1)/m
+end
+
+function rholinksigmoid(ρ, m)
+    return ρ/sqrt(1 + ρ^2)
+end
+function rholinksigmoidr(ρ, m)
+    return sign(ρ)*sqrt(ρ^2/(1-ρ^2))
+end
+
+function rholinksigmoid2(ρ, m)
+    return arctg(ρ)
+end
+function rholinksigmoidr2(ρ, m)
+    return tg(ρ)
+end
+
+function varlinkmap(θ, r1, r2, f1, f2)
+    θl      = similar(θ)
+    θl[r1]  = f1.(θ[r1])
+    θl[r2]  = f2.(θ[r2])
+    return θl
+end

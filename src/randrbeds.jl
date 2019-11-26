@@ -60,6 +60,7 @@ struct RBEDSSimResult
     num
     seeds
     result
+    errn
 end
 """
 ```julia
@@ -290,7 +291,7 @@ function simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l 
         end
 
     end
-    return RBEDSSimResult(seed, num, seeds, cnt/(num - err))
+    return RBEDSSimResult(seed, num, seeds, cnt/(num - err), err)
 end
 
 function Base.show(io::IO, obj::RBEDSSimResult)
@@ -301,5 +302,6 @@ function Base.show(io::IO, obj::RBEDSSimResult)
     end
     println(io, "Seed: $(obj.seed)")
     println(io, "Number: $(obj.num)")
+    println(io, "Errors: $(obj.errn)")
     println(io, "Result: $(obj.result)")
 end

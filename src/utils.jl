@@ -48,13 +48,13 @@ function contrast(rbe::RBE, L::Matrix; numdf = 0, name = "Contrast", memopt = tr
     if rank(L) ≥ 2
         vm      = Array{Float64, 1}(undef, size(L, 1))
         for i = 1:length(vm)
-            g       = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', rbe.Xv, rbe.Zv, varlink(x, rbe.vlm); memopt = memopt), θ)
+            g       = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
             df      = 2*((L[i:i,:]*rbe.C*L[i:i,:]')[1])^2/(g'*(rbe.A)*g)
             vm[i]   = df/(df-2)
         end
         df = 2*sum(vm)/(sum(vm)-rank(L))
     else
-        g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, varlink(x, rbe.vlm); memopt = memopt), θ)
+        g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
         df      = 2*((lcl)[1])^2/(g'*(rbe.A)*g)
     end
     pval    = ccdf(FDist(numdf, df), F)
@@ -126,8 +126,9 @@ function estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = tr
     se      = sqrt((lcl)[1])
     #F       = β'*L'*inv(lcl)*L*β/lclr
     if df == :sat
-        θ       = rvarlink(theta(rbe), rbe.vlm)
-        g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, varlink(x, rbe.vlm); memopt = memopt), θ)
+        θ       = theta(rbe)
+        g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
+
         df      = 2*((lcl)[1])^2/(g'*(rbe.A)*g)
     elseif df == :cont
         df      = rbe.design.df3

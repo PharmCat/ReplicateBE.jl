@@ -246,19 +246,24 @@ function rbe(df; dvar::Symbol,
     θ = varlink(θ, vlm)
     #Get reml
     remlv       = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memalloc)
-
+    #remlv       = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, varlink(θ, vlm), β, memalloc)
     #Get Hessian matrix (H) with ForwardDiff
     H           = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, x, β), θ)
+    #H           = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, varlink(x, vlm), β), θ)
+    #θ           = varlink(θ, vlm)
+
+    #If rho is near to 1.0 it leads to singular hessian matrix, and rho should be removed from variance-covariance matrix
+    #It can be done another way: using varlink everywhere, but it leads to problems of calling varlink after RBE object creation with other methods
     if abs(θ[5]) > 1 - singlim
         θ[5]    = 1.0
         H[:,5] .= 0
         H[5,:] .= 0
     end
+
     dH          = det(H)
     #Secondary parameters calculation
     A           = 2 * pinv(H)
     C           = cmat(Xv, Zv, iVv, θ)
-
     se          = Array{Float64, 1}(undef, p)
     F           = Array{Float64, 1}(undef, p)
     df          = Array{Float64, 1}(undef, p)
@@ -293,7 +298,6 @@ function rbe(df; dvar::Symbol,
             vm  = Array{Float64, 1}(undef, lclr)
             for i = 1:lclr
                 g        = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', Xv, Zv, x; memopt = memopt), θ)
-
                 dfi      = 2*((L[i:i,:]*C*L[i:i,:]')[1])^2/(g'*A*g)
                 vm[i]    = dfi/(dfi-2)
             end
@@ -317,15 +321,8 @@ function rbe(df; dvar::Symbol,
 
 end #END OF rbe()
 """
-This function apply following code for each factor before executing:
+This function can convert non-categorical to categorical and sort dataframe.
 
-```julia
-    categorical!(df, subject);
-    categorical!(df, formulation);
-    categorical!(df, period);
-    categorical!(df, sequence);
-    sort!(df, [subject, formulation, period])
-```
 
 It can takes more time, but can help to avoid some errors like: "ERROR: type ContinuousTerm has no field contrasts".
 """

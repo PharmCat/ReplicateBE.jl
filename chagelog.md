@@ -1,3 +1,8 @@
+- v1.0.3
+    * output fix
+    * add "linking" functions
+    * cosmetics
+
 - v1.0.2 (hotfix 2)
     * cmat fix
     * cosmetics

@@ -425,6 +425,42 @@ end
     @test ci[end][1]                        ≈ 0.8208303872086634    atol=1E-5
     @test ci[end][2]                        ≈ 1.3228068920153602    atol=1E-5
 
+    # Unbalanced by sequences
+    #26
+    #TRTR/RTRT
+    rds = ReplicateBE.randrbeds(;n=128, sequence=[1,2], design = ["T" "R" "T" "R"; "R" "T" "R" "T"], inter=[0.5, 0.4, 0.5], intra=[0.1, 0.15], intercept = 1.0, seqcoef = [1.0, 0.0], periodcoef = [0.0, 1.0, 0.0, 0.0], formcoef = [0.0, 0.2], seed = 10026)
+    be = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+    ci = confint(be, 0.1, expci = true)
+    #@test ReplicateBE.reml2(be)             ≈ 140.37671499958694    atol=1E-5
+    #@test ci[end][1]                        ≈ 0.8208303872086634    atol=1E-5
+    #@test ci[end][2]                        ≈ 1.3228068920153602    atol=1E-5
+    #27
+    #TRT/RTR
+    rds = ReplicateBE.randrbeds(;n=128, sequence=[1,2], design = ["T" "R" "T"; "R" "T" "R"], inter=[0.4, 0.3, 0.7], intra=[0.05, 0.2], intercept = 1.0, seqcoef = [1.1, 0.0], periodcoef = [0.0, 1.0, 0.0], formcoef = [0.2, 0.0], seed = 10027)
+    be = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+    ci = confint(be, 0.1, expci = true)
+    #@test ReplicateBE.reml2(be)             ≈ 140.37671499958694    atol=1E-5
+    #@test ci[end][1]                        ≈ 0.8208303872086634    atol=1E-5
+    #@test ci[end][2]                        ≈ 1.3228068920153602    atol=1E-5
+
+    # Unbalanced by sequences
+    #28
+    #TRTR/RTRT
+    rds = ReplicateBE.randrbeds(;n=512, sequence=[1,2], design = ["T" "R" "T" "R"; "R" "T" "R" "T"], inter=[0.5, 0.4, 0.7], intra=[0.1, 0.15], intercept = 1.0, seqcoef = [1.0, 0.0], periodcoef = [0.0, 1.0, 0.0, 0.0], formcoef = [0.0, 0.3], seed = 10028)
+    be = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+    ci = confint(be, 0.1, expci = true)
+    #@test ReplicateBE.reml2(be)             ≈ 140.37671499958694    atol=1E-5
+    #@test ci[end][1]                        ≈ 0.8208303872086634    atol=1E-5
+    #@test ci[end][2]                        ≈ 1.3228068920153602    atol=1E-5
+    #29
+    #TRT/RTR
+    rds = ReplicateBE.randrbeds(;n=512, sequence=[1,2], design = ["T" "R" "T"; "R" "T" "R"], inter=[0.4, 0.3, 0.7], intra=[0.05, 0.2], intercept = 1.0, seqcoef = [1.1, 0.0], periodcoef = [0.0, 0.0, 1.0], formcoef = [0.4, 0.0], seed = 10029)
+    be = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+    ci = confint(be, 0.1, expci = true)
+    #@test ReplicateBE.reml2(be)             ≈ 140.37671499958694    atol=1E-5
+    #@test ci[end][1]                        ≈ 0.8208303872086634    atol=1E-5
+    #@test ci[end][2]                        ≈ 1.3228068920153602    atol=1E-5
+
 end
 
 @testset "  #  Simulation                                  " begin

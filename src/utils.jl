@@ -41,7 +41,7 @@ function contrast(rbe::RBE, L::Matrix; numdf = 0, name = "Contrast", memopt = tr
     lcl     = L*rbe.C*L'
     lclr    = rank(lcl)
     F       = β'*L'*inv(lcl)*L*β/lclr
-    θ       = rvarlink(theta(rbe), rbe.vlm)
+    θ       = theta(rbe)
 
     if numdf == 0 numdf = rank(L) end
 

@@ -73,6 +73,7 @@ rbe(df; dvar::Symbol,
     memopt = true,
     init = [],
     postopt = false, maxopttry = 100)
+
 ```
 Mixed model fitting function for replicate bioequivalence without data preparation (apply categorical! for each factor and sort! to dataframe).
 
@@ -110,6 +111,7 @@ V_{i} = Z_{i}GZ_i'+R_{i}
 * init = [] - initial variance paremeters
 * postopt = false - post optimization
 * maxopttry = 100 - maximum attempts to optimize
+
 """
 function rbe(df; dvar::Symbol,
     subject::Symbol,
@@ -123,6 +125,7 @@ function rbe(df; dvar::Symbol,
     postopt = false, vlm = 1.0, maxopttry = 100, rhoadjstep = 0.15,
     rholink = :psigmoid,
     singlim = 1e-10)
+
     #Check
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
     if !(eltype(df[!,dvar]) <: Real)
@@ -196,6 +199,7 @@ function rbe(df; dvar::Symbol,
         rvarlink = (x, y) ->  varlinkmap(x, 1:4, 5,  vlinkr, z -> rholinkpsigmoidr(z, y))
     end
 
+
     θvec0 = rvarlink(θvec0, vlm)
     #Prelocatiom for G, R, V, V⁻¹ matrices
     G     = zeros(2, 2)
@@ -220,6 +224,7 @@ function rbe(df; dvar::Symbol,
             θvec0 = rvarlink(abs.(varlink(θvec0, vlm) .+ (rand(rng)-0.5)/20 .* varlink(θvec0, vlm) .+ eps()), vlm)[1:4]
             push!(θvec0, rand(rng))
             #θvec0[5] = θvec0[5] - rhoadjstep
+
         end
         optnum += 1
         if optnum > maxopttry
@@ -241,6 +246,7 @@ function rbe(df; dvar::Symbol,
     θ = varlink(θ, vlm)
     #Get reml
     remlv       = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memalloc)
+
     #Get Hessian matrix (H) with ForwardDiff
     H           = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, x, β), θ)
     if abs(θ[5]) > 1 - singlim
@@ -252,6 +258,7 @@ function rbe(df; dvar::Symbol,
     #Secondary parameters calculation
     A           = 2 * pinv(H)
     C           = cmat(Xv, Zv, iVv, θ)
+
     se          = Array{Float64, 1}(undef, p)
     F           = Array{Float64, 1}(undef, p)
     df          = Array{Float64, 1}(undef, p)
@@ -286,6 +293,7 @@ function rbe(df; dvar::Symbol,
             vm  = Array{Float64, 1}(undef, lclr)
             for i = 1:lclr
                 g        = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', Xv, Zv, x; memopt = memopt), θ)
+
                 dfi      = 2*((L[i:i,:]*C*L[i:i,:]')[1])^2/(g'*A*g)
                 vm[i]    = dfi/(dfi-2)
             end
@@ -306,6 +314,7 @@ function rbe(df; dvar::Symbol,
     sbf,
     p, zxr)
     return RBE(MF, RMF, design, fac, varlink(θvec0, vlm), vlm, Tuple(θ), remlv, fixed, typeiii, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
+
 end #END OF rbe()
 """
 This function apply following code for each factor before executing:
@@ -333,6 +342,7 @@ function rbe!(df; dvar::Symbol,
     rholink = :psigmoid,
     singlim = 1e-6)
 
+
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
     if !(eltype(df[!,dvar]) <: Real)
         @warn "Responce variable ∉ Real!"
@@ -356,6 +366,7 @@ function rbe!(df; dvar::Symbol,
     store_trace=store_trace, extended_trace=extended_trace, show_trace=show_trace,
     memopt=memopt, init=init, postopt=postopt, vlm = vlm, maxopttry = maxopttry, rhoadjstep = rhoadjstep,
     rholink = rholink, singlim = singlim)
+
 end
 #-------------------------------------------------------------------------------
 #returm -2REML

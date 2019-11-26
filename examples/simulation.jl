@@ -37,3 +37,4 @@ intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0],
 formcoef = [0.0, log(0.8)], seed = 0, dropobs = 10)
 
 result =  ReplicateBE.simulation(task; num = 2000, seed = 6564683774737, verbose = true)
+

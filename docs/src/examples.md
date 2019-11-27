@@ -1,6 +1,4 @@
-## Examples
-
-### Bioequivalence example
+## Bioequivalence example
 
 ```julia
 using CSV, DataFrames, ReplicateBE, StatsBase
@@ -62,7 +60,7 @@ reml2(be)
 design(be)
 ```
 
-### Random dataset generation
+###Random dataset generation
 
 ```julia
 using ReplicateBE
@@ -85,7 +83,7 @@ formcoef = [0.0, log(0.8)], seed = 1234, dropobs = 10)
 
 ```
 
-### Simulation
+## Simulation
 
 ```julia
 

@@ -1,6 +1,22 @@
 #Design structure
 """
-Describes of trial design.
+```julia
+struct Design
+    obs::Int              # Total observation
+    subj::Int             # Subjects
+    sqn::Int              # Sequences
+    pn::Int               # Periods
+    fn::Int               # Formulations
+    sbf::Vector{Int}      # Subject by formulation
+    rankx::Int            # Rank X
+    rankxz::Int           # Rank XZ
+    df2::Int              # DF (robust): Subjects - Sequence
+    df3::Int              # DF (contain): Observations - Rank(XZ)
+    df4::Int              # DF (Subj(Form)): sum(sbf) - sqn - 1                 # Experimental
+end
+```
+
+Trial design description.
 """
 struct Design
     obs::Int

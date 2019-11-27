@@ -1,15 +1,14 @@
-## Details
+## Introduction
 
 [![doi](https://img.shields.io/badge/doi-10.13140%2FRG.2.2.27418.39363-blue)](https://doi.org/10.13140/RG.2.2.27418.39363)
 
-### Introduction
 
 The replicate designed bioequivalence is a powerful approach to get more information about variation. In some cases the number of subjects required to demonstrate bioequivalence can be reduced by up to about 50% (Van Peer, A., 2010). For a high variability product, replication can really improve the precision and provide more complete intra-individual variation estimate. Also replicate design could be used for reference-scaled average bioequivalence (RSABE) to demonstrate bioequivalence for highly variable drugs (HVDs).
 With accordance to US FDA guideline linear mixed-effects model procedures, available in PROC MIXED in SAS or equivalent software, should be used for the analysis of replicated crossover studies for average BE (US FDA).
 At this moment linear mixed model effect analysis can be done with proprietary (SPSS, SAS, Stata) and open source (R:nlme, R:lme4, Julia:MixedModels) software. But not all statistical mixed models packages support flexible covariance structure fitting with structures like “heterogeneous compound symmetry” (CSH), FA0(2). This doesn’t means that lme4 or MixedModels can’t be used for bioequivalence estimation,  but CSH structure not available in this packages and comparison of results performed in SAS/SPSS with lme4 can be problematically.
 Objective of this work is: to provide instrument to make bioequivalence analysis with type C model and a development of a demonstrative code for step-by-step clarification of mixed model computation procedure for any interested developers.
 
-### Materials and Methods
+## Materials and Methods
 
 FDA recommended model can be described with following equation (Patterson, 2002; US FDA):
 
@@ -112,15 +111,15 @@ Where  ``A = 2H^{-1}``; ``g = \triangledown_{\theta}(LC^{-1}_{\theta}L')``
 
 Where L is a vector of known constant, C – variance-covariance matrix of fixed effects (var(β)), H – hessian matrix of REML function, N – total number of observations.
 
-### Validation
+## Validation
 
-ReplicateBE was validated with 6 reference public datasets, 25 generated datasets and simulation study. ReplicateBE is compliant to SAS/SPSS, values checked: REML estimate, variance components estimate, fixed effect estimate, standard error of fixed effect estimate. Validation procedures included in package test procedure and perform each time when new version released or can be done at any time on user machine. Validation results (REML & 90% CI) table can be found [here](https://github.com/PharmCat/ReplicateBE.jl/tree/master/validation).
+ReplicateBE was validated with 6 reference public datasets, 29 generated datasets and simulation study. ReplicateBE is compliant to SAS/SPSS when comparing the following parameters: REML estimate, variance components estimate, fixed effect estimate, standard error of fixed effect estimate. Validation procedures included in package test procedure and perform each time when new version released or can be done at any time on user machine. Validation results (REML & 90% CI) table can be found [here](https://github.com/PharmCat/ReplicateBE.jl/tree/master/validation).
 
 ReplicateBE include simulation utility, that based on generation multivariate distributed datasets. This can be used not only in purpose of the package diagnostics, but also in purpose of sample size estimation ets. Simulation using version 0.1.4 was performed with 100000 iterations. Confidence interval (95%) for type I error (alpha) is 0.048047 - 0.050733. No statistically significant difference found with acceptable rate (0.05) found. Other simulation results can be found [here](https://pharmcat.github.io/ReplicateBE.jl/latest/testval/#Simulation-study-1).
 
 Testing procedures cover approximately [![codecov](https://codecov.io/gh/PharmCat/ReplicateBE.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/PharmCat/ReplicateBE.jl) of code, and perform for each release on Travis CI platform: [![Build Status](https://api.travis-ci.com/PharmCat/ReplicateBE.jl.svg?branch=master)](https://travis-ci.com/PharmCat/ReplicateBE.jl).
 
-### Installation and using
+## Installation and using
 
 Installation:
 
@@ -170,21 +169,21 @@ formulation: 2 / formulation: 1
 Ratio: 106.65, CI: 99.5 - 114.3 (%)
 ```
 
-### Results
+## Results
 
 ReplicateBE was developed to get mixed model solution to bioequivalence clinical trial. Package repository: [![GitHub version](https://badge.fury.io/gh/PharmCat%2FReplicateBE.jl.svg)](https://badge.fury.io/gh/PharmCat%2FReplicateBE.jl), Julia 1.0.5 or latest should be installed.
 
-### Discussion
+## Discussion
 
-ReplicateBE not designed for modeling in a general purpose, but can be used in situation with similar structure. In part of datasets ReplicateBE showed better optimization result as SPSS. Also ReplicateBE based on direct inversing of variance-covarance matrix V, so computation of ``V^{-1}`` may be time expensive if size of matrix is big. This does not happen in bioequivalence study where size of ``V`` is no more 4 (4 periods). But in general this can be serious disadvantage. This situation can be avoided using sweep based transformations (Wolfinger et al., 1994). In ReplicateBE variance structure strictly denoted and can’t be changed, but it can be a target in package developing path. In ReplicateBE Satterthwaite degree of freedom (DF) estimate is equal with SAS/SPSS DF estimate for full-replicated basic bioequivalence balanced and unbalanced datasets (2x2x4, 2x2x3), and can be unequal in datasets with dropouts, results for half-replicated designs (2x3x3) or 2x4x4 designs can be found in validation results table.  
+ReplicateBE not designed for modeling in a general purpose, but can be used in situation with similar structure. In part of datasets ReplicateBE showed better optimization result as SPSS. Also ReplicateBE based on direct inversing of variance-covarance matrix V, so computation of ``V^{-1}`` may be time expensive if size of matrix is big. This does not happen in bioequivalence study where size of ``V`` is no more 4 (4 periods). But in general this can be serious performance disadvantage. This situation can be avoided using sweep based transformations (Wolfinger et al., 1994). In ReplicateBE variance structure strictly denoted and can’t be changed, but it can be a target in package developing path. In ReplicateBE Satterthwaite degree of freedom (DF) estimate is equal with SAS/SPSS DF estimate for full-replicated basic bioequivalence balanced and unbalanced datasets (2x2x4, 2x2x3), and can be unequal in datasets with dropouts. Validation results for half-replicated designs (2x3x3) or 2x4x4 designs can be found in validation results table.  
 
-### Development and version description
+## Development and version description
 
 Version format: ``X.Y.Z``
 
 * ``0.0.Z`` - alpha release, not ready for publics deploy;
 * ``0.Y.Z`` - beta release, ready for publics deploy and testing;
-* ``1.0.0`` - publics release with stable API and description of validation procedures, can be unstable or validation program can cover not all package functionality;
+* ``1.0.Z`` - publics release with stable API and description of validation procedures, can be unstable or validation program can cover not all package functionality;
 * ``1.1.0`` - stable public release;
 
 
@@ -194,11 +193,11 @@ When ``Y`` changed - minor patch, may include changes in functionality, but not 
 
 When ``X`` changed - major release, may include breaking changes.
 
-### Acknowledgments
+## Acknowledgments
 
 D.Sc. in Physical and Mathematical Sciences Anastasia Shitova a.shitova@qayar.ru
 
-### Literature Cited
+## Literature Cited
 
 * FDA Guidance for Industry: Statistical Approaches to Establishing Bioequivalence, 2001
 * Fletcher, Roger (1987), Practical methods of optimization (2nd ed.), New York: John Wiley & Sons, ISBN 978-0-471-91547-8

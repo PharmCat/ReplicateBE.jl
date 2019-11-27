@@ -67,7 +67,8 @@ end
     randrbeds(;n=24, sequence=[1,1],
         design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
         inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2],
-        intercept = 0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0],
+        intercept = 0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0],
+        formcoef = [0.0, 0.0],
         dropobs::Int = 0, seed::Int = 0)
 ```
 
@@ -207,7 +208,8 @@ end
 
 """
 ```julia
-simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l = log(0.8), u = log(1.25), seed = 0)
+simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100,
+    l = log(0.8), u = log(1.25), seed = 0)
 ```
 
 Count successful BE outcomes.

@@ -60,7 +60,7 @@ reml2(be)
 design(be)
 ```
 
-###Random dataset generation
+## Random dataset generation
 
 ```julia
 using ReplicateBE

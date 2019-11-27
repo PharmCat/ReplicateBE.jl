@@ -41,6 +41,16 @@ Generated datasets made with *randrbeds* function with fixed seed (could be repr
 
   * 25 TRR/RTT
 
+### 128 subject unbalanced dataset
+
+  * 26 TRTR/RTRT
+  * 27 TRT/RTR
+
+### 512 subject unbalanced dataset
+
+  * 28 TRTR/RTRT
+  * 29 TRT/RTR
+
 ### Special cases
 
     * 101 SP1: TRTR/RTRT 1024 subjects, 2000 dropped observations
@@ -49,6 +59,7 @@ Generated datasets made with *randrbeds* function with fixed seed (could be repr
 Datasets can be found [here](https://github.com/PharmCat/ReplicateBE.jl/tree/master/validation/csv).
 
 SP1 output:
+
 ```
 rds = ReplicateBE.randrbeds(;n=1024, sequence=[1,2], design = ["T" "R" "T" "R"; "R" "T" "R" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.1], dropobs = 2000, seed = 10101)
 @time be = ReplicateBE.rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
@@ -84,7 +95,8 @@ formulation: T / formulation: R
 106.673 - 115.1083 (%)
 ```
 
-SP2 output:    
+SP2 output:
+
 ```
 rds = ReplicateBE.randrbeds(;n=4096, sequence=[1,4], design = ["T" "R" "T"; "R" "T" "R"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.9], intercept = 1.0, seqcoef = [10.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 1.0], dropobs = 2000, seed = 10102)
 be = ReplicateBE.rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
@@ -124,12 +136,13 @@ formulation: T / formulation: R
 
   *SAS WARNING*: Stopped because of infinite likelihood.
 
-  ### Simulation study
+## Simulation
 
-  #### v0.1.4
+### v0.1.4
 
-  Following simulation was performed for version v0.1.4 (100000 iterations):
-  ```
+Following simulation was performed for version v0.1.4 (100000 iterations):
+
+```julia
   using Distributions, ReplicateBE
   function simulation(num)
     n   = 0
@@ -166,15 +179,17 @@ simulation(100000)
 ```
 
  Rusults:
+
 ```
  7104.944474 seconds (9.51 G allocations: 2.230 TiB, 44.90% gc time)
 0.04939
 ```
- Confidence interval (95%) for power: 0.048047 - 0.050733. No statistically significant difference found.
 
- #### v1.0.0
+Confidence interval (95%) for power: 0.048047 - 0.050733. No statistically significant difference found.
 
- ```
+### v1.0.0
+
+```julia
  task = ReplicateBE.RandRBEDS(;n=24,
  sequence=[1,2], design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
  inter=[0.05, 0.04, 0.6], intra=[0.02, 0.04],
@@ -182,19 +197,19 @@ simulation(100000)
  formcoef = [0.0, log(0.8)], seed = 0, dropobs = 0)
 
  @time result =  ReplicateBE.simulation(task; num = 100000, seed = 730795390628834530, verbose = true)
- ```
+```
 
- 1837.914923 seconds (3.99 G allocations: 1.092 TiB, 9.91% gc time)
+1837.914923 seconds (3.99 G allocations: 1.092 TiB, 9.91% gc time)
 
- Seed: 730795390628834530
+Seed: 730795390628834530
 
- Number: 100000
+Number: 100000
 
- Result: 0.05078660225829358
+Result: 0.05078660225829358
 
- CI: Estimate: 0.05079 (0.04943 - 0.05215)
+CI: Estimate: 0.05079 (0.04943 - 0.05215)
 
- ```
+```julia
  task = ReplicateBE.RandRBEDS(;n=24,
  sequence=[1,2], design = ["T" "R" "T"; "R" "T" "R"],
  inter=[0.05, 0.04, 0.4], intra=[0.02, 0.04],
@@ -202,21 +217,21 @@ simulation(100000)
  formcoef = [0.0, log(0.8)], seed = 0, dropobs = 0)
 
  @time result =  ReplicateBE.simulation(task; num = 100000, seed = 730795390628834530, verbose = true)
- ```
-
- 1638.566348 seconds (3.77 G allocations: 907.478 GiB, 9.77% gc time)
-
- Seed: 730795390628834530
-
- Number: 100000
-
- Result: 0.04997148203368122
-
- CI: Estimate: 0.04997 (0.04862 - 0.05132)
-
- #### version v1.0.1
-
 ```
+
+1638.566348 seconds (3.77 G allocations: 907.478 GiB, 9.77% gc time)
+
+Seed: 730795390628834530
+
+Number: 100000
+
+Result: 0.04997148203368122
+
+CI: Estimate: 0.04997 (0.04862 - 0.05132)
+
+### version v1.0.1
+
+```julia
  task = ReplicateBE.RandRBEDS(;n=24,
  sequence=[1,2], design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
  inter=[0.05, 0.04, 0.5], intra=[0.02, 0.04],
@@ -224,7 +239,8 @@ simulation(100000)
  formcoef = [0.0, log(0.8)], seed = 0, dropobs = 0)
 
  result =  ReplicateBE.simulation(task; num = 1000000, seed = 656468377477, verbose = true)
- ```
+```
+
 Seed: 656468377477
 
 Number: 1000000

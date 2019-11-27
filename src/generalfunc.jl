@@ -36,6 +36,9 @@ end
     G matrix
 """
 @inline function gmat(σ::Vector)::Matrix
+    #m = Matrix(Diagonal(σ[1:2]))
+    #m[1, 2] = m[2, 1] = sqrt(σ[1] * σ[2]) * σ[3]
+    #return m
     cov = sqrt(σ[1] * σ[2]) * σ[3]
     return [σ[1] cov; cov σ[2]]
 end
@@ -52,14 +55,14 @@ end
 """
     R matrix (ForwardDiff+)
 """
-@inline function rmat(σ::Vector{S}, Z::Matrix{T})::Matrix where S <: Real where T <: Real
-    return Matrix(Diagonal((Z*σ)[:,1]))
+@inline function rmat(σ::Vector, Z::Matrix)::Matrix
+    return Matrix(Diagonal((Z*σ)))
 end
 """
     R matrix  (memory pre-allocation)
 """
-@inline function rmat!(R::Matrix{Float64}, σ::Array{Float64, 1}, Z::Matrix{Float64})
-    copyto!(R, Matrix(Diagonal((Z*σ)[:,1])))
+@inline function rmat!(R::Matrix{Float64}, σ::Vector{Float64}, Z::Matrix{Float64})
+    copyto!(R, Matrix(Diagonal((Z*σ))))
     return
 end
 #-------------------------------------------------------------------------------
@@ -67,8 +70,8 @@ end
 """
     Return variance-covariance matrix V
 """
-@inline function vmat(G::Matrix{S}, R::Matrix{T}, Z::Matrix{U}) where S <: Real where T <: Real where U <: Real
-    V  = Z*G*Z' + R
+@inline function vmat(G::Matrix, R::Matrix, Z::Matrix)::Matrix
+    V  = Z * G * Z' + R
     return V
 end
 @inline function vmat!(V::Matrix{Float64}, G::Matrix{Float64}, R::Matrix{Float64}, Z::Matrix{Float64}, memc)
@@ -78,12 +81,12 @@ end
     V .+= R
     return
 end
-function mvmat(G::Matrix{S}, σ::Vector{T}, Z::Matrix{U}, cache) where S <: Real where T <: Real where U <: Real
+function mvmat(G::Matrix, σ::Vector, Z::Matrix, cache)::Matrix
     h = hash(tuple(σ, Z))
     if h in keys(cache)
         return cache[h]
     else
-        V  = Z*G*Z' + Matrix(Diagonal((Z*σ)[:,1]))
+        V  = Z * G * Z' + Matrix(Diagonal((Z*σ)))
         cache[h] = V
         return V
     end
@@ -102,17 +105,17 @@ end
     Return C matrix
     var(β) p×p variance-covariance matrix
 """
-@inline function cmat(Xv::Vector{Matrix{T}}, Zv::Vector, iVv::Vector, θ::Vector)::Array{Float64, 2} where T <: Real
+@inline function cmat(Xv::Vector{Matrix{Float64}}, Zv::Vector, iVv::Vector, θ::Vector)::Matrix{Float64}
     p = size(Xv[1])[2]
-    C = zeros(p,p)
+    C = zeros(p, p)
     for i=1:length(Xv)
-        @inbounds C .+= Xv[i]'*iVv[i]*Xv[i]
+        @inbounds C .+= Xv[i]' * iVv[i] * Xv[i]
     end
     return inv(C)
 end
 #println("θ₁: ", θ1, " θ₂: ",  θ2,  " θ₃: ", θ3)
 
-function minv(M, cache)
+function minv(M::Matrix, cache::Dict)::Matrix
     h = hash(M)
     if h in keys(cache)
         return cache[h]
@@ -122,7 +125,7 @@ function minv(M, cache)
         return iM
     end
 end
-function mlogdet(M, cache)
+function mlogdet(M::Matrix, cache::Dict)
     h = hash(M)
     if h in keys(cache)
         return cache[h]
@@ -136,7 +139,7 @@ end
 """
     REML function for ForwardDiff
 """
-function reml(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vector; memopt::Bool = true)
+function reml(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vector; memopt::Bool = true)::Real
     maxobs    = maximum(length.(yv))
     #some memory optimizations to reduse allocations
     mXviV     = Array{Array{eltype(θvec), 2}, 1}(undef, maxobs)
@@ -151,7 +154,7 @@ function reml(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vec
     n         = length(yv)
     N         = sum(length.(yv))
     G         = gmat(θvec[3:5])
-    c         = (N-p)*LOG2PI
+    c         = (N - p) * LOG2PI
     θ1        = 0
     θ2        = zeros(promote_type(Float64, eltype(θvec)), p, p)
     θ3        = 0
@@ -175,15 +178,15 @@ function reml(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vec
         @inbounds mul!(mXviVXv, mXviV[size(Xv[i])[1]], Xv[i])
         θ2  += mXviVXv
         #-----------------------------------------------------------------------
-        @inbounds r    = yv[i]-Xv[i]*β
-        θ3  += r'*iV*r
+        @inbounds r    = yv[i] - Xv[i] * β
+        θ3  += r' * iV * r
     end
     return   -(θ1 + logdet(θ2) + θ3 + c)/2
 end
 """
     REML estimation with β recalculation
 """
-function remlb(yv, Zv, p, Xv, θvec, β; memopt::Bool = true)
+function remlb(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vector; memopt::Bool = true)::Real
     maxobs    = maximum(length.(yv))
     #some memory optimizations to reduse allocations
     mXviV     = Array{Array{eltype(θvec), 2}, 1}(undef, maxobs)
@@ -225,7 +228,7 @@ function remlb(yv, Zv, p, Xv, θvec, β; memopt::Bool = true)
         @inbounds mul!(mXviV[size(Xv[i])[1]], Xv[i]', iVv[i])
         @inbounds mul!(mXviVXv, mXviV[size(Xv[i])[1]], Xv[i])
         θ2  += mXviVXv
-        @inbounds βm  .+= mXviV[size(Xv[i])[1]]*yv[i]
+        @inbounds βm  .+= mXviV[size(Xv[i])[1]] * yv[i]
         #-----------------------------------------------------------------------
         #tm   = Xv[i]'*iVv[i]    #Temp matrix for Xv[i]'*iV*Xv[i] and Xv[i]'*iV*yv[i] calc
         #θ2m .+= tm*Xv[i]
@@ -233,8 +236,8 @@ function remlb(yv, Zv, p, Xv, θvec, β; memopt::Bool = true)
     end
     mul!(βt, inv(θ2), βm)
     for i = 1:n
-        @inbounds r    = yv[i] - Xv[i]*βt
-        @inbounds θ3  += r'*iVv[i]*r
+        @inbounds r    = yv[i] - Xv[i] * βt
+        @inbounds θ3  += r' * iVv[i] * r
     end
 
     return   -(θ1 + logdet(θ2) + θ3 + c)/2
@@ -242,7 +245,7 @@ end
 """
 Satterthwaite DF gradient function.
 """
-function lclgf(L, Lt, Xv, Zv, θ; memopt::Bool = true)
+function lclgf(L, Lt, Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
     p     = size(Xv[1])[2]
     G     = gmat(θ[3:5])
     C     = zeros(promote_type(Float64, eltype(θ)), p, p)
@@ -255,9 +258,9 @@ function lclgf(L, Lt, Xv, Zv, θ; memopt::Bool = true)
             R   = rmat(θ[1:2], Zv[i])
             iV  = inv(vmat(G, R, Zv[i]))
         end
-        C  += Xv[i]'*iV*Xv[i]
+        C  += Xv[i]' * iV * Xv[i]
     end
-    return (L*inv(C)*Lt)[1]
+    return (L * inv(C) * Lt)[1]
 end
 #-------------------------------------------------------------------------------
 #             REML FOR OPT ALGORITHM
@@ -265,7 +268,9 @@ end
 """
     REML with β final update
 """
-function reml2b!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2}, Rv::T, Vv::T, iVv::T, θvec::Array{Float64, 1}, β::Array{Float64, 1}, mem::MemAlloc)::Float64 where T <: Array{Array{Float64, 2}, 1} where S <: Array{Array{Float64, 1}, 1}
+function reml2b!(yv::Vector, Zv::Vector, p::Int, n::Int, N::Int,
+        Xv::Vector, G::Matrix{Float64}, Rv::Vector, Vv::Vector, iVv::Vector,
+        θvec::Vector{Float64}, β::Vector{Float64}, mem::MemAlloc)::Float64
     gmat!(G, θvec[3:5])
     c  = (N-p)*LOG2PI #log(2π)
     θ1 = 0
@@ -284,14 +289,14 @@ function reml2b!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 
         θ1  += mlogdet(Vv[i], cachel)
         #-
         mul!(mem.mem2[size(Xv[i])[1]], Xv[i]', iVv[i])
-        θ2    .+= mem.mem2[size(Xv[i])[1]]*Xv[i]
-        βm    .+= mem.mem2[size(Xv[i])[1]]*yv[i]
+        θ2    .+= mem.mem2[size(Xv[i])[1]] * Xv[i]
+        βm    .+= mem.mem2[size(Xv[i])[1]] * yv[i]
     end
     mul!(β, inv(θ2), βm)
     for i = 1:n
         copyto!(mem.mem3[length(yv[i])], yv[i])
-        mem.mem3[length(yv[i])] .-= Xv[i]*β
-        θ3  += mem.mem3[length(yv[i])]'*iVv[i]*mem.mem3[length(yv[i])]
+        mem.mem3[length(yv[i])] .-= Xv[i] * β
+        θ3  += mem.mem3[length(yv[i])]' * iVv[i] * mem.mem3[length(yv[i])]
         #Same:
         #r    = yv[i] - Xv[i]*β
         #θ3  += r'*iVv[i]*r
@@ -302,13 +307,13 @@ end
 """
     Initial variance computation
 """
-function initvar(df, dv, fac, sbj)
+function initvar(df::DataFrame, dv, fac::Symbol, sbj::Symbol)::Vector
     u  = unique(df[:, sbj])
     f  = unique(df[:, fac])
     fv = Array{Float64, 1}(undef, 0)
     sb = Array{Float64, 1}(undef, 0)
     for i in f
-        push!(fv,var(df[df[!, fac] .== i, dv]))
+        push!(fv, var(df[df[!, fac] .== i, dv]))
     end
     for i in u
         sv = var(df[df[!, sbj] .== i, dv])
@@ -340,17 +345,17 @@ function vlinkr(σ)
 end
 
 function rholinkpsigmoid(ρ, m)
-    return 1/(1 + exp(ρ*m))
+    return 1/(1 + exp(ρ * m))
 end
 function rholinkpsigmoidr(ρ, m)
-    return log(1/ρ-1)/m
+    return log(1/ρ - 1)/m
 end
 
 function rholinksigmoid(ρ, m)
     return ρ/sqrt(1 + ρ^2)
 end
 function rholinksigmoidr(ρ, m)
-    return sign(ρ)*sqrt(ρ^2/(1-ρ^2))
+    return sign(ρ)*sqrt(ρ^2/(1 - ρ^2))
 end
 
 function rholinksigmoid2(ρ, m)

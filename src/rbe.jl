@@ -230,7 +230,7 @@ function rbe(df; dvar::Symbol,
         optnum += 1
         if optnum > maxopttry
             opttry = false
-            throw(ErrorException("Optimization faild! Iteration $(optnum), θvec = $(θvec0)"))
+            throw(ErrorException("Optimization faild! Iteration $(optnum), θvec = $(varlink(θvec0, vlm))"))
         end
 
     end

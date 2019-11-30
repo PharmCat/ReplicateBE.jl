@@ -5,10 +5,12 @@
 
 using Test, CSV, DataFrames, StatsBase
 
+path    = dirname(@__FILE__)
+
 include("testdata.jl")
 
 @testset "  Basic mixed model test                         " begin
-    be = ReplicateBE.rbe!(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
+    be = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     e1 = be.fixed.est[6]
     @test be.fixed.est[6]       ≈  -0.0791666 atol=1E-5
     @test be.fixed.se[6]        ≈   0.09037378448083119 atol=1E-5
@@ -30,7 +32,7 @@ include("testdata.jl")
     @test ci[end][2]            ≈   0.088882433441213 atol=1E-5
     @test dof(be)[end]          ≈   5.463110799437906 atol=1E-5
 
-    be = ReplicateBE.rbe!(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10, memopt = false);
+    be = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10, memopt = false);
     @test be.fixed.est[6] == e1
     @test ReplicateBE.estimate(be, [0 0 0 0 0 1], df = :cont, name = "Formulation")[1,4] == 8
 
@@ -43,12 +45,17 @@ include("testdata.jl")
     Base.show(io, ReplicateBE.estimate(be, [0 0 0 0 0 1]))
 
     #POSTOPT+
-    be = ReplicateBE.rbe!(df, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10, postopt = true)
+    be = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10, postopt = true)
     #CONTRAST MULTIDIM+
     L = [0 0 1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 1 0]
     t =  ReplicateBE.typeiii(be)
     c =  ReplicateBE.contrast(be, L)
     @test t[2, 5] ≈ c[1, 5]
+
+    be = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, rholink = :sigmoid)
+    ci1 = confint(be)[end]
+    be = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, rholink = :arctgsigmoid)
+    ci2 = confint(be)[end]
 end
 
 @testset "  #1                                             " begin
@@ -94,8 +101,8 @@ end
     #REML 530.14451303
     #SE 0.04650
     #DF 208
-    df4[!,:var1] = float.(df4[!,:var1])
-    be = ReplicateBE.rbe!(df4, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
+    #df4[!,:var1] = float.(df4[!,:var1])
+    be = ReplicateBE.rbe!(df4, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     ci = ReplicateBE.confint(be, 0.1, expci = true, inv = true)
     @test be.reml  ≈  530.1445137281626  atol=1E-5
     @test be.fixed.se[6] ≈    0.04650123700721 atol=1E-5
@@ -109,8 +116,8 @@ end
 @testset "  #5 Patterson 2012 doi:10.1002/pst.498 AUC      " begin
     #SAS  REML 321.44995530 - SAS STOP!
     #SPSS REML 314.221769
-    df5[!,:var1] = float.(df5[!,:var1])
-    be = ReplicateBE.rbe!(df5, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
+    #df5[!,:var1] = float.(df5[!,:var1])
+    be = ReplicateBE.rbe!(df5, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     ci = ReplicateBE.confint(be, 0.1, expci = true)
     @test be.reml                           ≈  314.2217688405106 atol=1E-5
     @test ci[end][1]                        ≈  0.6307479743996646 atol=1E-5 #1.187496 SPSS
@@ -124,8 +131,8 @@ end
     #SE 0.04153
     #DF 62
     #F 2.40
-    df6[!,:var1] = float.(df6[!,:var1])
-    be = ReplicateBE.rbe!(df6, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
+    #df6[!,:var1] = float.(df6[!,:var1])
+    be = ReplicateBE.rbe!(df6, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     ci = confint(be, 0.1, expci = true)
     @test ReplicateBE.reml2(be)  ≈  329.25749377843033 atol=1E-5
     @test be.fixed.f[end]        ≈  2.399661661708039 atol=1E-5
@@ -134,7 +141,7 @@ end
 end
 
 @testset "  #  Utils test                                  " begin
-    be = ReplicateBE.rbe!(df6, dvar = :var1, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
+    be = ReplicateBE.rbe!(df6, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     @test ReplicateBE.contrast(be, [0 0 0 0 0 1]).f[1]   ≈ 2.3996616631488368 atol=1E-5
     estt = ReplicateBE.estimate(be, [0 0 0 0 0 1])
     @test estt.est[1]                                    ≈ 0.06434039007812514 atol=1E-5

@@ -1,3 +1,8 @@
+- v1.0.4
+    * CSV test dataset
+    * rho linking function fix
+    * docs update
+
 - v1.0.3
     * output fix
     * add "linking" functions

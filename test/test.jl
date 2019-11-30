@@ -63,7 +63,7 @@ include("testdata.jl")
 
 end
 
-@testset "  #1                                             " begin
+@testset "  #1 Patterson and Jones 2017 E 4.3              " begin
     be = ReplicateBE.rbe!(df1, dvar = :logCmax, subject = :id, formulation = :formulation, period = :period, sequence = :sequence)
     ci = confint(be, 0.1; expci = true)[end]
     @test ci[1]                             ≈  0.831853  atol=1E-4
@@ -79,7 +79,7 @@ end
     @test ReplicateBE.stderror(be)[end]     ≈ 0.024308218717669812   atol=1E-5
 end
 
-@testset "  #2                                             " begin
+@testset "  #2 Shein-Chung Chow, Jen-pei Liu 2009 E 9.4.1  " begin
     be = ReplicateBE.rbe!(df2, dvar = :logAUC, subject = :id, formulation = :formulation, period = :period, sequence = :sequence)
     #SPSS -2REML 45.242642
     @test ReplicateBE.reml2(be)             ≈ 45.242642227970045 atol=1E-5
@@ -88,7 +88,7 @@ end
     @test ci[2]                             ≈  1.38703413072702 atol=1E-5
 end
 
-@testset "  #3                                             " begin
+@testset "  #3 Patterson and Jones 2017 E 4.4              " begin
     be = ReplicateBE.rbe!(df3, dvar = :logCmax, subject = :id, formulation = :formulation, period = :period, sequence = :sequence)
     ci = confint(be, 0.1; expci = true)[end]
     @test ReplicateBE.reml2(be)             ≈ 433.84147581860884

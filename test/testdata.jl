@@ -5,8 +5,11 @@
 
 #Simple dataset
 df0         = CSV.File(path*"/csv/df0.csv") |> DataFrame
+#Scott D. Patterson, Byron Jones, Bioequivalence and Statistics in Clinical Pharmacology 2nd Edition - ISBN 9781466585201, example 4.3, t 4.29, p. 104
 df1         = CSV.File(path*"/csv/df1.csv") |> DataFrame
+#Shein-Chung Chow, Jen-pei Liu, Design and Analysis of Bioavailability and Bioequivalence Studies, 3rd Edition, ISBN 9781584886686, example 9.4.1, t. 9.4.3, p. 284
 df2         = CSV.File(path*"/csv/df2.csv") |> DataFrame
+#Scott D. Patterson, Byron Jones, Bioequivalence and Statistics in Clinical Pharmacology 2nd Edition - ISBN 9781466585201, example 4.4, t. 4.30, p. 105
 df3         = CSV.File(path*"/csv/df3.csv") |> DataFrame
 #QA 1 Bioequivalence 2x2x4, UnB, NC Dataset
 df4         = CSV.File(path*"/csv/df4.csv") |> DataFrame

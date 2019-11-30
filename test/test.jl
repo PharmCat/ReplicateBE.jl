@@ -35,7 +35,7 @@ include("testdata.jl")
     be = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10, memopt = false);
     @test be.fixed.est[6] == e1
     @test ReplicateBE.estimate(be, [0 0 0 0 0 1], df = :cont, name = "Formulation")[1,4] == 8
-
+    ci0 = confint(be)[end]
     io = IOBuffer();
     Base.show(io, be)
     Base.show(io, ci)
@@ -45,6 +45,7 @@ include("testdata.jl")
     Base.show(io, ReplicateBE.estimate(be, [0 0 0 0 0 1]))
 
     #POSTOPT+
+    #Not recommended
     be = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10, postopt = true)
     #CONTRAST MULTIDIM+
     L = [0 0 1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 1 0]
@@ -52,10 +53,14 @@ include("testdata.jl")
     c =  ReplicateBE.contrast(be, L)
     @test t[2, 5] ≈ c[1, 5]
 
-    be = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, rholink = :sigmoid)
+    be  = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, rholink = :sigmoid)
     ci1 = confint(be)[end]
-    be = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, rholink = :arctgsigmoid)
+    @test ci0[1] ≈ ci1[1]
+    @test ci0[2] ≈ ci1[2]
+    #Experimental
+    be  = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, rholink = :arctgsigmoid, singlim = 1e-4)
     ci2 = confint(be)[end]
+
 end
 
 @testset "  #1                                             " begin

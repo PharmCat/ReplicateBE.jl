@@ -19,6 +19,7 @@ or:
 using Pkg; Pkg.clone("https://github.com/PharmCat/ReplicateBE.jl.git")
 ```
 
+## Contents
 
 ```@contents
 Pages = [

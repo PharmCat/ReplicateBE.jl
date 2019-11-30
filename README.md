@@ -62,13 +62,13 @@ period: 4        0.036742      0.0561037   0.428886   153.634   0.654894    0.51
 formulation: 2   0.0643404     0.0415345   2.39966    62.0      1.54908     0.126451
 ──────────────────────────────────────────────────────────────────────────────────────────────────────
 Intra-individual variance:
-formulation: 1   0.108629   CVᵂ:   33.87   %
+formulation: 1   0.108629    CVᵂ:   33.87   %
 formulation: 2   0.0783544   CVᵂ:   28.55   %
 
 Inter-individual variance:
 formulation: 1   0.377846
 formulation: 2   0.421356
-ρ:               0.980288   Cov: 0.391143
+ρ:               0.980288   Cov: 0.391143   
 
 Confidence intervals(90%):
 formulation: 1 / formulation: 2

@@ -359,10 +359,10 @@ function rholinksigmoidr(ρ, m)
 end
 
 function rholinksigmoid2(ρ, m)
-    return arctg(ρ)
+    return atan(ρ)
 end
 function rholinksigmoidr2(ρ, m)
-    return tg(ρ)
+    return tan(ρ)
 end
 
 function varlinkmap(θ, r1, r2, f1, f2)

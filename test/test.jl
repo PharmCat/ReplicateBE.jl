@@ -292,8 +292,13 @@ end
     @test ReplicateBE.reml2(be)             ≈ 129.06198795781413   atol=1E-5
     @test ReplicateBE.stderror(be)[end]     ≈ 0.1096846988112254   atol=1E-5
     ci = confint(be, 0.1, expci = true)
-    @test ci[end][1]                        ≈ 0.8719537380504332   atol=1E-5
-    @test ci[end][2]                        ≈ 1.2621358539962937   atol=1E-5
+    #1.0.4
+    #@test ci[end][1]                        ≈ 0.8719537380504332   atol=1E-5
+    #@test ci[end][2]                        ≈ 1.2621358539962937   atol=1E-5
+    #1.0.5
+    @test ci[end][1]                        ≈ 0.8719023753585434   atol=1E-5
+    @test ci[end][2]                        ≈ 1.2622102048603623   atol=1E-5
+
 
     #DF contain 74
     #DF contain form 92
@@ -395,8 +400,13 @@ end
     @test ReplicateBE.reml2(be)             ≈ 237.07672185 atol=1E-5
     @test ReplicateBE.stderror(be)[end]     ≈ 0.09665    atol=1E-5
     ci = confint(be, 0.1, expci = true)
-    @test ci[end][1]                        ≈ 0.8296448401676422             atol=1E-5
-    @test ci[end][2]                        ≈ 1.14767886003498             atol=1E-5
+    #v1.0.4
+    #@test ci[end][1]                        ≈ 0.8296448401676422             atol=1E-5
+    #@test ci[end][2]                        ≈ 1.14767886003498             atol=1E-5
+    #v1.0.5
+    @test ci[end][1]                        ≈ 0.8293880338983111             atol=1E-5
+    @test ci[end][2]                        ≈ 1.1480342197874598             atol=1E-5
+
     #DF contain 35
     #22
     #TRR/RTR
@@ -406,8 +416,13 @@ end
     @test ReplicateBE.reml2(be)             ≈ 232.55722966 atol=1E-5
     @test ReplicateBE.stderror(be)[end]     ≈ 0.1090 atol=1E-5
     ci = confint(be, 0.1, expci = true)
-    @test ci[end][1]                        ≈ 0.90656475483436             atol=1E-5
-    @test ci[end][2]                        ≈ 1.3053853980517822             atol=1E-5
+    #v1.0.4
+    #@test ci[end][1]                        ≈ 0.90656475483436             atol=1E-5
+    #@test ci[end][2]                        ≈ 1.3053853980517822             atol=1E-5
+    #v1.0.5
+    @test ci[end][1]                        ≈ 0.9064394831113237            atol=1E-5
+    @test ci[end][2]                        ≈ 1.3055658048846954             atol=1E-5
+
     #DF contain 32
 
     # Unbalanced by sequences

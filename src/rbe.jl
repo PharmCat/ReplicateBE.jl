@@ -251,6 +251,7 @@ function rbe(df; dvar::Symbol,
     #Get Hessian matrix (H) with ForwardDiff
     H           = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, x, β), θ)
     #H           = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, varlink(x, vlm), β), θ)
+    #H           = O.trace[end].metadata["h(x)"]
     #θ           = varlink(θ, vlm)
 
     #If rho is near to 1.0 it leads to singular hessian matrix, and rho should be removed from variance-covariance matrix
@@ -263,7 +264,12 @@ function rbe(df; dvar::Symbol,
 
     dH          = det(H)
     #Secondary parameters calculation
-    A           = 2 * pinv(H)
+    A = nothing
+    if abs(dH) > singlim
+        A       = 2 * inv(H)
+    else
+        A       = 2 * pinv(H)
+    end
     C           = cmat(Xv, Zv, iVv, θ)
     se          = Array{Float64, 1}(undef, p)
     F           = Array{Float64, 1}(undef, p)
@@ -566,8 +572,8 @@ function Base.show(io::IO, rbe::RBE)
     rcoef = coefnames(rbe.rmodel);
     θ     = theta(rbe)
     println(io, "Bioequivalence Linear Mixed Effect Model (status: $(Optim.converged(rbe.optim) ? "converged" : printstyled(io, "not converged"; color = :red)))")
-    if rbe.detH <= 0.0
-        printstyled(io, "Hessian not positive!"; color = :yellow)
+    if !isposdef(Symmetric(rbe.H))
+        printstyled(io, "Hessian not positive defined!"; color = :yellow)
         println(io, "")
     end
     if θ[end] >= 1.0 - eps()

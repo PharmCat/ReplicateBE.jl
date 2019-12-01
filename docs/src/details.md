@@ -91,7 +91,7 @@ F = \frac{\beta'L'(LCL')^{-1}L\beta}{rank(LCL')}
 Where
 
 ```math
-C = \sum_{i=1}^{n} X_i'V_i^{-1}X_i
+C = (\sum_{i=1}^{n} X_i'V_i^{-1}X_i)^{-1}
 ```
 
 And
@@ -106,7 +106,7 @@ Degree of freedom (DF) computed with Satterthwaite approximation or with “cont
 df = \frac{2(LCL')^{2}}{g'Ag}
 ```
 
-Where  ``A = 2H^{-1}``; ``g = \triangledown_{\theta}(LC^{-1}_{\theta}L')``
+Where  ``A = 2H^{-1}``; ``g = \triangledown_{\theta}(LC_{\theta}L')``
 
 
 Where L is a vector of known constant, C – variance-covariance matrix of fixed effects (var(β)), H – hessian matrix of REML function, N – total number of observations.

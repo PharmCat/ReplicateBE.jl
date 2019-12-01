@@ -414,7 +414,7 @@ se = \\sqrt{LCL'}
 where
 
 ```math
-C = \\sum_{i=1}^{n} X_i'V_i^{-1}X_i
+C = (\\sum_{i=1}^{n} X_i'V_i^{-1}X_i)^{-1}
 ```
 """
 function StatsBase.stderror(rbe::RBE)

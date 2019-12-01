@@ -323,20 +323,6 @@ function initvar(df::DataFrame, dv, fac::Symbol, sbj::Symbol)::Vector
     return fv
 end
 #------------------------------------------------------------------------------
-#=
-function varlink(θ, m)
-    θl      = similar(θ)
-    θl[1:4] = exp.(θ[1:4])
-    θl[5]    = 1/(1 + exp(θ[5]*m))
-    return θl
-end
-function rvarlink(θ, m)
-    θl      = similar(θ)
-    θ1[1:4]  = log.(θ[1:4])
-    θ1[5]    = log(1/θ[5]-1)/m
-    return θ1
-end
-=#
 function vlink(σ)
     exp(σ)
 end

@@ -15,7 +15,7 @@ F = \\frac{\\beta'L'(LCL')^{-1}L\\beta}{rank(LCL')}
 where
 
 ```math
-C = \\sum_{i=1}^{n} X_i'V_i^{-1}X_i
+C = (\\sum_{i=1}^{n} X_i'V_i^{-1}X_i)^{-1}
 ```
 
 DF for one-dimetion case:
@@ -26,7 +26,7 @@ df = \\frac{2(LCL')^{2}}{g'Ag}
 
 where ``A = 2H^{-1}``
 
-where ``g = \\triangledown _{\\theta}(LC^{-1}L')``
+where ``g = \\triangledown _{\\theta}(LC_{\\theta}L')``
 
 DF for multi-dimention case see Schaalje et al 2002.
 
@@ -93,12 +93,12 @@ df = \\frac{2(LCL')^{2}}{g'Ag}
 where
 
 ```math
-C = \\sum_{i=1}^{n} X_i'V_i^{-1}X_i
+C = (\\sum_{i=1}^{n} X_i'V_i^{-1}X_i)^{-1}
 ```
 
 where ``A = 2H^{-1}``
 
-where ``g = \\triangledown _{\\theta}(LC^{-1}L')``
+where ``g = \\triangledown _{\\theta}(LC_{\\theta}L')``
 
 For ```df = :cont``` (contain):
 

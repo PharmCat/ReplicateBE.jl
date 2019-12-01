@@ -121,12 +121,17 @@ end
 @testset "  #5 Patterson 2012 doi:10.1002/pst.498 AUC      " begin
     #SAS  REML 321.44995530 - SAS STOP!
     #SPSS REML 314.221769
-    #df5[!,:var1] = float.(df5[!,:var1])
+    df5[!,:var] = float.(df5[!,:var])
     be = ReplicateBE.rbe!(df5, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     ci = ReplicateBE.confint(be, 0.1, expci = true)
     @test be.reml                           ≈  314.2217688405106 atol=1E-5
+    #1.0.4
     @test ci[end][1]                        ≈  0.6307479743996646 atol=1E-5 #1.187496 SPSS
     @test ci[end][2]                        ≈  0.8420705538500828 atol=1E-5 #1.585490 SPSS
+    #1.0.5
+    #@test ci[end][1]                        ≈  0.6307285753672432 atol=1E-5 #1.187496 SPSS
+    #@test ci[end][2]                        ≈  0.8420964530317809 atol=1E-5 #1.585490 SPSS
+    #0.8420964530317809
     #119-159%
 end
 
@@ -235,8 +240,8 @@ end
     @test ReplicateBE.reml2(be)         ≈ 173.3987026483377   atol=1E-5
     @test ReplicateBE.stderror(be)[end]     ≈ 0.126898491641026    atol=1E-5
     ci = confint(be, 0.1, expci = true)
-    @test ci[end][1]                        ≈ 0.8697647630450958    atol=1E-5
-    @test ci[end][2]                        ≈ 1.3438521036812334   atol=1E-5
+    @test ci[end][1]                        ≈ 0.8697647630450958    atol=1E-4
+    @test ci[end][2]                        ≈ 1.3438521036812334    atol=1E-4
     #6
     #TRTR/RTRT/TTRR/RRTT
     rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1,1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T" ; "T" "T" "R" "R"; "R" "R" "T" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10006)

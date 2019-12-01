@@ -13,7 +13,7 @@ function mrmat(σ::Vector{S}, Z::Matrix{T}, cache)::Matrix where S <: Real where
 end
 =#
 #=
-function Base.show(io::IO, obj::Tuple{Vararg{Tuple{Float64, Float64}}})
+function Base.show(io::IO, obj::Tuple{Vararg{Tuple{Real, Real}}})
     for i in obj
         println(io, i)
     end
@@ -50,9 +50,9 @@ end
     C
 """
 function ctrst(p, Xv, Zv, iVv, θ, β, A, C; memopt::Bool = true)
-    se    = Array{Float64, 1}(undef, p)
-    F     = Array{Float64, 1}(undef, p)
-    df    = Array{Float64, 1}(undef, p)
+    se    = Array{Real, 1}(undef, p)
+    F     = Array{Real, 1}(undef, p)
+    df    = Array{Real, 1}(undef, p)
     for i = 1:p
         L    = zeros(1, p)
         L[i]    = 1
@@ -74,7 +74,7 @@ end
 """
 function rmatvec(σ₁, σ₂, Zvec)
     n  = length(Zvec)
-    Ra = Array{Array{Float64,2}, 1}(undef, n)
+    Ra = Array{Array{Real,2}, 1}(undef, n)
     for i = 1:n
         Ra[i] = rmat([σ₁, σ₂], Zvec[i])
     end
@@ -85,7 +85,7 @@ end
 """
 function vmatvec(Zvec, G, Rvec)
     n  = length(Zvec)
-    Va = Array{Array{Float64,2}, 1}(undef, n)
+    Va = Array{Array{Real,2}, 1}(undef, n)
     for i = 1:length(Zvec)
         Va[i] = vmat(G, Rvec[i], Zvec[i])
     end
@@ -102,7 +102,7 @@ function βcoef(yv, X, Xv, iVv)
     end
     return inv(A)*β
 end
-function βcoef!(p::Int, n::Int, yv::Array{Array{Float64, 1}, 1}, Xv::Array{Array{Float64, 2}, 1}, iVv::Array{Array{Float64, 2}, 1}, β::Array{Float64, 1})
+function βcoef!(p::Int, n::Int, yv::Array{Array{Real, 1}, 1}, Xv::Array{Array{Real, 2}, 1}, iVv::Array{Array{Real, 2}, 1}, β::Array{Real, 1})
     A = zeros(p,p)
     β0 = zeros(p)
     for i = 1:n
@@ -116,7 +116,7 @@ end
     Optim reml without β
     For Pre-opt
 """
-function reml2!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Float64, 2}, Rv::T, Vv::T, iVv::T, θvec::Array{Float64, 1}, β::Array{Float64, 1}, memc, memc2, memc3, memc4)::Float64 where T <: Array{Array{Float64, 2}, 1} where S <: Array{Array{Float64, 1}, 1}
+function reml2!(yv::S, Zv::T, p::Int, n::Int, N::Int, Xv::T, G::Array{Real, 2}, Rv::T, Vv::T, iVv::T, θvec::Array{Real, 1}, β::Array{Real, 1}, memc, memc2, memc3, memc4)::Real where T <: Array{Array{Real, 2}, 1} where S <: Array{Array{Real, 1}, 1}
     gmat!(G, θvec[3], θvec[4], θvec[5])
     c  = (N-p)*LOG2PI
     θ1 = 0
@@ -145,9 +145,9 @@ end
 
 function memcalloc(p, zs, yv)
     maxobs  = maximum(length.(yv))
-    memc = Array{Array{Float64, 2}, 1}(undef, maxobs)
-    memc2 = Array{Array{Float64, 2}, 1}(undef, maxobs)
-    memc3 = Array{Array{Float64, 1}, 1}(undef, maxobs)
+    memc = Array{Array{Real, 2}, 1}(undef, maxobs)
+    memc2 = Array{Array{Real, 2}, 1}(undef, maxobs)
+    memc3 = Array{Array{Real, 1}, 1}(undef, maxobs)
     for i = 1:maxobs
         memc[i] = zeros(i, zs)
         memc2[i] = zeros(p, i)

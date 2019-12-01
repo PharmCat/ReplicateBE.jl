@@ -1,3 +1,7 @@
+- v1.0.5
+    * inv(H) used where possible
+    * Type optimization
+
 - v1.0.4
     * CSV test dataset
     * rho linking function fix

@@ -46,7 +46,7 @@ function contrast(rbe::RBE, L::Matrix; numdf = 0, name = "Contrast", memopt = tr
     if numdf == 0 numdf = rank(L) end
 
     if rank(L) ≥ 2
-        vm      = Array{Float64, 1}(undef, size(L, 1))
+        vm      = Array{eltype(rbe.Xv[1]), 1}(undef, size(L, 1))
         for i = 1:length(vm)
             g       = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
             df      = 2*((L[i:i,:]*rbe.C*L[i:i,:]')[1])^2/(g'*(rbe.A)*g)

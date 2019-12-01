@@ -7,14 +7,14 @@
 """
 function sortsubjects(df::DataFrame, sbj::Symbol, X::Matrix, Z::Matrix, y::Vector)
     u = unique(df[:, sbj])
-    Xa = Array{Array{Float64,2}, 1}(undef, length(u))
-    Za = Array{Array{Float64,2}, 1}(undef, length(u))
-    ya = Array{Array{Float64,1}, 1}(undef, length(u))
+    Xa = Array{Array{eltype(X),2}, 1}(undef, length(u))
+    Za = Array{Array{eltype(Z),2}, 1}(undef, length(u))
+    ya = Array{Array{eltype(y),1}, 1}(undef, length(u))
     for i = 1:length(u)
         v = findall(x->x==u[i], df[:, sbj])
-        Xs = Array{Float64, 1}(undef, 0)
-        Zs = Array{Float64, 1}(undef, 0)
-        ys = Array{Float64, 1}(undef, 0)
+        Xs = Array{eltype(X), 1}(undef, 0)
+        Zs = Array{eltype(Z), 1}(undef, 0)
+        ys = Array{eltype(y), 1}(undef, 0)
         for r in v
             append!(Xs, X[r, :])
             append!(Zs, Z[r, :])
@@ -45,7 +45,7 @@ end
 """
     G matrix  (memory pre-allocation)
 """
-@inline function gmat!(G::Matrix{Float64}, σ::Vector)
+@inline function gmat!(G::Matrix{T}, σ::Vector) where T <: AbstractFloat
     G[1, 1] = σ[1]
     G[2, 2] = σ[2]
     G[1, 2] = G[2, 1] = sqrt(σ[1] * σ[2]) * σ[3]
@@ -61,7 +61,7 @@ end
 """
     R matrix  (memory pre-allocation)
 """
-@inline function rmat!(R::Matrix{Float64}, σ::Vector{Float64}, Z::Matrix{Float64})
+@inline function rmat!(R::Matrix{T}, σ::Vector{T}, Z::Matrix{T}) where T <: AbstractFloat
     copyto!(R, Matrix(Diagonal((Z*σ))))
     return
 end
@@ -74,7 +74,7 @@ end
     V  = Z * G * Z' + R
     return V
 end
-@inline function vmat!(V::Matrix{Float64}, G::Matrix{Float64}, R::Matrix{Float64}, Z::Matrix{Float64}, memc)
+@inline function vmat!(V::Matrix{T}, G::Matrix{T}, R::Matrix{T}, Z::Matrix{T}, memc) where T <: AbstractFloat
     #copyto!(V, Z*G*Z')
     mul!(memc[size(Z)[1]], Z, G)
     mul!(V, memc[size(Z)[1]], Z')
@@ -105,7 +105,7 @@ end
     Return C matrix
     var(β) p×p variance-covariance matrix
 """
-@inline function cmat(Xv::Vector{Matrix{Float64}}, Zv::Vector, iVv::Vector, θ::Vector)::Matrix{Float64}
+@inline function cmat(Xv::Vector{Matrix{T}}, Zv::Vector, iVv::Vector, θ::Vector)::Matrix where T <: AbstractFloat
     p = size(Xv[1])[2]
     C = zeros(p, p)
     for i=1:length(Xv)
@@ -139,13 +139,13 @@ end
 """
     REML function for ForwardDiff
 """
-function reml(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vector; memopt::Bool = true)::Real
+function reml(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vector; memopt::Bool = true)
     maxobs    = maximum(length.(yv))
     #some memory optimizations to reduse allocations
     mXviV     = Array{Array{eltype(θvec), 2}, 1}(undef, maxobs)
-    mXviVXv   = zeros(promote_type(Float64, eltype(θvec)), p, p)
+    mXviVXv   = zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, p)
     for i = 1:maxobs
-        mXviV[i] =  zeros(promote_type(Float64, eltype(θvec)), p, i)
+        mXviV[i] =  zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, i)
     end
     cache     = Dict()
     cachel    = Dict()
@@ -156,7 +156,7 @@ function reml(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vec
     G         = gmat(θvec[3:5])
     c         = (N - p) * LOG2PI
     θ1        = 0
-    θ2        = zeros(promote_type(Float64, eltype(θvec)), p, p)
+    θ2        = zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, p)
     θ3        = 0
     iV        = nothing
     for i = 1:n
@@ -186,13 +186,13 @@ end
 """
     REML estimation with β recalculation
 """
-function remlb(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vector; memopt::Bool = true)::Real
+function remlb(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vector; memopt::Bool = true)
     maxobs    = maximum(length.(yv))
     #some memory optimizations to reduse allocations
     mXviV     = Array{Array{eltype(θvec), 2}, 1}(undef, maxobs)
-    mXviVXv   = zeros(promote_type(Float64, eltype(θvec)), p, p)
+    mXviVXv   = zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, p)
     for i = 1:maxobs
-        mXviV[i] =  zeros(promote_type(Float64, eltype(θvec)), p, i)
+        mXviV[i] =  zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, i)
     end
     cache     = Dict()
     cachel    = Dict()
@@ -204,11 +204,11 @@ function remlb(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Ve
     iVv       = Array{Array{eltype(θvec), 2}, 1}(undef, n)
     c         = (N-p)*LOG2PI
     θ1        = 0
-    θ2        = zeros(promote_type(Float64, eltype(θvec)), p, p)
+    θ2        = zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, p)
     θ3        = 0
     iV        = nothing
-    βm        = zeros(promote_type(Float64, eltype(θvec)), p)
-    βt        = zeros(promote_type(Float64, eltype(θvec)), p)
+    βm        = zeros(promote_type(eltype(yv[1]), eltype(θvec)), p)
+    βt        = zeros(promote_type(eltype(yv[1]), eltype(θvec)), p)
     for i = 1:n
         if MEMOPT && memopt
             #@inbounds R        = memrmat(θr, Zv[i])
@@ -248,7 +248,7 @@ Satterthwaite DF gradient function.
 function lclgf(L, Lt, Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
     p     = size(Xv[1])[2]
     G     = gmat(θ[3:5])
-    C     = zeros(promote_type(Float64, eltype(θ)), p, p)
+    C     = zeros(promote_type(eltype(Zv[1]), eltype(θ)), p, p)
     cache     = Dict()
     cachem    = Dict()
     for i = 1:length(Xv)
@@ -269,8 +269,8 @@ end
     REML with β final update
 """
 function reml2b!(yv::Vector, Zv::Vector, p::Int, n::Int, N::Int,
-        Xv::Vector, G::Matrix{Float64}, Rv::Vector, Vv::Vector, iVv::Vector,
-        θvec::Vector{Float64}, β::Vector{Float64}, mem::MemAlloc)::Float64
+        Xv::Vector, G::Matrix{T}, Rv::Vector, Vv::Vector, iVv::Vector,
+        θvec::Vector{T}, β::Vector{T}, mem::MemAlloc) where T <: AbstractFloat
     gmat!(G, θvec[3:5])
     c  = (N-p)*LOG2PI #log(2π)
     θ1 = 0
@@ -307,11 +307,12 @@ end
 """
     Initial variance computation
 """
-function initvar(df::DataFrame, dv, fac::Symbol, sbj::Symbol)::Vector
+function initvar(df::DataFrame, dv::Symbol, fac::Symbol, sbj::Symbol)::Vector
     u  = unique(df[:, sbj])
     f  = unique(df[:, fac])
-    fv = Array{Float64, 1}(undef, 0)
-    sb = Array{Float64, 1}(undef, 0)
+
+    fv = Array{eltype(df[!, dv]), 1}(undef, 0)
+    sb = Array{eltype(df[!, dv]), 1}(undef, 0)
     for i in f
         push!(fv, var(df[df[!, fac] .== i, dv]))
     end

@@ -119,7 +119,7 @@ function rbe(df; dvar::Symbol,
     formulation::Symbol,
     period::Symbol,
     sequence::Symbol,
-    g_tol::Float64 = 1e-12, x_tol::Float64 = 0.0, f_tol::Float64 = 0.0, iterations::Int = 100,
+    g_tol::Real = 1e-12, x_tol::Real = 0.0, f_tol::Real = 0.0, iterations::Int = 100,
     store_trace = false, extended_trace = false, show_trace = false,
     memopt = true,
     init = [],
@@ -129,9 +129,10 @@ function rbe(df; dvar::Symbol,
 
     #Check
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
-    if !(eltype(df[!,dvar]) <: Real)
-        @warn "Responce variable ∉ Real!"
+    if !(eltype(df[!,dvar]) <: AbstractFloat)
+        @warn "Responce variable ∉ Float!"
     end
+    vartype = eltype(df[!,dvar])
     if !(typeof(df[!,subject]) <: CategoricalArray)
         @warn "Subject variable not Categorical, use rbe!()!"
     end
@@ -204,9 +205,9 @@ function rbe(df; dvar::Symbol,
     θvec0 = rvarlink(θvec0, vlm)
     #Prelocatiom for G, R, V, V⁻¹ matrices
     G     = zeros(2, 2)
-    Rv    = Array{Array{Float64,2}, 1}(undef, n)
-    Vv    = Array{Array{Float64,2}, 1}(undef, n)
-    iVv   = Array{Array{Float64,2}, 1}(undef, n)
+    Rv    = Array{Array{vartype,2}, 1}(undef, n)
+    Vv    = Array{Array{vartype,2}, 1}(undef, n)
+    iVv   = Array{Array{vartype,2}, 1}(undef, n)
     matvecz!(Rv, Zv)
     matvecz!(Vv, Zv)
     matvecz!(iVv, Zv)
@@ -275,11 +276,11 @@ function rbe(df; dvar::Symbol,
     end
     =#
     C           = cmat(Xv, Zv, iVv, θ)
-    se          = Array{Float64, 1}(undef, p)
-    F           = Array{Float64, 1}(undef, p)
-    df          = Array{Float64, 1}(undef, p)
-    t           = Array{Float64, 1}(undef, p)
-    pval        = Array{Float64, 1}(undef, p)
+    se          = Array{vartype, 1}(undef, p)
+    F           = Array{vartype, 1}(undef, p)
+    df          = Array{vartype, 1}(undef, p)
+    t           = Array{vartype, 1}(undef, p)
+    pval        = Array{vartype, 1}(undef, p)
     for i = 1:p
         L       = zeros(1, p)
         L[i]    = 1
@@ -296,17 +297,17 @@ function rbe(df; dvar::Symbol,
     end
     fixed       = EffectTable(coefnames(MF), β, se, F, df, t, pval)
     fac         = [sequence, period, formulation]
-    F           = Array{Float64, 1}(undef, length(fac))
-    df          = Array{Float64, 1}(undef, length(fac))
-    ndf         = Array{Float64, 1}(undef, length(fac))
-    pval        = Array{Float64, 1}(undef, length(fac))
+    F           = Array{vartype, 1}(undef, length(fac))
+    df          = Array{vartype, 1}(undef, length(fac))
+    ndf         = Array{vartype, 1}(undef, length(fac))
+    pval        = Array{vartype, 1}(undef, length(fac))
     for i = 1:length(fac)
         L       = lmatrix(MF, fac[i])
         lcl     = L*C*L'
         lclr    = rank(lcl)
         F[i]    = β'*L'*inv(lcl)*L*β/lclr
         if lclr ≥ 2
-            vm  = Array{Float64, 1}(undef, lclr)
+            vm  = Array{vartype, 1}(undef, lclr)
             for i = 1:lclr
                 g        = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', Xv, Zv, x; memopt = memopt), θ)
                 dfi      = 2*((L[i:i,:]*C*L[i:i,:]')[1])^2/(g'*A*g)
@@ -342,7 +343,7 @@ function rbe!(df; dvar::Symbol,
     formulation::Symbol,
     period::Symbol,
     sequence::Symbol,
-    g_tol::Float64 = 1e-12, x_tol::Float64 = 0.0, f_tol::Float64 = 0.0, iterations::Int = 100,
+    g_tol::Real = 1e-12, x_tol::Real = 0.0, f_tol::Real = 0.0, iterations::Int = 100,
     store_trace = false, extended_trace = false, show_trace = false,
     memopt = true,
     init = [],
@@ -352,8 +353,8 @@ function rbe!(df; dvar::Symbol,
 
 
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
-    if !(eltype(df[!,dvar]) <: Real)
-        @warn "Responce variable ∉ Real!"
+    if !(eltype(df[!,dvar]) <: AbstractFloat)
+        @warn "Responce variable ∉ AbstractFloat!"
         df[!,dvar] = float.(df[!,dvar])
     end
     if !(typeof(df[!,subject]) <: CategoricalArray)
@@ -379,11 +380,11 @@ end
 #-------------------------------------------------------------------------------
 #returm -2REML
 """
-    reml2(rbe::RBE, θ::Array{Float64, 1})
+    reml2(rbe::RBE, θ::Array{T, 1}) where T <: AbstractFloat
 
 Returm -2logREML for rbe model with θ variance vector.
 """
-function reml2(rbe::RBE, θ::Array{Float64, 1})
+function reml2(rbe::RBE, θ::Array{T, 1}) where T <: AbstractFloat
     return -2*reml(rbe.yv, rbe.Zv, rank(ModelMatrix(rbe.model).m), rbe.Xv, θ, coef(rbe))
 end
 """
@@ -477,10 +478,10 @@ CI = estimate ± t(alpha, df)*SE
 function StatsBase.confint(obj::RBE; level::Real=0.95, expci::Bool = false, inv::Bool = false, df = :sat)
     confint(obj, 1 - level; expci = expci, inv = inv, df = df)
 end
-function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::Bool = false, df = :sat)
+function StatsBase.confint(obj::RBE, alpha::Real; expci::Bool = false, inv::Bool = false, df = :sat)
     ifv = 1
     if inv ifv = -1 end
-    if isa(df, Array{Float64, 1})
+    if isa(df, Array)
         if length(obj.fixed.df) != length(df)
             df = obj.fixed.df
         else
@@ -510,7 +511,7 @@ function StatsBase.confint(obj::RBE, alpha::Float64; expci::Bool = false, inv::B
     end
     return Tuple(a)
 end
-function calcci(x::Float64, se::Float64, df::Float64, alpha::Float64, expci::Bool)::Tuple{Float64, Float64}
+function calcci(x::T, se::T, df::T, alpha::T, expci::Bool) where T <: AbstractFloat
     q = quantile(TDist(df), 1.0-alpha/2)
     if !expci
         return x-q*se, x+q*se

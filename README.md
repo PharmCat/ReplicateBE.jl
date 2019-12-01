@@ -16,7 +16,7 @@ Install:
 ```
 using Pkg; Pkg.add("ReplicateBE")
 ```
-or:
+Install latest version directly:
 ```
 using Pkg; Pkg.clone("https://github.com/PharmCat/ReplicateBE.jl.git")
 ```

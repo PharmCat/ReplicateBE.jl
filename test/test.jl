@@ -126,8 +126,8 @@ end
     ci = ReplicateBE.confint(be, 0.1, expci = true)
     @test be.reml                           ≈  314.2217688405106 atol=1E-5
     #1.0.4
-    @test ci[end][1]                        ≈  0.6307479743996646 atol=1E-5 #1.187496 SPSS
-    @test ci[end][2]                        ≈  0.8420705538500828 atol=1E-5 #1.585490 SPSS
+    @test ci[end][1]                        ≈  0.6307479743996646 atol=1E-4 #1.187496 SPSS
+    @test ci[end][2]                        ≈  0.8420705538500828 atol=1E-4 #1.585490 SPSS
     #1.0.5
     #@test ci[end][1]                        ≈  0.6307285753672432 atol=1E-5 #1.187496 SPSS
     #@test ci[end][2]                        ≈  0.8420964530317809 atol=1E-5 #1.585490 SPSS

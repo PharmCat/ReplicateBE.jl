@@ -253,24 +253,27 @@ function rbe(df; dvar::Symbol,
     #H           = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, varlink(x, vlm), β), θ)
     #H           = O.trace[end].metadata["h(x)"]
     #θ           = varlink(θ, vlm)
-
+    A = nothing
     #If rho is near to 1.0 it leads to singular hessian matrix, and rho should be removed from variance-covariance matrix
     #It can be done another way: using varlink everywhere, but it leads to problems of calling varlink after RBE object creation with other methods
     if abs(θ[5]) > 1 - singlim
         θ[5]    = 1.0
         H[:,5] .= 0
         H[5,:] .= 0
+        A       = 2 * pinv(H)
+    else
+        A       = 2 * inv(H)
     end
 
     dH          = det(H)
     #Secondary parameters calculation
-    A = nothing
-    #if abs(dH) > singlim
-    try
+    #=
+    if abs(dH) > singlim
         A       = 2 * inv(H)
-    catch
+    else
         A       = 2 * pinv(H)
     end
+    =#
     C           = cmat(Xv, Zv, iVv, θ)
     se          = Array{Float64, 1}(undef, p)
     F           = Array{Float64, 1}(undef, p)

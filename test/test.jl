@@ -190,7 +190,7 @@ end
     #1
     #TRTR/RTRT
     rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10001)
-    be  = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+    be  = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, store_trace = true, extended_trace = true)
     @test ReplicateBE.reml2(be)             ≈ 164.61336006747743   atol=1E-5
     @test ReplicateBE.stderror(be)[end]     ≈ 0.120162             atol=1E-5
     ci = confint(be, 0.1, expci = true)

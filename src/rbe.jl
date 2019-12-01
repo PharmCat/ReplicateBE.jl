@@ -265,9 +265,10 @@ function rbe(df; dvar::Symbol,
     dH          = det(H)
     #Secondary parameters calculation
     A = nothing
-    if abs(dH) > singlim
+    #if abs(dH) > singlim
+    try
         A       = 2 * inv(H)
-    else
+    catch
         A       = 2 * pinv(H)
     end
     C           = cmat(Xv, Zv, iVv, θ)

@@ -323,7 +323,11 @@ function initvar(df::DataFrame, dv::Symbol, fac::Symbol, sbj::Symbol)::Vector
     push!(fv, mean(sb))
     return fv
 end
-#------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+function optimcallback(x)
+    false
+end
+#-------------------------------------------------------------------------------
 function vlink(σ)
     exp(σ)
 end

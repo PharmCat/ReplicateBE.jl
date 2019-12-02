@@ -217,7 +217,7 @@ function rbe(df; dvar::Symbol,
     rng     = MersenneTwister(hash(θvec0))
     while opttry
         try
-            O       = optimize(td, θvec0, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace)
+            O       = optimize(td, θvec0, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace, callback = optimcallback)
             opttry  = false
         catch
 

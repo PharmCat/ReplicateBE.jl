@@ -262,21 +262,18 @@ function rbe(df; dvar::Symbol,
         H[:,5] .= 0
         H[5,:] .= 0
     end
-    #=
-        A       = 2 * pinv(H)
-    else
-        A       = 2 * inv(H)
-    end
-    =#
+
     dH          = det(H)
     #Secondary parameters calculation
-
+    # inv() can be incorrect pinv() used
+    #=
     if abs(dH) > singlim
         A       = 2 * inv(H)
     else
         A       = 2 * pinv(H)
     end
-    
+    =#
+    A           = 2 * pinv(H)
     C           = cmat(Xv, Zv, iVv, θ)
     se          = Array{vartype, 1}(undef, p)
     F           = Array{vartype, 1}(undef, p)

@@ -50,9 +50,18 @@ function contrast(rbe::RBE, L::Matrix; numdf = 0, name = "Contrast", memopt = tr
         for i = 1:length(vm)
             g       = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
             df      = 2*((L[i:i,:]*rbe.C*L[i:i,:]')[1])^2/(g'*(rbe.A)*g)
-            vm[i]   = df/(df-2)
+            if df > 2
+                vm[i] = df/(df-2)
+            else
+                vm[i] = 0
+            end
         end
-        df = 2*sum(vm)/(sum(vm)-rank(L))
+        E   = sum(vm)
+        if E > lclr
+            df = 2 * E / (E - lclr)
+        else
+            df = 0
+        end
     else
         g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
         df      = 2*((lcl)[1])^2/(g'*(rbe.A)*g)
@@ -118,7 +127,7 @@ Example of L matrix if length of fixed effect vector is 6, estimate for 4-th val
 L = [0 0 0 1 0 0]
 ```
 """
-function estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = true, alpha = 0.05)
+function estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = true, alpha = 0.05)::EstimateTable
     lcl     = L*rbe.C*L'
     β       = coef(rbe)
     est     = (L*β)[1]

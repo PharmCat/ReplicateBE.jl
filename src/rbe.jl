@@ -3,62 +3,62 @@
 #
 """
 ```julia
-    struct RBE
-        model::ModelFrame               #Model frame
-        rmodel::ModelFrame              #Random effect model
-        design::Design                  #Design description
-        factors::Array{Symbol, 1}       #Factor list
-        θ0::Array{Float64, 1}           #Initial variance paramethers
-        vlm::Real
-        θ::Tuple{Vararg{Float64}}       #Final variance paramethers
-        reml::Float64                   #-2REML
-        fixed::EffectTable              #Fixed Effect table
-        typeiii::ContrastTable          #Type III table
-        R::Array{Matrix{Float64},1}     #R matrices for each subject
-        V::Array{Matrix{Float64},1}     #V matrices for each subject
-        G::Matrix{Float64}              #G matrix
-        C::Matrix{Float64}              #C var(β) p×p variance-covariance matrix
-        A::Matrix{Float64}              #asymptotic variance-covariance matrix of b θ
-        H::Matrix{Float64}              #Hessian matrix
-        X::Matrix                       #Matrix for fixed effects
-        Z::Matrix                       #Matrix for random effects
-        Xv::Array{Matrix{Float64},1}    #X matrices for each subject
-        Zv::Array{Matrix{Float64},1}    #Z matrices for each subject
-        yv::Array{Array{Float64, 1},1}  #responce vectors for each subject
-        detH::Float64                   #Hessian determinant
-        preoptim::Union{Optim.MultivariateOptimizationResults, Nothing}         #Pre-optimization result object
-        optim::Optim.MultivariateOptimizationResults                            #Optimization result object
-    end
+struct RBE{T <: AbstractFloat}
+    model::ModelFrame               # Model frame
+    rmodel::ModelFrame              # Random effect model
+    design::Design
+    factors::Vector{Symbol}         # Factor list
+    θ0::Vector{T}                   # Initial variance paramethers
+    vlm::T
+    θ::Tuple{Vararg{T}}             # Final variance paramethers
+    reml::T                         # -2REML
+    fixed::EffectTable
+    typeiii::ContrastTable
+    R::Vector{Matrix{T}}            # R matrices for each subject
+    V::Vector{Matrix{T}}            # V matrices for each subject
+    G::Matrix{T}                    # G matrix
+    C::Matrix{T}                    # C var(β) p×p variance-covariance matrix
+    A::Matrix{T}                    # asymptotic variance-covariance matrix ofb θ
+    H::Matrix{T}                    # Hessian matrix
+    X::Matrix{T}                    # Matrix for fixed effects
+    Z::Matrix{T}                    # Matrix for random effects
+    Xv::Vector{Matrix{T}}           # X matrices for each subject
+    Zv::Vector{Matrix{T}}           # Z matrices for each subject
+    yv::Vector{Vector{T}}           # responce vectors for each subject
+    detH::T                         # Hessian determinant
+    preoptim::Union{Optim.MultivariateOptimizationResults, Nothing}             # Pre-optimization result object
+    optim::Optim.MultivariateOptimizationResults                                # Optimization result object
+end
 ```
 
 Replicate bioequivalence structure.
 
 """
-struct RBE
-    model::ModelFrame               #Model frame
-    rmodel::ModelFrame              #Random effect model
+struct RBE{T <: AbstractFloat}
+    model::ModelFrame               # Model frame
+    rmodel::ModelFrame              # Random effect model
     design::Design
-    factors::Array{Symbol, 1}       #Factor list
-    θ0::Array{Float64, 1}           #Initial variance paramethers
-    vlm::Real
-    θ::Tuple{Vararg{Float64}}       #Final variance paramethers
-    reml::Float64                   #-2REML
+    factors::Vector{Symbol}         # Factor list
+    θ0::Vector{T}                   # Initial variance paramethers
+    vlm::T
+    θ::Tuple{Vararg{T}}             # Final variance paramethers
+    reml::T                         # -2REML
     fixed::EffectTable
     typeiii::ContrastTable
-    R::Array{Matrix{Float64},1}     #R matrices for each subject
-    V::Array{Matrix{Float64},1}     #V matrices for each subject
-    G::Matrix{Float64}              #G matrix
-    C::Matrix{Float64}              #C var(β) p×p variance-covariance matrix
-    A::Matrix{Float64}              #asymptotic variance-covariance matrix ofb θ
-    H::Matrix{Float64}              #Hessian matrix
-    X::Matrix                       #Matrix for fixed effects
-    Z::Matrix                       #Matrix for random effects
-    Xv::Array{Matrix{Float64},1}    #X matrices for each subject
-    Zv::Array{Matrix{Float64},1}    #Z matrices for each subject
-    yv::Array{Array{Float64, 1},1}  #responce vectors for each subject
-    detH::Float64                   #Hessian determinant
-    preoptim::Union{Optim.MultivariateOptimizationResults, Nothing}        #Pre-optimization result object
-    optim::Optim.MultivariateOptimizationResults           #Optimization result object
+    R::Vector{Matrix{T}}            # R matrices for each subject
+    V::Vector{Matrix{T}}            # V matrices for each subject
+    G::Matrix{T}                    # G matrix
+    C::Matrix{T}                    # C var(β) p×p variance-covariance matrix
+    A::Matrix{T}                    # asymptotic variance-covariance matrix ofb θ
+    H::Matrix{T}                    # Hessian matrix
+    X::Matrix{T}                    # Matrix for fixed effects
+    Z::Matrix{T}                    # Matrix for random effects
+    Xv::Vector{Matrix{T}}           # X matrices for each subject
+    Zv::Vector{Matrix{T}}           # Z matrices for each subject
+    yv::Vector{Vector{T}}           # responce vectors for each subject
+    detH::T                         # Hessian determinant
+    preoptim::Union{Optim.MultivariateOptimizationResults, Nothing}             # Pre-optimization result object
+    optim::Optim.MultivariateOptimizationResults                                # Optimization result object
 end
 
 """
@@ -111,7 +111,6 @@ V_{i} = Z_{i}GZ_i'+R_{i}
 * memopt = true - memory optimization (function cache)
 * init = [] - initial variance paremeters
 * postopt = false - post optimization
-* maxopttry = 100 - maximum attempts to optimize
 
 """
 function rbe(df; dvar::Symbol,
@@ -132,7 +131,6 @@ function rbe(df; dvar::Symbol,
     if !(eltype(df[!,dvar]) <: AbstractFloat)
         @warn "Responce variable ∉ Float!"
     end
-    vartype = eltype(df[!,dvar])
     if !(typeof(df[!,subject]) <: CategoricalArray)
         @warn "Subject variable not Categorical, use rbe!()!"
     end
@@ -202,14 +200,14 @@ function rbe(df; dvar::Symbol,
     end
 
 
-    θvec0 = rvarlink(θvec0, vlm)
+    θvec0   = rvarlink(θvec0, vlm)
     #Prelocatiom for G, R, V, V⁻¹ matrices
-    G     = zeros(2, 2)
-    Rv    = Array{Array{vartype,2}, 1}(undef, n)
-    Vv    = Array{Array{vartype,2}, 1}(undef, n)
-    iVv   = Array{Array{vartype,2}, 1}(undef, n)
-    matvecz!(Rv, Zv)
-    matvecz!(Vv, Zv)
+    G       = zeros(2, 2)
+    Rv      = Vector{Matrix{eltype(df[!,dvar])}}(undef, n)
+    Vv      = Vector{Matrix{eltype(df[!,dvar])}}(undef, n)
+    iVv     = Vector{Matrix{eltype(df[!,dvar])}}(undef, n)
+    matvecz!(Rv,  Zv)
+    matvecz!(Vv,  Zv)
     matvecz!(iVv, Zv)
     #Optimization
     pO      = nothing
@@ -275,11 +273,11 @@ function rbe(df; dvar::Symbol,
 
     #A           = 2 * pinv(H)
     C           = cmat(Xv, Zv, iVv, θ)
-    se          = Array{vartype, 1}(undef, p)
-    F           = Array{vartype, 1}(undef, p)
-    df          = Array{vartype, 1}(undef, p)
-    t           = Array{vartype, 1}(undef, p)
-    pval        = Array{vartype, 1}(undef, p)
+    se          = Vector{eltype(C)}(undef, p)
+    F           = Vector{eltype(C)}(undef, p)
+    df          = Vector{eltype(C)}(undef, p)
+    t           = Vector{eltype(C)}(undef, p)
+    pval        = Vector{eltype(C)}(undef, p)
     for i = 1:p
         L       = zeros(1, p)
         L[i]    = 1
@@ -296,23 +294,32 @@ function rbe(df; dvar::Symbol,
     end
     fixed       = EffectTable(coefnames(MF), β, se, F, df, t, pval)
     fac         = [sequence, period, formulation]
-    F           = Array{vartype, 1}(undef, length(fac))
-    df          = Array{vartype, 1}(undef, length(fac))
-    ndf         = Array{vartype, 1}(undef, length(fac))
-    pval        = Array{vartype, 1}(undef, length(fac))
+    F           = Vector{eltype(C)}(undef, length(fac))
+    df          = Vector{eltype(C)}(undef, length(fac))
+    ndf         = Vector{eltype(C)}(undef, length(fac))
+    pval        = Vector{eltype(C)}(undef, length(fac))
     for i = 1:length(fac)
         L       = lmatrix(MF, fac[i])
         lcl     = L*C*L'
         lclr    = rank(lcl)
         F[i]    = β'*L'*inv(lcl)*L*β/lclr
         if lclr ≥ 2
-            vm  = Array{vartype, 1}(undef, lclr)
+            vm  = Vector{eltype(C)}(undef, lclr)
             for i = 1:lclr
-                g        = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', Xv, Zv, x; memopt = memopt), θ)
-                dfi      = 2*((L[i:i,:]*C*L[i:i,:]')[1])^2/(g'*A*g)
-                vm[i]    = dfi/(dfi-2)
+                g         = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', Xv, Zv, x; memopt = memopt), θ)
+                dfi       = 2*((L[i:i,:]*C*L[i:i,:]')[1])^2/(g'*A*g)
+                if dfi > 2
+                    vm[i] = dfi/(dfi-2)
+                else
+                    vm[i] = 0
+                end
             end
-            dfi = 2*sum(vm)/(sum(vm)-lclr)
+            E   = sum(vm)
+            if E > lclr
+                dfi = 2 * E / (E - lclr)
+            else
+                dfi = 0
+            end
         else
             g   = ForwardDiff.gradient(x -> lclgf(L, L', Xv, Zv, x; memopt = memopt), θ)
             dfi = 2*((lcl)[1])^2/(g'*(A)*g)
@@ -379,11 +386,11 @@ end
 #-------------------------------------------------------------------------------
 #returm -2REML
 """
-    reml2(rbe::RBE, θ::Array{T, 1}) where T <: AbstractFloat
+    reml2(rbe::RBE, θ::Vector{T}) where T <: AbstractFloat
 
 Returm -2logREML for rbe model with θ variance vector.
 """
-function reml2(rbe::RBE, θ::Array{T, 1}) where T <: AbstractFloat
+function reml2(rbe::RBE, θ::Vector{T}) where T <: AbstractFloat
     return -2*reml(rbe.yv, rbe.Zv, rank(ModelMatrix(rbe.model).m), rbe.Xv, θ, coef(rbe))
 end
 """
@@ -504,7 +511,7 @@ function StatsBase.confint(obj::RBE, alpha::Real; expci::Bool = false, inv::Bool
             df = obj.fixed.df
         end
     end
-    a = Array{Tuple{Float64, Float64},1}(undef, length(obj.fixed.est))
+    a = Array{Tuple{eltype(obj.fixed.est), eltype(obj.fixed.est)},1}(undef, length(obj.fixed.est))
     for i = 1:length(obj.fixed.est)
         a[i] = calcci(obj.fixed.est[i]*ifv, obj.fixed.se[i], df[i], alpha, expci)
     end

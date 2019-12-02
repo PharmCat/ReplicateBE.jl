@@ -28,7 +28,7 @@ mutable struct RandRBEDS
     seqcoef::Vector
     periodcoef::Vector
     formcoef::Vector
-    dropsubj::Float64                #Deprecated
+    dropsubj::Real                #Deprecated
     dropobs::Int
     seed
     function RandRBEDS(;n=24, sequence=[1,1],
@@ -127,7 +127,7 @@ function randrbeds(n::Int, sequence::Vector,
     design::Matrix,
     θinter::Vector, θintra::Vector,
     intercept::Real, seqcoef::Vector, periodcoef::Vector, formcoef::Vector,
-    dropsubj::Float64, dropobs::Int, seed)
+    dropsubj::Real, dropobs::Int, seed)
     if seed != 0
         rng = MersenneTwister(seed)
     else

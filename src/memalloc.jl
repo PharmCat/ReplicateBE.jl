@@ -1,14 +1,14 @@
 struct MemAlloc{T <: AbstractFloat}
-    mem1::Array{Array{T, 2}, 1}
-    mem2::Array{Array{T, 2}, 1}
-    mem3::Array{Array{T, 1}, 1}
+    mem1::Vector{Matrix{T}}
+    mem2::Vector{Matrix{T}}
+    mem3::Vector{Vector{T}}
     #mem4::Array{Float64, 2}
     function MemAlloc(p, zs, yv::Vector{Vector{T}}) where T <: AbstractFloat
         maxobs  = maximum(length.(yv))
         yvtype = eltype(yv[1])
-        memc1 = Array{Array{yvtype, 2}, 1}(undef, maxobs)
-        memc2 = Array{Array{yvtype, 2}, 1}(undef, maxobs)
-        memc3 = Array{Array{yvtype, 1}, 1}(undef, maxobs)
+        memc1 = Vector{Matrix{yvtype}}(undef, maxobs)
+        memc2 = Vector{Matrix{yvtype}}(undef, maxobs)
+        memc3 = Vector{Vector{yvtype}}(undef, maxobs)
         for i = 1:maxobs
             memc1[i] = zeros(i, zs)
             memc2[i] = zeros(p, i)

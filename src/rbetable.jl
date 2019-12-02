@@ -102,7 +102,11 @@ function Base.show(io::IO, t::T) where T <: RBETable
     matrix[:,1] = string.(collect(t.name))
     for c = 2:length(header)
         for r = 1:length(t.name)
-            matrix[r,c] = string(round(t[r,c], sigdigits=6))
+            if abs(t[r,c]) > 1E-5
+                matrix[r,c] = string(round(t[r,c], sigdigits=6))
+            else
+                matrix[r,c] = @sprintf "%1.6G" t[r,c]
+            end
             if fn[c] == :p && t[r,c] < 0.05 matrix[r,c] = matrix[r,c]*"*" end
         end
     end

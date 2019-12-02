@@ -1,6 +1,8 @@
 - v1.0.5
     * inv(H) used where possible
+    * DF for typeiii checks
     * Type optimization
+    * Output fix
 
 - v1.0.4
     * CSV test dataset

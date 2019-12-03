@@ -1,9 +1,31 @@
 """
-A' * B * A -> θ
+A' * B * A -> + θ (cache)
 """
 function mulall!(θ, A::Matrix, B::Matrix, c)
     q = size(B, 1)
     p = size(A, 2)
+    for i = 1:p
+        c .= 0
+        for n = 1:q
+            for m = 1:q
+                @inbounds c[n] += B[m, n] * A[m, i]
+            end
+        end
+        for n = 1:p
+            for m = 1:q
+                @inbounds θ[i, n] += A[m, n] * c[m]
+            end
+        end
+    end
+    θ
+end
+"""
+A' * B * A -> + θ
+"""
+function mulall!(θ, A::Matrix, B::Matrix)
+    q = size(B, 1)
+    p = size(A, 2)
+    c = zeros(eltype(B), q)
     for i = 1:p
         c .= 0
         for n = 1:q

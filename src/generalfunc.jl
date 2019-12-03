@@ -7,14 +7,14 @@
 """
 function sortsubjects(df::DataFrame, sbj::Symbol, X::Matrix, Z::Matrix, y::Vector)
     u = unique(df[:, sbj])
-    Xa = Array{Array{eltype(X),2}, 1}(undef, length(u))
-    Za = Array{Array{eltype(Z),2}, 1}(undef, length(u))
-    ya = Array{Array{eltype(y),1}, 1}(undef, length(u))
+    Xa = Vector{Matrix{eltype(X)}}(undef, length(u))
+    Za = Vector{Matrix{eltype(Z)}}(undef, length(u))
+    ya = Vector{Vector{eltype(y)}}(undef, length(u))
     for i = 1:length(u)
         v = findall(x->x==u[i], df[:, sbj])
-        Xs = Array{eltype(X), 1}(undef, 0)
-        Zs = Array{eltype(Z), 1}(undef, 0)
-        ys = Array{eltype(y), 1}(undef, 0)
+        Xs = Vector{eltype(X)}(undef, 0)
+        Zs = Vector{eltype(Z)}(undef, 0)
+        ys = Vector{eltype(y)}(undef, 0)
         for r in v
             append!(Xs, X[r, :])
             append!(Zs, Z[r, :])
@@ -109,9 +109,10 @@ end
     p = size(Xv[1])[2]
     C = zeros(p, p)
     for i=1:length(Xv)
-        @inbounds C .+= Xv[i]' * iVv[i] * Xv[i]
+        #@inbounds C .+= Xv[i]' * iVv[i] * Xv[i]
+        mulall!(C, Xv[i], iVv[i])
     end
-    return inv(C)
+    return pinv(C)
 end
 #println("θ₁: ", θ1, " θ₂: ",  θ2,  " θ₃: ", θ3)
 
@@ -179,7 +180,7 @@ function reml(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vec
         ##@inbounds mul!(mXviV[size(Xv[i])[1]], Xv[i]', iV)
         ##@inbounds mul!(mXviVXv, mXviV[size(Xv[i])[1]], Xv[i])
         ##θ2  += mXviVXv
-        mulall!(θ2, Xv[i], iV, mc[size(Xv[i], 1)])
+        @inbounds mulall!(θ2, Xv[i], iV, mc[size(Xv[i], 1)])
         #-----------------------------------------------------------------------
         #@inbounds r    = yv[i] - Xv[i] * β
         #θ3  += r' * iV * r
@@ -269,10 +270,44 @@ function lclgf(L, Lt, Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
             R   = rmat(θ[1:2], Zv[i])
             iV  = inv(vmat(G, R, Zv[i]))
         end
-        C  += Xv[i]' * iV * Xv[i]
+        #C  += Xv[i]' * iV * Xv[i]
+        mulall!(C, Xv[i], iV)
     end
     return (L * inv(C) * Lt)[1]
 end
+#-------------------------------------------------------------------------------
+# Experimental C matrix derivation
+#-------------------------------------------------------------------------------
+function cmatgf(Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
+    p      = size(Xv[1], 2)
+    jV     = ForwardDiff.jacobian(x -> cmatvec(Xv, Zv, x; memopt = memopt), θ)
+    result = Vector{Matrix}(undef, 0)
+    for i in 1:length(θ)
+        push!(result, reshape(jV[:,i], p, p))
+    end
+    return result
+end
+function cmatvec(Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
+    p     = size(Xv[1], 2)
+    G     = gmat(θ[3:5])
+    C     = zeros(promote_type(eltype(Zv[1]), eltype(θ)), p, p)
+    cache     = Dict()
+    cachem    = Dict()
+    for i = 1:length(Xv)
+        if memopt
+            iV   = minv(mvmat(G, θ[1:2], Zv[i], cachem), cache)
+        else
+            R   = rmat(θ[1:2], Zv[i])
+            iV  = inv(vmat(G, R, Zv[i]))
+        end
+        #C  += Xv[i]' * iV * Xv[i]
+        mulall!(C, Xv[i], iV)
+    end
+    return C[:]
+end
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+
 #-------------------------------------------------------------------------------
 #             REML FOR OPT ALGORITHM
 #-------------------------------------------------------------------------------

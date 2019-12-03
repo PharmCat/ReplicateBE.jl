@@ -142,10 +142,12 @@ end
 function reml(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vector; memopt::Bool = true)
     maxobs    = maximum(length.(yv))
     #some memory optimizations to reduse allocations
-    mXviV     = Array{Array{eltype(θvec), 2}, 1}(undef, maxobs)
-    mXviVXv   = zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, p)
+    mc        = Vector{Vector{eltype(θvec)}}(undef, maxobs)
+    #mXviV     = Array{Array{eltype(θvec), 2}, 1}(undef, maxobs)
+    #mXviVXv   = zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, p)
     for i = 1:maxobs
-        mXviV[i] =  zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, i)
+        #mXviV[i] =  zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, i)
+        mc[i]    =  zeros(promote_type(eltype(yv[1]), eltype(θvec)), i)
     end
     cache     = Dict()
     cachel    = Dict()
@@ -174,12 +176,15 @@ function reml(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vec
 
         #-----------------------------------------------------------------------
         #θ2 += Xv[i]'*iV*Xv[i]
-        @inbounds mul!(mXviV[size(Xv[i])[1]], Xv[i]', iV)
-        @inbounds mul!(mXviVXv, mXviV[size(Xv[i])[1]], Xv[i])
-        θ2  += mXviVXv
+        ##@inbounds mul!(mXviV[size(Xv[i])[1]], Xv[i]', iV)
+        ##@inbounds mul!(mXviVXv, mXviV[size(Xv[i])[1]], Xv[i])
+        ##θ2  += mXviVXv
+        mulall!(θ2, Xv[i], iV, mc[size(Xv[i], 1)])
         #-----------------------------------------------------------------------
-        @inbounds r    = yv[i] - Xv[i] * β
-        θ3  += r' * iV * r
+        #@inbounds r    = yv[i] - Xv[i] * β
+        #θ3  += r' * iV * r
+
+        @inbounds θ3  += mulall(yv[i], Xv[i], β, iV, mc[length(yv[i])])
     end
     return   -(θ1 + logdet(θ2) + θ3 + c)/2
 end
@@ -189,10 +194,12 @@ end
 function remlb(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vector; memopt::Bool = true)
     maxobs    = maximum(length.(yv))
     #some memory optimizations to reduse allocations
-    mXviV     = Array{Array{eltype(θvec), 2}, 1}(undef, maxobs)
-    mXviVXv   = zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, p)
+    #mXviV     = Vector{Matrix{eltype(θvec)}}(undef, maxobs)
+    mc        = Vector{Vector{eltype(θvec)}}(undef, maxobs)
+    #mXviVXv   = zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, p)
     for i = 1:maxobs
-        mXviV[i] =  zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, i)
+        #mXviV[i] =  zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, i)
+        mc[i]    =  zeros(promote_type(eltype(yv[1]), eltype(θvec)), i)
     end
     cache     = Dict()
     cachel    = Dict()
@@ -224,11 +231,13 @@ function remlb(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Ve
         end
 
         #-----------------------------------------------------------------------
-        #θ2 += Xv[i]'*iV*Xv[i]
-        @inbounds mul!(mXviV[size(Xv[i])[1]], Xv[i]', iVv[i])
-        @inbounds mul!(mXviVXv, mXviV[size(Xv[i])[1]], Xv[i])
-        θ2  += mXviVXv
-        @inbounds βm  .+= mXviV[size(Xv[i])[1]] * yv[i]
+        #θ2 += Xv[i]'*iVv[i]*Xv[i]
+        #-
+        #@inbounds mul!(mXviV[size(Xv[i])[1]], Xv[i]', iVv[i])
+        #@inbounds mul!(mXviVXv, mXviV[size(Xv[i])[1]], Xv[i])
+        #θ2  += mXviVXv
+        #@inbounds βm  .+= mXviV[size(Xv[i])[1]] * yv[i]
+        mulall!(θ2, βm, Xv[i], iVv[i], yv[i], mc[length(yv[i])])
         #-----------------------------------------------------------------------
         #tm   = Xv[i]'*iVv[i]    #Temp matrix for Xv[i]'*iV*Xv[i] and Xv[i]'*iV*yv[i] calc
         #θ2m .+= tm*Xv[i]
@@ -236,8 +245,10 @@ function remlb(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Ve
     end
     mul!(βt, inv(θ2), βm)
     for i = 1:n
-        @inbounds r    = yv[i] - Xv[i] * βt
-        @inbounds θ3  += r' * iVv[i] * r
+        #@inbounds r    = yv[i] - Xv[i] * βt
+        #@inbounds θ3  += r' * iVv[i] * r
+
+        @inbounds θ3  += mulall(yv[i], Xv[i], βt, iVv[i], mc[length(yv[i])])
     end
 
     return   -(θ1 + logdet(θ2) + θ3 + c)/2
@@ -288,18 +299,24 @@ function reml2b!(yv::Vector, Zv::Vector, p::Int, n::Int, N::Int,
         copyto!(iVv[i], minv(Vv[i], cache))
         θ1  += mlogdet(Vv[i], cachel)
         #-
-        mul!(mem.mem2[size(Xv[i])[1]], Xv[i]', iVv[i])
-        θ2    .+= mem.mem2[size(Xv[i])[1]] * Xv[i]
-        βm    .+= mem.mem2[size(Xv[i])[1]] * yv[i]
+        #θ2 += Xv[i]'*iVv[i]*Xv[i]
+        #mul!(mem.mem2[size(Xv[i])[1]], Xv[i]', iVv[i])
+        #θ2    .+= mem.mem2[size(Xv[i])[1]] * Xv[i]
+        #βm    .+= mem.mem2[size(Xv[i])[1]] * yv[i]
+        mulall!(θ2, βm, Xv[i], iVv[i], yv[i], mem.mem3[length(yv[i])])
     end
     mul!(β, inv(θ2), βm)
     for i = 1:n
-        copyto!(mem.mem3[length(yv[i])], yv[i])
-        mem.mem3[length(yv[i])] .-= Xv[i] * β
-        θ3  += mem.mem3[length(yv[i])]' * iVv[i] * mem.mem3[length(yv[i])]
+
+        #copyto!(mem.mem3[length(yv[i])], yv[i])
+        #mem.mem3[length(yv[i])] .-= Xv[i] * β
+        #θ3  += mem.mem3[length(yv[i])]' * iVv[i] * mem.mem3[length(yv[i])]
+
         #Same:
         #r    = yv[i] - Xv[i]*β
         #θ3  += r'*iVv[i]*r
+
+        @inbounds θ3  += mulall(yv[i], Xv[i], β, iVv[i], mem.mem3[length(yv[i])])
     end
     return   -(θ1 + logdet(θ2) + θ3 + c)
 end

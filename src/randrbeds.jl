@@ -270,7 +270,7 @@ function simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l 
             #!
             if verbose
                 if !optstat(be) printstyled(io, "Iteration: ", i, ", seed ", seeds[i], ": unconverged! \n"; color = :yellow) end
-                if be.detH <= 0
+                if !isposdef(Symmetric(be.H))
                     printstyled(io, "Iteration: ", i, ", seed ", seeds[i], ": Hessian not positive defined! \n"; color = :yellow)
                 end
             end

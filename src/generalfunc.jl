@@ -101,19 +101,7 @@ function matvecz!(M, Zv)
     end
     return
 end
-"""
-    Return C matrix
-    var(β) p×p variance-covariance matrix
-"""
-@inline function cmat(Xv::Vector{Matrix{T}}, Zv::Vector, iVv::Vector, θ::Vector)::Matrix where T <: AbstractFloat
-    p = size(Xv[1])[2]
-    C = zeros(p, p)
-    for i=1:length(Xv)
-        #@inbounds C .+= Xv[i]' * iVv[i] * Xv[i]
-        mulall!(C, Xv[i], iVv[i])
-    end
-    return pinv(C)
-end
+
 #println("θ₁: ", θ1, " θ₂: ",  θ2,  " θ₃: ", θ3)
 
 function minv(M::Matrix, cache::Dict)::Matrix
@@ -136,7 +124,53 @@ function mlogdet(M::Matrix, cache::Dict)
         return iM
     end
 end
+#-------------------------------------------------------------------------------
+#             REML FOR OPT ALGORITHM
+#-------------------------------------------------------------------------------
+"""
+    -2 REML with β final update
+"""
+function reml2b!(yv::Vector, Zv::Vector, p::Int, n::Int, N::Int,
+        Xv::Vector, G::Matrix{T}, Rv::Vector, Vv::Vector, iVv::Vector,
+        θvec::Vector{T}, β::Vector{T}, mem::MemAlloc) where T <: AbstractFloat
+    gmat!(G, θvec[3:5])
+    c  = (N-p)*LOG2PI #log(2π)
+    θ1 = 0
+    θ2  = zeros(p, p)
+    θ3 = 0
+    iV   = nothing
+    #fill!(mem.mem4, 0)
+    βm   = zeros(p)
+    cache     = Dict()
+    cachel    = Dict()
+    @inbounds for i = 1:n
+        rmat!(Rv[i], θvec[1:2], Zv[i])
+        vmat!(Vv[i], G, Rv[i], Zv[i], mem.mem1)
+        #Memopt!
+        copyto!(iVv[i], minv(Vv[i], cache))
+        θ1  += mlogdet(Vv[i], cachel)
+        #-
+        #θ2 += Xv[i]'*iVv[i]*Xv[i]
+        #mul!(mem.mem2[size(Xv[i])[1]], Xv[i]', iVv[i])
+        #θ2    .+= mem.mem2[size(Xv[i])[1]] * Xv[i]
+        #βm    .+= mem.mem2[size(Xv[i])[1]] * yv[i]
+        mulall!(θ2, βm, Xv[i], iVv[i], yv[i], mem.mem3[length(yv[i])])
+    end
+    mul!(β, inv(θ2), βm)
+    for i = 1:n
 
+        #copyto!(mem.mem3[length(yv[i])], yv[i])
+        #mem.mem3[length(yv[i])] .-= Xv[i] * β
+        #θ3  += mem.mem3[length(yv[i])]' * iVv[i] * mem.mem3[length(yv[i])]
+
+        #Same:
+        #r    = yv[i] - Xv[i]*β
+        #θ3  += r'*iVv[i]*r
+
+        @inbounds θ3  += mulall(yv[i], Xv[i], β, iVv[i], mem.mem3[length(yv[i])])
+    end
+    return   θ1 + logdet(θ2) + θ3 + c
+end
 """
     -2 REML function for ForwardDiff
 """
@@ -190,7 +224,7 @@ function reml2(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Ve
     return   θ1 + logdet(θ2) + θ3 + c
 end
 """
-    -2 REML estimation with β recalculation
+    -2 REML estimation with β recalculation for ForwardDiff
 """
 function reml2b(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector; memopt::Bool = true)
     maxobs    = maximum(length.(yv))
@@ -254,29 +288,22 @@ function reml2b(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector; memop
 
     return   θ1 + logdet(θ2) + θ3 + c
 end
+#-------------------------------------------------------------------------------
 """
-Satterthwaite DF gradient function.
+    Return C matrix
+    var(β) p×p variance-covariance matrix
 """
-function lclgf(L, Lt, Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
-    p     = size(Xv[1])[2]
-    G     = gmat(θ[3:5])
-    C     = zeros(promote_type(eltype(Zv[1]), eltype(θ)), p, p)
-    cache     = Dict()
-    cachem    = Dict()
-    for i = 1:length(Xv)
-        if MEMOPT && memopt
-            iV   = minv(mvmat(G, θ[1:2], Zv[i], cachem), cache)
-        else
-            R   = rmat(θ[1:2], Zv[i])
-            iV  = inv(vmat(G, R, Zv[i]))
-        end
-        #C  += Xv[i]' * iV * Xv[i]
-        mulall!(C, Xv[i], iV)
+@inline function cmat(Xv::Vector{Matrix{T}}, Zv::Vector, iVv::Vector, θ::Vector)::Matrix where T <: AbstractFloat
+    p = size(Xv[1])[2]
+    C = zeros(p, p)
+    for i=1:length(Xv)
+        #@inbounds C .+= Xv[i]' * iVv[i] * Xv[i]
+        mulall!(C, Xv[i], iVv[i])
     end
-    return (L * inv(C) * Lt)[1]
+    return pinv(C)
 end
 #-------------------------------------------------------------------------------
-# Experimental C matrix derivation
+# C matrix derivation
 #-------------------------------------------------------------------------------
 """
 non inverted C matrix gradient function
@@ -334,54 +361,6 @@ function lclg(gradc, L)
 end
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
-
-#-------------------------------------------------------------------------------
-#             REML FOR OPT ALGORITHM
-#-------------------------------------------------------------------------------
-"""
-    -2 REML with β final update
-"""
-function reml2b!(yv::Vector, Zv::Vector, p::Int, n::Int, N::Int,
-        Xv::Vector, G::Matrix{T}, Rv::Vector, Vv::Vector, iVv::Vector,
-        θvec::Vector{T}, β::Vector{T}, mem::MemAlloc) where T <: AbstractFloat
-    gmat!(G, θvec[3:5])
-    c  = (N-p)*LOG2PI #log(2π)
-    θ1 = 0
-    θ2  = zeros(p, p)
-    θ3 = 0
-    iV   = nothing
-    #fill!(mem.mem4, 0)
-    βm   = zeros(p)
-    cache     = Dict()
-    cachel    = Dict()
-    @inbounds for i = 1:n
-        rmat!(Rv[i], θvec[1:2], Zv[i])
-        vmat!(Vv[i], G, Rv[i], Zv[i], mem.mem1)
-        #Memopt!
-        copyto!(iVv[i], minv(Vv[i], cache))
-        θ1  += mlogdet(Vv[i], cachel)
-        #-
-        #θ2 += Xv[i]'*iVv[i]*Xv[i]
-        #mul!(mem.mem2[size(Xv[i])[1]], Xv[i]', iVv[i])
-        #θ2    .+= mem.mem2[size(Xv[i])[1]] * Xv[i]
-        #βm    .+= mem.mem2[size(Xv[i])[1]] * yv[i]
-        mulall!(θ2, βm, Xv[i], iVv[i], yv[i], mem.mem3[length(yv[i])])
-    end
-    mul!(β, inv(θ2), βm)
-    for i = 1:n
-
-        #copyto!(mem.mem3[length(yv[i])], yv[i])
-        #mem.mem3[length(yv[i])] .-= Xv[i] * β
-        #θ3  += mem.mem3[length(yv[i])]' * iVv[i] * mem.mem3[length(yv[i])]
-
-        #Same:
-        #r    = yv[i] - Xv[i]*β
-        #θ3  += r'*iVv[i]*r
-
-        @inbounds θ3  += mulall(yv[i], Xv[i], β, iVv[i], mem.mem3[length(yv[i])])
-    end
-    return   θ1 + logdet(θ2) + θ3 + c
-end
 #-------------------------------------------------------------------------------
 """
     Initial variance computation

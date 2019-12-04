@@ -1,3 +1,25 @@
+"""
+Satterthwaite DF gradient function.
+"""
+function lclgf(L, Lt, Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
+    p     = size(Xv[1])[2]
+    G     = gmat(θ[3:5])
+    C     = zeros(promote_type(eltype(Zv[1]), eltype(θ)), p, p)
+    cache     = Dict()
+    cachem    = Dict()
+    for i = 1:length(Xv)
+        if MEMOPT && memopt
+            iV   = minv(mvmat(G, θ[1:2], Zv[i], cachem), cache)
+        else
+            R   = rmat(θ[1:2], Zv[i])
+            iV  = inv(vmat(G, R, Zv[i]))
+        end
+        #C  += Xv[i]' * iV * Xv[i]
+        mulall!(C, Xv[i], iV)
+    end
+    return (L * inv(C) * Lt)[1]
+end
+
 #=
 function mrmat(σ::Vector{S}, Z::Matrix{T}, cache)::Matrix where S <: Real where T <: Real
     h = hash(tuple(σ, Z))

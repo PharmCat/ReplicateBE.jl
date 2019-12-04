@@ -265,7 +265,7 @@ function rbe(df; dvar::Symbol,
     #Secondary parameters calculation
     # inv() can be incorrect pinv() used
 
-    if abs(minimum(svd(H).S)) > singlim
+    if abs(minimum(svdvals(H))) > singlim
         A       = 2 * inv(H)
     else
         A       = 2 * pinv(H)

@@ -55,8 +55,8 @@ include("testdata.jl")
 
     be  = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, rholink = :sigmoid)
     ci1 = confint(be)[end]
-    @test ci0[1] ≈ ci1[1]
-    @test ci0[2] ≈ ci1[2]
+    @test ci0[1] ≈ ci1[1] atol=1E-5
+    @test ci0[2] ≈ ci1[2] atol=1E-5
     #Experimental
     be  = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, rholink = :arctgsigmoid, singlim = 1e-4)
     ci2 = confint(be)[end]

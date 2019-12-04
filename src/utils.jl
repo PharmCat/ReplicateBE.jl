@@ -42,13 +42,17 @@ function contrast(rbe::RBE, L::Matrix; numdf = 0, name = "Contrast", memopt = tr
     lclr    = rank(lcl)
     F       = β'*L'*inv(lcl)*L*β/lclr
     θ       = theta(rbe)
+    gradc   = cmatg(rbe.Xv, rbe.Zv, θ, rbe.C; memopt = memopt)
+
 
     if numdf == 0 numdf = rank(L) end
 
     if rank(L) ≥ 2
         vm      = Array{eltype(rbe.Xv[1]), 1}(undef, size(L, 1))
         for i = 1:length(vm)
-            g       = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
+            #g       = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
+            #g       = cmatg(rbe.Xv, rbe.Zv, θ, rbe.C, L[i:i,:]; memopt = memopt)
+            g       = lclg(gradc, L[i:i,:])
             df      = 2*((L[i:i,:]*rbe.C*L[i:i,:]')[1])^2/(g'*(rbe.A)*g)
             if df > 2
                 vm[i] = df/(df-2)
@@ -63,7 +67,8 @@ function contrast(rbe::RBE, L::Matrix; numdf = 0, name = "Contrast", memopt = tr
             df = 0
         end
     else
-        g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
+        #g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
+        g       = lclg(gradc, L)
         df      = 2*((lcl)[1])^2/(g'*(rbe.A)*g)
     end
     pval    = ccdf(FDist(numdf, df), F)
@@ -136,8 +141,9 @@ function estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = tr
     #F       = β'*L'*inv(lcl)*L*β/lclr
     if df == :sat
         θ       = theta(rbe)
-        g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
-
+        #g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
+        gradc   = cmatg(rbe.Xv, rbe.Zv, θ, rbe.C; memopt = memopt)
+        g       = lclg(gradc, L)
         df      = 2*((lcl)[1])^2/(g'*(rbe.A)*g)
     elseif df == :cont
         df      = rbe.design.df3
@@ -160,7 +166,8 @@ function lmatrix(mf::ModelFrame, f::Union{Symbol, AbstractTerm})
     id  = findterm(mf, f)
     n   = length(mf.f.rhs.terms[id].contrasts.termnames)
     lm  = zeros(n, length(coefnames(mf)))
-    vec = Array{Int, 1}(undef, 0)
+    vec = Vector{Int}(undef, 0)
+    #lnum= Vector{Int}(undef, 0)
     for i = 1:l
         if isa(mf.f.rhs.terms[i], InterceptTerm)
             if f == InterceptTerm
@@ -178,10 +185,11 @@ function lmatrix(mf::ModelFrame, f::Union{Symbol, AbstractTerm})
     for i = 1:size(lm, 2)
         if vec[i] == 1
             lm[r, i] = 1
+            #push!(lnum, i)
             r +=1
         end
     end
-    return lm
+    return lm#, lnum
 end
 #Find by Symbol
 function findterm(MF::ModelFrame, f::Union{Symbol, AbstractTerm})::Int

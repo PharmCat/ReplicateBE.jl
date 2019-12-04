@@ -278,15 +278,21 @@ end
 #-------------------------------------------------------------------------------
 # Experimental C matrix derivation
 #-------------------------------------------------------------------------------
+"""
+non inverted C matrix gradient function
+"""
 function cmatgf(Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
     p      = size(Xv[1], 2)
-    jV     = ForwardDiff.jacobian(x -> cmatvec(Xv, Zv, x; memopt = memopt), θ)
+    jC     = ForwardDiff.jacobian(x -> cmatvec(Xv, Zv, x; memopt = memopt), θ)
     result = Vector{Matrix}(undef, 0)
     for i in 1:length(θ)
-        push!(result, reshape(jV[:,i], p, p))
+        push!(result, reshape(jC[:,i], p, p))
     end
     return result
 end
+"""
+non inverted C matrix in vector form for gradient
+"""
 function cmatvec(Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
     p     = size(Xv[1], 2)
     G     = gmat(θ[3:5])
@@ -304,6 +310,27 @@ function cmatvec(Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
         mulall!(C, Xv[i], iV)
     end
     return C[:]
+end
+"""
+C matrix gradients
+"""
+function cmatg(Xv::Vector, Zv::Vector, θ::Vector, C::Matrix; memopt::Bool = true)
+    g  = Vector{Matrix}(undef, length(θ))
+    jC = cmatgf(Xv, Zv, θ; memopt = memopt)
+    for i = 1:length(θ)
+        g[i] = (- C * jC[i] * C)
+    end
+    return g
+end
+"""
+L * C * L' for all C marices
+"""
+function lclg(gradc, L)
+    g  = Vector{eltype(gradc[1])}(undef, length(gradc))
+    for i = 1:length(gradc)
+        g[i] = (L * gradc[i] * L')[1]
+    end
+    return g
 end
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------

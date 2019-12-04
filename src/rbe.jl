@@ -278,6 +278,7 @@ function rbe(df; dvar::Symbol,
     df          = Vector{eltype(C)}(undef, p)
     t           = Vector{eltype(C)}(undef, p)
     pval        = Vector{eltype(C)}(undef, p)
+    gradc       = cmatg(Xv, Zv, θ, C; memopt = memopt)
     for i = 1:p
         L       = zeros(1, p)
         L[i]    = 1
@@ -286,7 +287,8 @@ function rbe(df; dvar::Symbol,
         lclr    = rank(lcl)
         se[i]   = sqrt((lcl)[1])
         F[i]    = β'*L'*inv(lcl)*L*β/lclr                                       #F[i]    = (L*β)'*inv(L*C*L')*(L*β)/lclr
-        g       = ForwardDiff.gradient(x -> lclgf(L, Lt, Xv, Zv, x; memopt = memopt), θ)
+        #grads[i]= ForwardDiff.gradient(x -> lclgf(L, Lt, Xv, Zv, x; memopt = memopt), θ)
+        g       = lclg(gradc, L)
         df[i]   = max(1, 2*((lcl)[1])^2/(g'*(A)*g))
         t[i]    = ((L*β)/se[i])[1]
         pval[i] = ccdf(TDist(df[i]), abs(t[i]))*2
@@ -306,7 +308,9 @@ function rbe(df; dvar::Symbol,
         if lclr ≥ 2
             vm  = Vector{eltype(C)}(undef, lclr)
             for i = 1:lclr
-                g         = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', Xv, Zv, x; memopt = memopt), θ)
+                #g         = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', Xv, Zv, x; memopt = memopt), θ)
+                #g         = L[i:i,:]*gradc*L[i:i,:]'
+                g         = lclg(gradc, L[i:i,:])
                 dfi       = 2*((L[i:i,:]*C*L[i:i,:]')[1])^2/(g'*A*g)
                 if dfi > 2
                     vm[i] = dfi/(dfi-2)
@@ -321,7 +325,9 @@ function rbe(df; dvar::Symbol,
                 dfi = 0
             end
         else
-            g   = ForwardDiff.gradient(x -> lclgf(L, L', Xv, Zv, x; memopt = memopt), θ)
+            #g   = ForwardDiff.gradient(x -> lclgf(L, L', Xv, Zv, x; memopt = memopt), θ)
+            #g   = L*gradc*L'
+            g   = lclg(gradc, L)
             dfi = 2*((lcl)[1])^2/(g'*(A)*g)
         end
         df[i]   = max(1, dfi)

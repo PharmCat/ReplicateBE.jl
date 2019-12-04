@@ -138,9 +138,9 @@ function mlogdet(M::Matrix, cache::Dict)
 end
 
 """
-    REML function for ForwardDiff
+    -2 REML function for ForwardDiff
 """
-function reml(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vector; memopt::Bool = true)
+function reml2(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vector; memopt::Bool = true)
     maxobs    = maximum(length.(yv))
     #some memory optimizations to reduse allocations
     mc        = Vector{Vector{eltype(θvec)}}(undef, maxobs)
@@ -187,12 +187,12 @@ function reml(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vec
 
         @inbounds θ3  += mulall(yv[i], Xv[i], β, iV, mc[length(yv[i])])
     end
-    return   -(θ1 + logdet(θ2) + θ3 + c)/2
+    return   θ1 + logdet(θ2) + θ3 + c
 end
 """
-    REML estimation with β recalculation
+    -2 REML estimation with β recalculation
 """
-function remlb(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vector; memopt::Bool = true)
+function reml2b(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector; memopt::Bool = true)
     maxobs    = maximum(length.(yv))
     #some memory optimizations to reduse allocations
     #mXviV     = Vector{Matrix{eltype(θvec)}}(undef, maxobs)
@@ -252,7 +252,7 @@ function remlb(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Ve
         @inbounds θ3  += mulall(yv[i], Xv[i], βt, iVv[i], mc[length(yv[i])])
     end
 
-    return   -(θ1 + logdet(θ2) + θ3 + c)/2
+    return   θ1 + logdet(θ2) + θ3 + c
 end
 """
 Satterthwaite DF gradient function.
@@ -312,7 +312,7 @@ end
 #             REML FOR OPT ALGORITHM
 #-------------------------------------------------------------------------------
 """
-    REML with β final update
+    -2 REML with β final update
 """
 function reml2b!(yv::Vector, Zv::Vector, p::Int, n::Int, N::Int,
         Xv::Vector, G::Matrix{T}, Rv::Vector, Vv::Vector, iVv::Vector,
@@ -353,7 +353,7 @@ function reml2b!(yv::Vector, Zv::Vector, p::Int, n::Int, N::Int,
 
         @inbounds θ3  += mulall(yv[i], Xv[i], β, iVv[i], mem.mem3[length(yv[i])])
     end
-    return   -(θ1 + logdet(θ2) + θ3 + c)
+    return   θ1 + logdet(θ2) + θ3 + c
 end
 #-------------------------------------------------------------------------------
 """

@@ -211,7 +211,7 @@ function rbe(df; dvar::Symbol,
     matvecz!(iVv, Zv)
     #Optimization
     pO      = nothing
-    td      = TwiceDifferentiable(x -> -2*remlb(yv, Zv, p, Xv, varlink(x, vlm), β; memopt = memopt), θvec0; autodiff = :forward)
+    td      = TwiceDifferentiable(x -> reml2b(yv, Zv, p, Xv, varlink(x, vlm); memopt = memopt), θvec0; autodiff = :forward)
     opttry  = true
     optnum  = 0
     rng     = MersenneTwister(hash(θvec0))
@@ -238,17 +238,17 @@ function rbe(df; dvar::Symbol,
     #Post optimization
     if postopt
         pO     = O
-        od     = OnceDifferentiable(x -> -2*reml(yv, Zv, p, Xv, varlink(x, vlm), β; memopt = memopt), θ; autodiff = :forward)
+        od     = OnceDifferentiable(x -> reml2b(yv, Zv, p, Xv, varlink(x, vlm); memopt = memopt), θ; autodiff = :forward)
         method = BFGS(linesearch = LineSearches.HagerZhang(), alphaguess = LineSearches.InitialStatic())
         O      = optimize(od, [-Inf, -Inf, -Inf, -Inf, -Inf], [Inf, Inf, Inf, Inf, Inf], θ,  Fminbox(method), Optim.Options(g_tol=g_tol, x_tol=x_tol, f_tol=f_tol))
         θ      = Optim.minimizer(O)
     end
     θ = varlink(θ, vlm)
     #Get reml
-    remlv       = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memalloc)
-    #remlv       = -reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, varlink(θ, vlm), β, memalloc)
+    remlv       = reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memalloc)
+    #remlv       = reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, varlink(θ, vlm), β, memalloc)
     #Get Hessian matrix (H) with ForwardDiff
-    H           = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, x, β), θ)
+    H           = ForwardDiff.hessian(x -> reml2(yv, Zv, p, Xv, x, β), θ)
     #H           = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, varlink(x, vlm), β), θ)
     #H           = O.trace[end].metadata["h(x)"]
     #θ           = varlink(θ, vlm)
@@ -391,7 +391,7 @@ end
 Returm -2logREML for rbe model with θ variance vector.
 """
 function reml2(rbe::RBE, θ::Vector{T}) where T <: AbstractFloat
-    return -2*reml(rbe.yv, rbe.Zv, rank(ModelMatrix(rbe.model).m), rbe.Xv, θ, coef(rbe))
+    return reml2(rbe.yv, rbe.Zv, rank(ModelMatrix(rbe.model).m), rbe.Xv, θ, coef(rbe))
 end
 """
     reml2(rbe::RBE)

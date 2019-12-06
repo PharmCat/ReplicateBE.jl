@@ -14,17 +14,10 @@ struct RBE{T <: AbstractFloat}
     reml::T                         # -2REML
     fixed::EffectTable
     typeiii::ContrastTable
-    R::Vector{Matrix{T}}            # R matrices for each subject
-    V::Vector{Matrix{T}}            # V matrices for each subject
     G::Matrix{T}                    # G matrix
     C::Matrix{T}                    # C var(β) p×p variance-covariance matrix
     A::Matrix{T}                    # asymptotic variance-covariance matrix ofb θ
     H::Matrix{T}                    # Hessian matrix
-    X::Matrix{T}                    # Matrix for fixed effects
-    Z::Matrix{T}                    # Matrix for random effects
-    Xv::Vector{Matrix{T}}           # X matrices for each subject
-    Zv::Vector{Matrix{T}}           # Z matrices for each subject
-    yv::Vector{Vector{T}}           # responce vectors for each subject
     detH::T                         # Hessian determinant
     preoptim::Union{Optim.MultivariateOptimizationResults, Nothing}             # Pre-optimization result object
     optim::Optim.MultivariateOptimizationResults                                # Optimization result object
@@ -45,17 +38,18 @@ struct RBE{T <: AbstractFloat}
     reml::T                         # -2REML
     fixed::EffectTable
     typeiii::ContrastTable
-    R::Vector{Matrix{T}}            # R matrices for each subject
-    V::Vector{Matrix{T}}            # V matrices for each subject
-    G::Matrix{T}                    # G matrix
+    #R::Vector{Matrix{T}}            # R matrices for each subject
+    #V::Vector{Matrix{T}}            # V matrices for each subject
+    G::AbstractMatrix{T}                    # G matrix
     C::Matrix{T}                    # C var(β) p×p variance-covariance matrix
     A::Matrix{T}                    # asymptotic variance-covariance matrix ofb θ
     H::Matrix{T}                    # Hessian matrix
     X::Matrix{T}                    # Matrix for fixed effects
     Z::Matrix{T}                    # Matrix for random effects
-    Xv::Vector{Matrix{T}}           # X matrices for each subject
-    Zv::Vector{Matrix{T}}           # Z matrices for each subject
-    yv::Vector{Vector{T}}           # responce vectors for each subject
+    #Xv::Vector{Matrix{T}}           # X matrices for each subject
+    #Zv::Vector{Matrix{T}}           # Z matrices for each subject
+    #yv::Vector{Vector{T}}           # responce vectors for each subject
+    data::RBEDataStructure
     detH::T                         # Hessian determinant
     preoptim::Union{Optim.MultivariateOptimizationResults, Nothing}             # Pre-optimization result object
     optim::Optim.MultivariateOptimizationResults                                # Optimization result object
@@ -169,9 +163,13 @@ function rbe(df; dvar::Symbol,
         push!(sbf, sbjnbyf(df, subject, formulation, fl[i]))
     end
     #Memory pre-allocation arrays for matrix computations
-    memalloc = MemAlloc(p, 2, yv)
+    #memalloc = MemAlloc(p, 2, yv)
+
     #Check data
     checkdata(X, Z, Xv, Zv, y)
+    maxobs = maximum(length.(yv))
+    #
+    data = RBEDataStructure(Xv, Zv, yv, p, N, n, (N - p) * LOG2PI, maxobs, MemCache(maxobs))
     #Calculate initial fixed parameters
     qro   = qr(X)
     β     = inv(qro.R)*qro.Q'*y
@@ -193,7 +191,7 @@ function rbe(df; dvar::Symbol,
         rvarlink = (x, y) ->  varlinkmap(x, 1:4, 5,  vlinkr, z -> rholinksigmoidr(z, y))
     elseif rholink == :arctgsigmoid
         varlink  = (x, y) ->  varlinkmap(x, 1:4, 5,  vlink,  z -> rholinksigmoid2(z, y))
-        rvarlink = (x, y) ->  varlinkmap(x, 1:4, 5,  vlinkr, z -> rholinksigmoidr2(z, y))
+        rvarlink = (x, y) ->  varlinkmap(x, 1:4, 5,  vlinkr, z -> rholinksigmoid2r(z, y))
     else
         varlink  = (x, y) ->  varlinkmap(x, 1:4, 5,  vlink,  z -> rholinkpsigmoid(z, y))
         rvarlink = (x, y) ->  varlinkmap(x, 1:4, 5,  vlinkr, z -> rholinkpsigmoidr(z, y))
@@ -201,17 +199,19 @@ function rbe(df; dvar::Symbol,
 
 
     θvec0   = rvarlink(θvec0, vlm)
+    
     #Prelocatiom for G, R, V, V⁻¹ matrices
-    G       = zeros(2, 2)
-    Rv      = Vector{Matrix{eltype(df[!,dvar])}}(undef, n)
-    Vv      = Vector{Matrix{eltype(df[!,dvar])}}(undef, n)
-    iVv     = Vector{Matrix{eltype(df[!,dvar])}}(undef, n)
-    matvecz!(Rv,  Zv)
-    matvecz!(Vv,  Zv)
-    matvecz!(iVv, Zv)
+    #Deprecated
+    #G       = zeros(2, 2)
+    #Rv      = Vector{Matrix{eltype(df[!,dvar])}}(undef, n)
+    #Vv      = Vector{Matrix{eltype(df[!,dvar])}}(undef, n)
+    #iVv     = Vector{Matrix{eltype(df[!,dvar])}}(undef, n)
+    #matvecz!(Rv,  Zv)
+    #matvecz!(Vv,  Zv)
+    #matvecz!(iVv, Zv)
     #Optimization
     pO      = nothing
-    td      = TwiceDifferentiable(x -> reml2b(yv, Zv, p, Xv, varlink(x, vlm); memopt = memopt), θvec0; autodiff = :forward)
+    td      = TwiceDifferentiable(x -> reml2bfd(data, varlink(x, vlm); memopt = memopt), θvec0; autodiff = :forward)
     opttry  = true
     optnum  = 0
     rng     = MersenneTwister(hash(θvec0))
@@ -219,6 +219,7 @@ function rbe(df; dvar::Symbol,
         try
             O       = optimize(td, θvec0, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace, callback = optimcallback)
             opttry  = false
+        #try
         catch
 
             θvec0 = rvarlink(abs.(varlink(θvec0, vlm) .+ (rand(rng)-0.5)/20 .* varlink(θvec0, vlm) .+ eps()), vlm)[1:4]
@@ -238,17 +239,19 @@ function rbe(df; dvar::Symbol,
     #Post optimization
     if postopt
         pO     = O
-        od     = OnceDifferentiable(x -> reml2b(yv, Zv, p, Xv, varlink(x, vlm); memopt = memopt), θ; autodiff = :forward)
+        od     = OnceDifferentiable(x -> reml2bfd(data, varlink(x, vlm); memopt = memopt), θ; autodiff = :forward)
         method = BFGS(linesearch = LineSearches.HagerZhang(), alphaguess = LineSearches.InitialStatic())
         O      = optimize(od, [-Inf, -Inf, -Inf, -Inf, -Inf], [Inf, Inf, Inf, Inf, Inf], θ,  Fminbox(method), Optim.Options(g_tol=g_tol, x_tol=x_tol, f_tol=f_tol))
         θ      = Optim.minimizer(O)
     end
     θ = varlink(θ, vlm)
     #Get reml
-    remlv       = reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, θ, β, memalloc)
+    #remlv       = reml2b!(data, G, Rv, Vv, iVv, θ, β, memalloc)
+    remlv, β, iC = reml2b(data, θ; memopt = memopt)
     #remlv       = reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, varlink(θ, vlm), β, memalloc)
     #Get Hessian matrix (H) with ForwardDiff
-    H           = ForwardDiff.hessian(x -> reml2(yv, Zv, p, Xv, x, β), θ)
+    #H           = ForwardDiff.hessian(x -> reml2(yv, Zv, p, Xv, x, β), θ)
+    H           = ForwardDiff.hessian(x -> reml2(data, x, β), θ)
     #H           = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, varlink(x, vlm), β), θ)
     #H           = O.trace[end].metadata["h(x)"]
     #θ           = varlink(θ, vlm)
@@ -272,7 +275,8 @@ function rbe(df; dvar::Symbol,
     end
 
     #A           = 2 * pinv(H)
-    C           = cmat(Xv, Zv, iVv, θ)
+    #C           = cmat(Xv, Zv, iVv, θ)
+    C           = pinv(iC)
     se          = Vector{eltype(C)}(undef, p)
     F           = Vector{eltype(C)}(undef, p)
     df          = Vector{eltype(C)}(undef, p)
@@ -341,7 +345,7 @@ function rbe(df; dvar::Symbol,
     termmodelleveln(MF, formulation),
     sbf,
     p, zxr)
-    return RBE(MF, RMF, design, fac, varlink(θvec0, vlm), vlm, Tuple(θ), remlv, fixed, typeiii, Rv, Vv, G, C, A, H, X, Z, Xv, Zv, yv, dH, pO, O)
+    return RBE(MF, RMF, design, fac, varlink(θvec0, vlm), vlm, Tuple(θ), remlv, fixed, typeiii, #=Rv, Vv,=# gmat(θ[3:5]), C, A, H, X, Z, #=Xv, Zv, yv,=# data, dH, pO, O)
 
 end #END OF rbe()
 """
@@ -397,7 +401,7 @@ end
 Returm -2logREML for rbe model with θ variance vector.
 """
 function reml2(rbe::RBE, θ::Vector{T}) where T <: AbstractFloat
-    return reml2(rbe.yv, rbe.Zv, rank(ModelMatrix(rbe.model).m), rbe.Xv, θ, coef(rbe))
+    return reml2(rbe.data, θ, coef(rbe))
 end
 """
     reml2(rbe::RBE)

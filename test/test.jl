@@ -33,7 +33,7 @@ include("testdata.jl")
     @test dof(be)[end]          ≈   5.463110799437906 atol=1E-5
 
     be = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10, memopt = false);
-    @test be.fixed.est[6] == e1
+    @test be.fixed.est[6]       ≈ e1 atol=1E-10
     @test ReplicateBE.estimate(be, [0 0 0 0 0 1], df = :cont, name = "Formulation")[1,4] == 8
     ci0 = confint(be)[end]
     io = IOBuffer();

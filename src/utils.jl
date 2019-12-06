@@ -42,13 +42,13 @@ function contrast(rbe::RBE, L::Matrix; numdf = 0, name = "Contrast", memopt = tr
     lclr    = rank(lcl)
     F       = β'*L'*inv(lcl)*L*β/lclr
     θ       = theta(rbe)
-    gradc   = cmatg(rbe.Xv, rbe.Zv, θ, rbe.C; memopt = memopt)
+    gradc   = cmatg(rbe.data.Xv, rbe.data.Zv, θ, rbe.C; memopt = memopt)
 
 
     if numdf == 0 numdf = rank(L) end
 
     if rank(L) ≥ 2
-        vm      = Array{eltype(rbe.Xv[1]), 1}(undef, size(L, 1))
+        vm      = Array{eltype(first(rbe.data.Xv)), 1}(undef, size(L, 1))
         for i = 1:length(vm)
             #g       = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
             #g       = cmatg(rbe.Xv, rbe.Zv, θ, rbe.C, L[i:i,:]; memopt = memopt)
@@ -142,7 +142,7 @@ function estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = tr
     if df == :sat
         θ       = theta(rbe)
         #g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
-        gradc   = cmatg(rbe.Xv, rbe.Zv, θ, rbe.C; memopt = memopt)
+        gradc   = cmatg(rbe.data.Xv, rbe.data.Zv, θ, rbe.C; memopt = memopt)
         g       = lclg(gradc, L)
         df      = 2*((lcl)[1])^2/(g'*(rbe.A)*g)
     elseif df == :cont

@@ -18,3 +18,11 @@ struct MemAlloc{T <: AbstractFloat}
         new{T}(memc1, memc2, memc3)::MemAlloc
     end
 end
+
+struct MemCache
+    svec::Vector{Vector}
+    function MemCache(maxobs)
+        svec  = Vector{Vector}(undef, 1)
+        new(svec)::MemCache
+    end
+end

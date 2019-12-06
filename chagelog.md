@@ -1,3 +1,8 @@
+- v1.0.6
+    * many optimizations
+    * linear algebra custom functions
+    * drop all interim data
+
 - v1.0.5
     * inv(H) used where possible
     * DF for typeiii checks

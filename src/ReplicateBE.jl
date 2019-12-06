@@ -17,14 +17,15 @@ const LOG2PI = log(2π)
 const MEMOPT = true
 
 include("rbetable.jl")
+include("memalloc.jl")
 include("design.jl")
 include("randrbeds.jl")
-include("memalloc.jl")
 include("deprecated.jl")
 include("rbe.jl")
 include("utils.jl")
 include("generalfunc.jl")
 include("algebra.jl")
+
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------

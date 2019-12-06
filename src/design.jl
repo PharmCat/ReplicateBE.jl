@@ -1,3 +1,21 @@
+struct RBEDataStructure
+    Xv::Vector
+    Zv::Vector
+    yv::Vector
+    p::Int
+    N::Int
+    n::Int
+    remlc::AbstractFloat
+    maxobs::Int
+    mem::MemCache
+end
+
+function rebuildcache(data, type)
+        data.mem.svec[1] = zeros(type, data.maxobs)
+end
+
+
+
 #Design structure
 """
 ```julia

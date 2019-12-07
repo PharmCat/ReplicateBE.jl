@@ -1,4 +1,52 @@
 """
+    Return C matrix
+    var(β) p×p variance-covariance matrix
+"""
+@inline function cmat(Xv::Vector{Matrix{T}}, Zv::Vector, iVv::Vector, θ::Vector)::Matrix where T <: AbstractFloat
+    p = size(Xv[1])[2]
+    C = zeros(p, p)
+    for i=1:length(Xv)
+        #@inbounds C .+= Xv[i]' * iVv[i] * Xv[i]
+        mulαtβαinc!(C, Xv[i], iVv[i])
+    end
+    return pinv(C)
+end
+
+"""
+    -2 REML with β final update
+"""
+function reml2b!(data::RBEDataStructure, G::Matrix{T}, Rv::Vector, Vv::Vector, iVv::Vector,
+        θvec::Vector{T}, β::Vector{T}, mem::MemAlloc) where T <: AbstractFloat
+
+    rebuildcache(data, promote_type(eltype(first(data.yv)), eltype(θvec)))
+    gmat!(G, θvec[3:5])
+
+    θ1 = 0
+    θ2 = zeros(data.p, data.p)
+    θ3 = 0
+    βm   = zeros(data.p)
+    cache     = Dict()
+    cachel    = Dict()
+    @inbounds for i = 1:data.n
+        #rmat!(Rv[i], θvec[1:2], data.Zv[i])
+        #Memopt!
+        Vv[i], iVv[i], ldV         = mvmatall(G, θvec[1:2], data.Zv[i], first(data.mem.svec), cache)
+        θ1  += ldV
+        #-
+        #θ2 += Xv[i]'*iVv[i]*Xv[i]
+        mulθβinc!(θ2, βm, data.Xv[i], iVv[i], data.yv[i], first(data.mem.svec))
+    end
+    mul!(β, inv(θ2), βm)
+    for i = 1:data.n
+        #Same:
+        #r    = yv[i] - Xv[i]*β
+        #θ3  += r'*iVv[i]*r
+        @inbounds θ3  += mulθ₃(data.yv[i], data.Xv[i], β, iVv[i], first(data.mem.svec))
+    end
+    return   θ1 + logdet(θ2) + θ3 + data.remlc
+end
+
+"""
 Satterthwaite DF gradient function.
 """
 function lclgf(L, Lt, Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)

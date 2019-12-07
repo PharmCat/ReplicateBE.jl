@@ -1,7 +1,7 @@
 """
 A' * B * A -> + θ (cache)
 """
-function mulall!(θ, A::AbstractMatrix, B::Matrix, c)
+function mulαtβαinc!(θ, A::AbstractMatrix, B::Matrix, c)
     q = size(B, 1)
     p = size(A, 2)
     for i = 1:p
@@ -22,7 +22,7 @@ end
 """
 A' * B * A -> + θ
 """
-function mulall!(θ, A::AbstractMatrix, B::AbstractMatrix)
+function mulαtβαinc!(θ, A::AbstractMatrix, B::AbstractMatrix)
     q = size(B, 1)
     p = size(A, 2)
     c = zeros(eltype(B), q)
@@ -41,11 +41,12 @@ function mulall!(θ, A::AbstractMatrix, B::AbstractMatrix)
     end
     θ
 end
+#-------------------------------------------------------------------------------
 """
-A' * B * A -> θ
-A' * B * C -> β
+A' * B * A -> +θ
+A' * B * C -> +β
 """
-function mulall!(θ, β, A::AbstractMatrix, B::AbstractMatrix, C::Vector, c)
+function mulθβinc!(θ, β, A::AbstractMatrix, B::AbstractMatrix, C::Vector, c)
     q = size(B, 1)
     p = size(A, 2)
     for i = 1:p
@@ -65,6 +66,7 @@ function mulall!(θ, β, A::AbstractMatrix, B::AbstractMatrix, C::Vector, c)
     end
     θ, β
 end
+#-------------------------------------------------------------------------------
 """
 A' * B * A
 """
@@ -87,7 +89,7 @@ end
 """
 (y - X * β)' * V * (y - X * β)
 """
-function mulall(y::Vector, X::AbstractMatrix, β::Vector, V::AbstractMatrix, c)
+function mulθ₃(y::Vector, X::AbstractMatrix, β::Vector, V::AbstractMatrix, c)
     q = size(V, 1)
     p = size(X, 2)
     θ = 0

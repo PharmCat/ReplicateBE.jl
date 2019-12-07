@@ -27,7 +27,7 @@ end
 Replicate bioequivalence structure.
 
 """
-struct RBE{T <: AbstractFloat}
+mutable struct RBE{T <: AbstractFloat}
     model::ModelFrame               # Model frame
     rmodel::ModelFrame              # Random effect model
     design::Design
@@ -162,8 +162,6 @@ function rbe(df; dvar::Symbol,
     for i = 1:length(fl)
         push!(sbf, sbjnbyf(df, subject, formulation, fl[i]))
     end
-    #Memory pre-allocation arrays for matrix computations
-    #memalloc = MemAlloc(p, 2, yv)
 
     #Check data
     checkdata(X, Z, Xv, Zv, y)
@@ -197,18 +195,10 @@ function rbe(df; dvar::Symbol,
         rvarlink = (x, y) ->  varlinkmap(x, 1:4, 5,  vlinkr, z -> rholinkpsigmoidr(z, y))
     end
 
-
     θvec0   = rvarlink(θvec0, vlm)
-    
+
     #Prelocatiom for G, R, V, V⁻¹ matrices
-    #Deprecated
-    #G       = zeros(2, 2)
-    #Rv      = Vector{Matrix{eltype(df[!,dvar])}}(undef, n)
-    #Vv      = Vector{Matrix{eltype(df[!,dvar])}}(undef, n)
-    #iVv     = Vector{Matrix{eltype(df[!,dvar])}}(undef, n)
-    #matvecz!(Rv,  Zv)
-    #matvecz!(Vv,  Zv)
-    #matvecz!(iVv, Zv)
+
     #Optimization
     pO      = nothing
     td      = TwiceDifferentiable(x -> reml2bfd(data, varlink(x, vlm); memopt = memopt), θvec0; autodiff = :forward)
@@ -221,11 +211,8 @@ function rbe(df; dvar::Symbol,
             opttry  = false
         #try
         catch
-
             θvec0 = rvarlink(abs.(varlink(θvec0, vlm) .+ (rand(rng)-0.5)/20 .* varlink(θvec0, vlm) .+ eps()), vlm)[1:4]
             push!(θvec0, rand(rng))
-            #θvec0[5] = θvec0[5] - rhoadjstep
-
         end
         optnum += 1
         if optnum > maxopttry
@@ -246,13 +233,12 @@ function rbe(df; dvar::Symbol,
     end
     θ = varlink(θ, vlm)
     #Get reml
-    #remlv       = reml2b!(data, G, Rv, Vv, iVv, θ, β, memalloc)
+
     remlv, β, iC = reml2b(data, θ; memopt = memopt)
-    #remlv       = reml2b!(yv, Zv, p, n, N, Xv, G, Rv, Vv, iVv, varlink(θ, vlm), β, memalloc)
+
     #Get Hessian matrix (H) with ForwardDiff
-    #H           = ForwardDiff.hessian(x -> reml2(yv, Zv, p, Xv, x, β), θ)
+
     H           = ForwardDiff.hessian(x -> reml2(data, x, β), θ)
-    #H           = ForwardDiff.hessian(x -> -2*reml(yv, Zv, p, Xv, varlink(x, vlm), β), θ)
     #H           = O.trace[end].metadata["h(x)"]
     #θ           = varlink(θ, vlm)
     A = nothing
@@ -274,8 +260,6 @@ function rbe(df; dvar::Symbol,
         A       = 2 * pinv(H)
     end
 
-    #A           = 2 * pinv(H)
-    #C           = cmat(Xv, Zv, iVv, θ)
     C           = pinv(iC)
     se          = Vector{eltype(C)}(undef, p)
     F           = Vector{eltype(C)}(undef, p)
@@ -291,7 +275,6 @@ function rbe(df; dvar::Symbol,
         lclr    = rank(lcl)
         se[i]   = sqrt((lcl)[1])
         F[i]    = β'*L'*inv(lcl)*L*β/lclr                                       #F[i]    = (L*β)'*inv(L*C*L')*(L*β)/lclr
-        #grads[i]= ForwardDiff.gradient(x -> lclgf(L, Lt, Xv, Zv, x; memopt = memopt), θ)
         g       = lclg(gradc, L)
         df[i]   = max(1, 2*((lcl)[1])^2/(g'*(A)*g))
         t[i]    = ((L*β)/se[i])[1]
@@ -312,8 +295,6 @@ function rbe(df; dvar::Symbol,
         if lclr ≥ 2
             vm  = Vector{eltype(C)}(undef, lclr)
             for i = 1:lclr
-                #g         = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', Xv, Zv, x; memopt = memopt), θ)
-                #g         = L[i:i,:]*gradc*L[i:i,:]'
                 g         = lclg(gradc, L[i:i,:])
                 dfi       = 2*((L[i:i,:]*C*L[i:i,:]')[1])^2/(g'*A*g)
                 if dfi > 2
@@ -329,8 +310,6 @@ function rbe(df; dvar::Symbol,
                 dfi = 0
             end
         else
-            #g   = ForwardDiff.gradient(x -> lclgf(L, L', Xv, Zv, x; memopt = memopt), θ)
-            #g   = L*gradc*L'
             g   = lclg(gradc, L)
             dfi = 2*((lcl)[1])^2/(g'*(A)*g)
         end

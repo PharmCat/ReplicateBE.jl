@@ -65,6 +65,11 @@ ReplicateBE.optstat
 ReplicateBE.randrbeds
 ```
 
+### ReplicateBE.randrbetask
+```@docs
+ReplicateBE.randrbetask
+```
+
 ### ReplicateBE.reml2
 ```@docs
 ReplicateBE.reml2

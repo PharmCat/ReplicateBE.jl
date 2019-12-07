@@ -500,7 +500,7 @@ end
 
 @testset "  #  Simulation                                  " begin
     io = IOBuffer()
-    task = ReplicateBE.RandRBEDS(
+    task = ReplicateBE.randrbetask(
         ;
         n = 12,
         sequence = [1, 1],
@@ -514,6 +514,6 @@ end
         seed = 10001,
         dropobs = 2,
     )
-    pow = ReplicateBE.simulation(task; io = io, num = 10, seed = 1234, verbose = true)
-    @test pow.result == 0.0
+    pow = ReplicateBE.simulation(task; io = io, num = 100, seed = 1234, verbose = true)
+    @test pow.result == 0.04
 end

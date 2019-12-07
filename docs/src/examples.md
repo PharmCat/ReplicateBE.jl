@@ -37,7 +37,7 @@ fixed(be)
 
 #Get Type III object
 
-ypeiii(be)
+typeiii(be)
 
 #Get model coefficients
 
@@ -65,7 +65,7 @@ design(be)
 ```julia
 using ReplicateBE
 
-task = ReplicateBE.RandRBEDS(;n=24,
+task = ReplicateBE.randrbetask(;n=24,
 sequence=[1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
 inter=[0.05, 0.04, 0.6], intra=[0.02, 0.02],
 intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0],
@@ -89,7 +89,7 @@ formcoef = [0.0, log(0.8)], seed = 1234, dropobs = 10)
 
 using ReplicateBE
 
-task = ReplicateBE.RandRBEDS(;n=24,
+task = ReplicateBE.randrbetask(;n=24,
 sequence=[1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
 inter=[0.05, 0.04, 0.6], intra=[0.02, 0.02],
 intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0],

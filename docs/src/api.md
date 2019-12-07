@@ -1,16 +1,11 @@
 ## API
 
-### ReplicateBE.RBE
-```@docs
-ReplicateBE.RBE
-```
-
 ### ReplicateBE.rbe
 ```@docs
 ReplicateBE.rbe
 ```
 
-### ReplicateBE.rbe
+### ReplicateBE.rbe!
 ```@docs
 ReplicateBE.rbe!
 ```

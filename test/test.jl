@@ -41,7 +41,7 @@ include("testdata.jl")
     Base.show(io, ci)
     Base.show(io, be.design)
     Base.show(io, be.fixed)
-    Base.show(io, be.typeiii)
+    #Base.show(io, be.typeiii)
     Base.show(io, ReplicateBE.estimate(be, [0 0 0 0 0 1]))
 
     #POSTOPT+
@@ -52,6 +52,7 @@ include("testdata.jl")
     t =  ReplicateBE.typeiii(be)
     c =  ReplicateBE.contrast(be, L)
     @test t[2, 5] ≈ c[1, 5]
+    Base.show(io, t)
 
     be  = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, rholink = :sigmoid)
     ci1 = confint(be)[end]

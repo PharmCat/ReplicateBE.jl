@@ -31,13 +31,13 @@ mutable struct RBE{T <: AbstractFloat}
     model::ModelFrame               # Model frame
     rmodel::ModelFrame              # Random effect model
     design::Design
-    factors::Vector{Symbol}         # Factor list
+    #factors::Vector{Symbol}         # Factor list
     θ0::Vector{T}                   # Initial variance paramethers
     vlm::T
     θ::Tuple{Vararg{T}}             # Final variance paramethers
     reml::T                         # -2REML
     fixed::EffectTable
-    typeiii::ContrastTable
+    #typeiii::ContrastTable
     #R::Vector{Matrix{T}}            # R matrices for each subject
     #V::Vector{Matrix{T}}            # V matrices for each subject
     G::AbstractMatrix{T}                    # G matrix
@@ -49,7 +49,8 @@ mutable struct RBE{T <: AbstractFloat}
     #Xv::Vector{Matrix{T}}           # X matrices for each subject
     #Zv::Vector{Matrix{T}}           # Z matrices for each subject
     #yv::Vector{Vector{T}}           # responce vectors for each subject
-    data::RBEDataStructure
+    data::RBEDataStructure           # Data for model fitting
+    result::RBEResults
     detH::T                         # Hessian determinant
     preoptim::Union{Optim.MultivariateOptimizationResults, Nothing}             # Pre-optimization result object
     optim::Optim.MultivariateOptimizationResults                                # Optimization result object
@@ -167,10 +168,11 @@ function rbe(df; dvar::Symbol,
     checkdata(X, Z, Xv, Zv, y)
     maxobs = maximum(length.(yv))
     #
-    data = RBEDataStructure(Xv, Zv, yv, p, N, n, (N - p) * LOG2PI, maxobs, MemCache(maxobs))
+    data = RBEDataStructure([sequence, period, formulation], Xv, Zv, yv, p, N, n, (N - p) * LOG2PI, maxobs, MemCache(maxobs))
     #Calculate initial fixed parameters
-    qro   = qr(X)
-    β     = inv(qro.R)*qro.Q'*y
+    #qro   = qr(X)
+    #β     = inv(qro.R)*qro.Q'*y
+
     #Calculate initial variance
     if length(init) == 5
         θvec0 = init
@@ -232,15 +234,17 @@ function rbe(df; dvar::Symbol,
         θ      = Optim.minimizer(O)
     end
     θ = varlink(θ, vlm)
-    #Get reml
-
+    #Get reml, β and inverted variance covariance matrix of β
     remlv, β, iC = reml2b(data, θ; memopt = memopt)
 
     #Get Hessian matrix (H) with ForwardDiff
-
     H           = ForwardDiff.hessian(x -> reml2(data, x, β), θ)
+
+    # Can be done with calculus with less performance and accuracy
+    #H           = Calculus.hessian(x -> reml2(data, x, β), θ)
+    # If no varlink using can be obtained from optim results
     #H           = O.trace[end].metadata["h(x)"]
-    #θ           = varlink(θ, vlm)
+
     A = nothing
     #If rho is near to 1.0 it leads to singular hessian matrix, and rho should be removed from variance-covariance matrix
     #It can be done another way: using varlink everywhere, but it leads to problems of calling varlink after RBE object creation with other methods
@@ -252,7 +256,7 @@ function rbe(df; dvar::Symbol,
 
     dH          = det(H)
     #Secondary parameters calculation
-    # inv() can be incorrect pinv() used
+    # if inv(H) incorrect pinv(H) used
 
     if abs(minimum(svdvals(H))) > singlim
         A       = 2 * inv(H)
@@ -267,6 +271,9 @@ function rbe(df; dvar::Symbol,
     t           = Vector{eltype(C)}(undef, p)
     pval        = Vector{eltype(C)}(undef, p)
     gradc       = cmatg(Xv, Zv, θ, C; memopt = memopt)
+
+    result      = RBEResults(-remlv/2,  β, θ, H, A, C, gradc)
+
     for i = 1:p
         L       = zeros(1, p)
         L[i]    = 1
@@ -282,6 +289,8 @@ function rbe(df; dvar::Symbol,
         #LinearAlgebra.eigen(L*C*L')
     end
     fixed       = EffectTable(coefnames(MF), β, se, F, df, t, pval)
+
+    #=
     fac         = [sequence, period, formulation]
     F           = Vector{eltype(C)}(undef, length(fac))
     df          = Vector{eltype(C)}(undef, length(fac))
@@ -289,6 +298,7 @@ function rbe(df; dvar::Symbol,
     pval        = Vector{eltype(C)}(undef, length(fac))
     for i = 1:length(fac)
         L       = lmatrix(MF, fac[i])
+        #=
         lcl     = L*C*L'
         lclr    = rank(lcl)
         F[i]    = β'*L'*inv(lcl)*L*β/lclr
@@ -316,15 +326,18 @@ function rbe(df; dvar::Symbol,
         df[i]   = max(1, dfi)
         ndf[i]  = numdf[fac[i]]
         pval[i] = ccdf(FDist(ndf[i], df[i]), F[i])
+        =#
+        F[i], ndf[i], df[i], pval[i] = contrastvec(data, result, L)
     end
     typeiii     = ContrastTable(fac, F, ndf, df, pval)
+    =#
     design      = Design(N, n,
     termmodelleveln(MF, sequence),
     termmodelleveln(MF, period),
     termmodelleveln(MF, formulation),
     sbf,
     p, zxr)
-    return RBE(MF, RMF, design, fac, varlink(θvec0, vlm), vlm, Tuple(θ), remlv, fixed, typeiii, #=Rv, Vv,=# gmat(θ[3:5]), C, A, H, X, Z, #=Xv, Zv, yv,=# data, dH, pO, O)
+    return RBE(MF, RMF, design, #=fac,=# varlink(θvec0, vlm), vlm, Tuple(θ), remlv, fixed, #=typeiii,=# #=Rv, Vv,=# gmat(θ[3:5]), C, A, H, X, Z, #=Xv, Zv, yv,=# data, result, dH, pO, O)
 
 end #END OF rbe()
 """
@@ -555,7 +568,17 @@ Return TYPE III table.
 (see contrast)
 """
 function typeiii(rbe::RBE)
-    return rbe.typeiii
+    #return rbe.typeiii
+    fac         = rbe.data.factors
+    F           = Vector{eltype(rbe.result.C)}(undef, length(fac))
+    df          = Vector{eltype(rbe.result.C)}(undef, length(fac))
+    ndf         = Vector{eltype(rbe.result.C)}(undef, length(fac))
+    pval        = Vector{eltype(rbe.result.C)}(undef, length(fac))
+    for i = 1:length(fac)
+        L       = lmatrix(rbe.model, fac[i])
+        F[i], ndf[i], df[i], pval[i] = contrastvec(rbe.data, rbe.result, L)
+    end
+    ContrastTable(fac, F, ndf, df, pval)
 end
 """
     optstat(rbe::RBE)

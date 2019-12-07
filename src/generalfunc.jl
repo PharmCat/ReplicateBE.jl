@@ -283,7 +283,7 @@ function cmatg(Xv::Vector, Zv::Vector, θ::Vector, C::Matrix; memopt::Bool = tru
     return g
 end
 """
-L * C * L' for all C marices
+L * C * L' for all C gradient marices
 """
 function lclg(gradc, L)
     g  = Vector{eltype(gradc[1])}(undef, length(gradc))
@@ -291,6 +291,37 @@ function lclg(gradc, L)
         g[i] = (L * gradc[i] * L')[1]
     end
     return g
+end
+"""
+"""
+function contrastvec(data, res, L)
+    lcl     = L*res.C*L'
+    lclr    = rank(lcl)
+    F       = res.β'*L'*inv(lcl)*L*res.β/lclr
+    if lclr ≥ 2
+        vm  = Vector{eltype(res.C)}(undef, lclr)
+        for i = 1:lclr
+            g         = lclg(res.gradc, L[i:i,:])
+            dfi       = 2*((L[i:i,:]*res.C*L[i:i,:]')[1])^2/(g'*res.A*g)
+            if dfi > 2
+                vm[i] = dfi/(dfi-2)
+            else
+                vm[i] = 0
+            end
+        end
+        E   = sum(vm)
+        if E > lclr
+            dfi = 2 * E / (E - lclr)
+        else
+            dfi = 0
+        end
+    else
+        g   = lclg(res.gradc, L)
+        dfi = 2*((lcl)[1])^2/(g'*res.A*g)
+    end
+    df      = max(1, dfi)
+    pval    = ccdf(FDist(lclr, df), F)
+    return F, lclr, df, pval
 end
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
@@ -319,10 +350,10 @@ function optimcallback(x)
     false
 end
 #-------------------------------------------------------------------------------
-function vlink(σ)
+function vlink(σ::T) where T <: Real
     exp(σ)
 end
-function vlinkr(σ)
+function vlinkr(σ::T) where T <: Real
     log(σ)
 end
 
@@ -347,7 +378,7 @@ function rholinksigmoid2r(ρ, m)
     return tan(ρ)
 end
 
-function varlinkmap(θ, r1, r2, f1, f2)
+function varlinkmap(θ::Vector, r1::Union{Int, UnitRange}, r2::Union{Int, UnitRange}, f1::Function, f2::Function)
     θl      = similar(θ)
     θl[r1]  = f1.(θ[r1])
     θl[r2]  = f2.(θ[r2])

@@ -44,7 +44,6 @@ function contrast(rbe::RBE, L::Matrix; numdf = 0, name = "Contrast", memopt = tr
     θ       = theta(rbe)
     gradc   = cmatg(rbe.data.Xv, rbe.data.Zv, θ, rbe.C; memopt = memopt)
 
-
     if numdf == 0 numdf = rank(L) end
 
     if rank(L) ≥ 2
@@ -74,6 +73,7 @@ function contrast(rbe::RBE, L::Matrix; numdf = 0, name = "Contrast", memopt = tr
     pval    = ccdf(FDist(numdf, df), F)
     return ContrastTable([name], [F], [numdf], [df], [pval])
 end
+
 """
     estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = true, alpha = 0.05)
 
@@ -245,7 +245,7 @@ function lmean(obj::RBE)
     L    = zeros(1, length(obj.fixed.est))
     L[1] = 1.0
     it    = 2
-    for f in obj.factors
+    for f in obj.data.factors
         term = findterm(obj.model, f)
         len  = length(obj.model.f.rhs.terms[term].contrasts.termnames)
         dev  = 1/length(obj.model.f.rhs.terms[term].contrasts.levels)
@@ -257,7 +257,7 @@ function lmean(obj::RBE)
     return L
 end
 #-------------------------------------------------------------------------------
-function checkdata(X, Z, Xv, Zv, y)
+function checkdata(X::Matrix, Z::Matrix, Xv::Vector, Zv::Vector, y::Vector)
     if size(Z)[2] != 2 error("Size random effect matrix != 2. Not implemented yet!") end
     if length(Xv) != length(Zv) error("Length Xv != Zv !!!") end
     for i = 1:length(Xv)

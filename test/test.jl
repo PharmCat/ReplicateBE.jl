@@ -159,14 +159,15 @@ end
     @test estt.df[1]                                     ≈ 62.0                atol=1E-5
     @test estt.ul[1]                                     ≈ 0.14736661447650518 atol=1E-5
 
+    #=
     lsmean = ReplicateBE.lsm(be, [0 0 0 0 0 1])
     @test lsmean[1][1] ≈ 0.0643403 atol=1E-5
     @test lsmean[2][1] ≈ 0.0415345 atol=1E-5
     lsm = ReplicateBE.emm(be, [1 1 1 1 1 0], [0 0 0 0 0 0])
     @test lsm[1][1]    ≈ 4.616254407007809     atol=1E-5
     @test lsm[2][1]    ≈ 0.08217365963420642   atol=1E-5
+    =#
     @test ReplicateBE.reml2(be, [0.1, 0.2, 0.3, 0.4, 1.0]) ≈ 357.238054967491   atol=1E-5
-
     @test ReplicateBE.coefnum(be)      == 6
     @test ReplicateBE.reml2(be)        ≈ 329.25749377843044     atol=1E-5
     @test ReplicateBE.design(be).obs   == 256

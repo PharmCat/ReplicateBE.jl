@@ -1,4 +1,3 @@
-# 6.582 6.568 6.539
 #-------------------------------------------------------------------------------
 #                               GENERAL FUNCTIONS
 #
@@ -101,16 +100,17 @@ function mvmat(G::AbstractMatrix, σ::Vector, Z::Matrix, mem, cache)::Matrix
     end
 end
 function mvmatall(G::AbstractMatrix, σ::Vector, Z::Matrix, mem, cache)
-    #h = hash(tuple(σ, Z))
-    h = hash(Z)
-    if h in keys(cache)
-        return cache[h]
+    #h = hash(Z)
+    #if h in keys(cache)
+    if Z in keys(cache)
+        #return cache[h]
+        return cache[Z]
     else
         V   = mulαβαtc(Z, G, Diagonal(Z*σ), mem)
         #V   = Z * G * Z' + Diagonal(Z*σ)
         iV  = inv(V)
         ldV = logdet(V)
-        cache[h] = (V, iV, ldV)
+        cache[Z] = (V, iV, ldV)
         return V, iV, ldV
     end
 end
@@ -124,7 +124,6 @@ function matvecz!(M, Zv)
     end
     return
 end
-
 #println("θ₁: ", θ1, " θ₂: ",  θ2,  " θ₃: ", θ3)
 
 function minv(M::Matrix, cache::Dict)::Matrix
@@ -156,9 +155,10 @@ end
 function reml2(data::RBEDataStructure, θvec::Vector, β::Vector; memopt::Bool = true)
 
     #memory optimizations to reduse allocations (cache rebuild)
+    #empty!(data.mem.dict)
     rebuildcache(data, promote_type(eltype(data.yv[1]), eltype(θvec)))
-    cache     = Dict()
-
+    cache     = Dict{Matrix, Tuple{Matrix, Matrix, Number}}()
+    #cache     = data.mem.dict
     #---------------------------------------------------------------------------
     G         = gmat(θvec[3:5])
     θ1        = 0
@@ -194,9 +194,7 @@ end
 function reml2b(data::RBEDataStructure, θvec::Vector; memopt::Bool = true)
 
     rebuildcache(data, promote_type(eltype(data.yv[1]), eltype(θvec)))
-
     cache     = Dict()
-
     #---------------------------------------------------------------------------
     G         = gmat(θvec[3:5])
     iVv       = Array{Array{eltype(θvec), 2}, 1}(undef, data.n)
@@ -298,11 +296,33 @@ function contrastvec(data, res, L)
     lcl     = L*res.C*L'
     lclr    = rank(lcl)
     F       = res.β'*L'*inv(lcl)*L*res.β/lclr
+    df      = sattdf(data, res, L, lcl)
+    pval    = ccdf(FDist(lclr, df), F)
+    return F, lclr, df, pval
+end
+function estimatevec(data, res, L)
+    lcl     = L*res.C*L'
+    β       = copy(res.β)
+    est     = (L*β)[1]
+    lclr    = rank(lcl)
+    se      = sqrt((lcl)[1])
+    t       = ((est)/se)
+    return est, se, t
+end
+function sattdf(data, res, L, lcl)
+    lclr    = rank(lcl)
     if lclr ≥ 2
         vm  = Vector{eltype(res.C)}(undef, lclr)
+        # Spectral decomposition ?
+        #ev  = eigen(lcl)
+        #pl  = eigvecs(ev)
+        #dm  = eigvals(ev)
+        #ei  = pl * L
         for i = 1:lclr
             g         = lclg(res.gradc, L[i:i,:])
+            #g         = lclg(res.gradc, ei[i:i, :])
             dfi       = 2*((L[i:i,:]*res.C*L[i:i,:]')[1])^2/(g'*res.A*g)
+            #dfi       = 2*dm[i]^2/(g'*res.A*g)
             if dfi > 2
                 vm[i] = dfi/(dfi-2)
             else
@@ -319,9 +339,7 @@ function contrastvec(data, res, L)
         g   = lclg(res.gradc, L)
         dfi = 2*((lcl)[1])^2/(g'*res.A*g)
     end
-    df      = max(1, dfi)
-    pval    = ccdf(FDist(lclr, df), F)
-    return F, lclr, df, pval
+    return max(1, dfi)
 end
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------

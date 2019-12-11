@@ -2,6 +2,7 @@
     * many optimizations
     * linear algebra custom functions
     * drop all interim data
+    * improve code structure
 
 - v1.0.5
     * inv(H) used where possible

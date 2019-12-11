@@ -1,3 +1,30 @@
+struct RBEDataStructure
+    factors::Vector
+    Xv::Vector
+    Zv::Vector
+    yv::Vector
+    p::Int
+    N::Int
+    n::Int
+    remlc::AbstractFloat
+    maxobs::Int
+    mem::MemCache
+end
+
+function rebuildcache(data, type)
+        data.mem.svec[1] = zeros(type, data.maxobs)
+end
+
+struct RBEResults{T <: AbstractFloat}
+    reml::T
+    β::Vector{T}
+    theta::Vector{T}
+    H::Matrix{T}
+    A::Matrix{T}
+    C::Matrix{T}
+    gradc::Vector{Matrix}
+end
+
 #Design structure
 """
 ```julia

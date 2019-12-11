@@ -1,6 +1,6 @@
 #return contrast table
 """
-    contrast(rbe::RBE, L::Matrix; numdf = 1, name = "Contrast", memopt = true)::ContrastTable
+    contrast(rbe::RBE, L::Matrix; name = "Contrast", memopt = true)::ContrastTable
 
 Return contrast table for L matrix. Table include:
 * F
@@ -36,39 +36,12 @@ p value calculated with:
 pval    = ccdf(FDist(numdf, df), F)
 ```
 """
-function contrast(rbe::RBE, L::Matrix; numdf = 0, name = "Contrast", memopt = true)::ContrastTable
-    β       = coef(rbe)
-    lcl     = L*rbe.C*L'
-    lclr    = rank(lcl)
-    F       = β'*L'*inv(lcl)*L*β/lclr
-    θ       = theta(rbe)
+function contrast(rbe::RBE, L::Matrix;  name = "Contrast", memopt = true)::ContrastTable
+    F, ndf, df, pval = contrastvec(rbe.data, rbe.result, L)
+    return ContrastTable([name], [F], [ndf], [df], [pval])
 
-    if numdf == 0 numdf = rank(L) end
-
-    if rank(L) ≥ 2
-        vm      = Array{eltype(rbe.Xv[1]), 1}(undef, size(L, 1))
-        for i = 1:length(vm)
-            g       = ForwardDiff.gradient(x -> lclgf(L[i:i,:], L[i:i,:]', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
-            df      = 2*((L[i:i,:]*rbe.C*L[i:i,:]')[1])^2/(g'*(rbe.A)*g)
-            if df > 2
-                vm[i] = df/(df-2)
-            else
-                vm[i] = 0
-            end
-        end
-        E   = sum(vm)
-        if E > lclr
-            df = 2 * E / (E - lclr)
-        else
-            df = 0
-        end
-    else
-        g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
-        df      = 2*((lcl)[1])^2/(g'*(rbe.A)*g)
-    end
-    pval    = ccdf(FDist(numdf, df), F)
-    return ContrastTable([name], [F], [numdf], [df], [pval])
 end
+
 """
     estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = true, alpha = 0.05)
 
@@ -128,17 +101,9 @@ L = [0 0 0 1 0 0]
 ```
 """
 function estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = true, alpha = 0.05)::EstimateTable
-    lcl     = L*rbe.C*L'
-    β       = coef(rbe)
-    est     = (L*β)[1]
-    lclr    = rank(lcl)
-    se      = sqrt((lcl)[1])
-    #F       = β'*L'*inv(lcl)*L*β/lclr
+    est, se, t = estimatevec(rbe.data, rbe.result, L)
     if df == :sat
-        θ       = theta(rbe)
-        g       = ForwardDiff.gradient(x -> lclgf(L, L', rbe.Xv, rbe.Zv, x; memopt = memopt), θ)
-
-        df      = 2*((lcl)[1])^2/(g'*(rbe.A)*g)
+        df      = sattdf(rbe.data, rbe.result, L, L*rbe.result.C*L')
     elseif df == :cont
         df      = rbe.design.df3
     else
@@ -160,7 +125,7 @@ function lmatrix(mf::ModelFrame, f::Union{Symbol, AbstractTerm})
     id  = findterm(mf, f)
     n   = length(mf.f.rhs.terms[id].contrasts.termnames)
     lm  = zeros(n, length(coefnames(mf)))
-    vec = Array{Int, 1}(undef, 0)
+    vec = Vector{Int}(undef, 0)
     for i = 1:l
         if isa(mf.f.rhs.terms[i], InterceptTerm)
             if f == InterceptTerm
@@ -237,7 +202,7 @@ function lmean(obj::RBE)
     L    = zeros(1, length(obj.fixed.est))
     L[1] = 1.0
     it    = 2
-    for f in obj.factors
+    for f in obj.data.factors
         term = findterm(obj.model, f)
         len  = length(obj.model.f.rhs.terms[term].contrasts.termnames)
         dev  = 1/length(obj.model.f.rhs.terms[term].contrasts.levels)
@@ -249,7 +214,7 @@ function lmean(obj::RBE)
     return L
 end
 #-------------------------------------------------------------------------------
-function checkdata(X, Z, Xv, Zv, y)
+function checkdata(X::Matrix, Z::Matrix, Xv::Vector, Zv::Vector, y::Vector)
     if size(Z)[2] != 2 error("Size random effect matrix != 2. Not implemented yet!") end
     if length(Xv) != length(Zv) error("Length Xv != Zv !!!") end
     for i = 1:length(Xv)

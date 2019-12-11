@@ -33,7 +33,7 @@ include("testdata.jl")
     @test dof(be)[end]          ≈   5.463110799437906 atol=1E-5
 
     be = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10, memopt = false);
-    @test be.fixed.est[6] == e1
+    @test be.fixed.est[6]       ≈ e1 atol=1E-10
     @test ReplicateBE.estimate(be, [0 0 0 0 0 1], df = :cont, name = "Formulation")[1,4] == 8
     ci0 = confint(be)[end]
     io = IOBuffer();
@@ -41,7 +41,7 @@ include("testdata.jl")
     Base.show(io, ci)
     Base.show(io, be.design)
     Base.show(io, be.fixed)
-    Base.show(io, be.typeiii)
+    #Base.show(io, be.typeiii)
     Base.show(io, ReplicateBE.estimate(be, [0 0 0 0 0 1]))
 
     #POSTOPT+
@@ -52,11 +52,12 @@ include("testdata.jl")
     t =  ReplicateBE.typeiii(be)
     c =  ReplicateBE.contrast(be, L)
     @test t[2, 5] ≈ c[1, 5]
+    Base.show(io, t)
 
     be  = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, rholink = :sigmoid)
     ci1 = confint(be)[end]
-    @test ci0[1] ≈ ci1[1]
-    @test ci0[2] ≈ ci1[2]
+    @test ci0[1] ≈ ci1[1] atol=1E-5
+    @test ci0[2] ≈ ci1[2] atol=1E-5
     #Experimental
     be  = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, rholink = :arctgsigmoid, singlim = 1e-4)
     ci2 = confint(be)[end]
@@ -158,14 +159,15 @@ end
     @test estt.df[1]                                     ≈ 62.0                atol=1E-5
     @test estt.ul[1]                                     ≈ 0.14736661447650518 atol=1E-5
 
+    #=
     lsmean = ReplicateBE.lsm(be, [0 0 0 0 0 1])
     @test lsmean[1][1] ≈ 0.0643403 atol=1E-5
     @test lsmean[2][1] ≈ 0.0415345 atol=1E-5
     lsm = ReplicateBE.emm(be, [1 1 1 1 1 0], [0 0 0 0 0 0])
     @test lsm[1][1]    ≈ 4.616254407007809     atol=1E-5
     @test lsm[2][1]    ≈ 0.08217365963420642   atol=1E-5
+    =#
     @test ReplicateBE.reml2(be, [0.1, 0.2, 0.3, 0.4, 1.0]) ≈ 357.238054967491   atol=1E-5
-
     @test ReplicateBE.coefnum(be)      == 6
     @test ReplicateBE.reml2(be)        ≈ 329.25749377843044     atol=1E-5
     @test ReplicateBE.design(be).obs   == 256
@@ -499,7 +501,7 @@ end
 
 @testset "  #  Simulation                                  " begin
     io = IOBuffer()
-    task = ReplicateBE.RandRBEDS(
+    task = ReplicateBE.randrbetask(
         ;
         n = 12,
         sequence = [1, 1],
@@ -513,6 +515,6 @@ end
         seed = 10001,
         dropobs = 2,
     )
-    pow = ReplicateBE.simulation(task; io = io, num = 10, seed = 1234, verbose = true)
-    @test pow.result == 0.0
+    pow = ReplicateBE.simulation(task; io = io, num = 100, seed = 1234, verbose = true)
+    @test pow.result == 0.04
 end

@@ -1,16 +1,11 @@
 ## API
 
-### ReplicateBE.RBE
-```@docs
-ReplicateBE.RBE
-```
-
 ### ReplicateBE.rbe
 ```@docs
 ReplicateBE.rbe
 ```
 
-### ReplicateBE.rbe
+### ReplicateBE.rbe!
 ```@docs
 ReplicateBE.rbe!
 ```
@@ -68,6 +63,11 @@ ReplicateBE.optstat
 ### ReplicateBE.randrbeds
 ```@docs
 ReplicateBE.randrbeds
+```
+
+### ReplicateBE.randrbetask
+```@docs
+ReplicateBE.randrbetask
 ```
 
 ### ReplicateBE.reml2

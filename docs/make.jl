@@ -12,7 +12,7 @@ makedocs(
         "Syntax" => "syntax.md",
         "Details" => "details.md",
         "Validation" => "testval.md",
-        "Structures" => "struct.md",
+#        "Structures" => "struct.md",
         "Api" => "api.md",
     ],
 )

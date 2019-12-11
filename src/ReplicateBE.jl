@@ -7,7 +7,7 @@ module ReplicateBE
 
 using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlgebra, Random, PDMats, Optim, LineSearches, CategoricalArrays, Printf
 
-    export RBE, RandRBEDS, rbe, rbe!, reml2, nobs, coef, stderror, dof, coefnum, fixed, theta, typeiii, design, show, confint, contrast, estimate, optstat, randrbeds
+    export rbe, rbe!, reml2, nobs, coef, stderror, dof, coefnum, fixed, theta, typeiii, design, show, confint, contrast, estimate, optstat, randrbeds, randrbetask
     import Base.show
     import StatsBase.confint, StatsBase.coef, StatsBase.nobs, StatsBase.dof, StatsBase.stderror
     import Statistics.var
@@ -17,13 +17,15 @@ const LOG2PI = log(2π)
 const MEMOPT = true
 
 include("rbetable.jl")
+include("memalloc.jl")
 include("design.jl")
 include("randrbeds.jl")
-include("memalloc.jl")
 include("deprecated.jl")
 include("rbe.jl")
 include("utils.jl")
 include("generalfunc.jl")
+include("algebra.jl")
+
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------

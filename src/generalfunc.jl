@@ -7,14 +7,14 @@
 """
 function sortsubjects(df::DataFrame, sbj::Symbol, X::Matrix, Z::Matrix, y::Vector)
     u = unique(df[:, sbj])
-    Xa = Array{Array{eltype(X),2}, 1}(undef, length(u))
-    Za = Array{Array{eltype(Z),2}, 1}(undef, length(u))
-    ya = Array{Array{eltype(y),1}, 1}(undef, length(u))
+    Xa = Vector{Matrix{eltype(X)}}(undef, length(u))
+    Za = Vector{Matrix{eltype(Z)}}(undef, length(u))
+    ya = Vector{Vector{eltype(y)}}(undef, length(u))
     for i = 1:length(u)
         v = findall(x->x==u[i], df[:, sbj])
-        Xs = Array{eltype(X), 1}(undef, 0)
-        Zs = Array{eltype(Z), 1}(undef, 0)
-        ys = Array{eltype(y), 1}(undef, 0)
+        Xs = Vector{eltype(X)}(undef, 0)
+        Zs = Vector{eltype(Z)}(undef, 0)
+        ys = Vector{eltype(y)}(undef, 0)
         for r in v
             append!(Xs, X[r, :])
             append!(Zs, Z[r, :])
@@ -35,12 +35,9 @@ end
 """
     G matrix
 """
-@inline function gmat(σ::Vector)::Matrix
-    #m = Matrix(Diagonal(σ[1:2]))
-    #m[1, 2] = m[2, 1] = sqrt(σ[1] * σ[2]) * σ[3]
-    #return m
+@inline function gmat(σ::Vector)::AbstractMatrix
     cov = sqrt(σ[1] * σ[2]) * σ[3]
-    return [σ[1] cov; cov σ[2]]
+    return Symmetric([σ[1] cov; cov σ[2]])
 end
 """
     G matrix  (memory pre-allocation)
@@ -56,13 +53,13 @@ end
     R matrix (ForwardDiff+)
 """
 @inline function rmat(σ::Vector, Z::Matrix)::Matrix
-    return Matrix(Diagonal((Z*σ)))
+    return Diagonal(Z*σ)
 end
 """
     R matrix  (memory pre-allocation)
 """
-@inline function rmat!(R::Matrix{T}, σ::Vector{T}, Z::Matrix{T}) where T <: AbstractFloat
-    copyto!(R, Matrix(Diagonal((Z*σ))))
+@inline function rmat!(R::AbstractMatrix{T}, σ::Vector{T}, Z::Matrix{T}) where T <: AbstractFloat
+    copyto!(R, Diagonal(Z*σ))
     return
 end
 #-------------------------------------------------------------------------------
@@ -70,25 +67,51 @@ end
 """
     Return variance-covariance matrix V
 """
-@inline function vmat(G::Matrix, R::Matrix, Z::Matrix)::Matrix
-    V  = Z * G * Z' + R
-    return V
+@inline function vmat(G::AbstractMatrix, R::AbstractMatrix, Z::Matrix)::AbstractMatrix
+    return  mulαβαtc(Z, G, R)
 end
-@inline function vmat!(V::Matrix{T}, G::Matrix{T}, R::Matrix{T}, Z::Matrix{T}, memc) where T <: AbstractFloat
+@inline function vmat!(V::Matrix{T}, G::AbstractMatrix{T}, R::AbstractMatrix{T}, Z::Matrix{T}, memc) where T <: AbstractFloat
     #copyto!(V, Z*G*Z')
     mul!(memc[size(Z)[1]], Z, G)
     mul!(V, memc[size(Z)[1]], Z')
     V .+= R
     return
 end
-function mvmat(G::Matrix, σ::Vector, Z::Matrix, cache)::Matrix
+function mvmat(G::AbstractMatrix, σ::Vector, Z::Matrix, cache)::Matrix
     h = hash(tuple(σ, Z))
     if h in keys(cache)
         return cache[h]
     else
-        V  = Z * G * Z' + Matrix(Diagonal((Z*σ)))
+        #V  = mulαβαtc(Z, G, Diagonal(Z*σ), mem)
+        V   = Z * G * Z' + Diagonal(Z*σ)
         cache[h] = V
         return V
+    end
+end
+function mvmat(G::AbstractMatrix, σ::Vector, Z::Matrix, mem, cache)::Matrix
+    h = hash(tuple(σ, Z))
+    if h in keys(cache)
+        return cache[h]
+    else
+        V  = mulαβαtc(Z, G, Diagonal(Z*σ), mem)
+        #V   = Z * G * Z' + Diagonal(Z*σ)
+        cache[h] = V
+        return V
+    end
+end
+function mvmatall(G::AbstractMatrix, σ::Vector, Z::Matrix, mem, cache)
+    #h = hash(Z)
+    #if h in keys(cache)
+    if Z in keys(cache)
+        #return cache[h]
+        return cache[Z]
+    else
+        V   = mulαβαtc(Z, G, Diagonal(Z*σ), mem)
+        #V   = Z * G * Z' + Diagonal(Z*σ)
+        iV  = inv(V)
+        ldV = logdet(V)
+        cache[Z] = (V, iV, ldV)
+        return V, iV, ldV
     end
 end
 """
@@ -100,18 +123,6 @@ function matvecz!(M, Zv)
         M[i] = zeros(size(Zv[i])[1], size(Zv[i])[1])
     end
     return
-end
-"""
-    Return C matrix
-    var(β) p×p variance-covariance matrix
-"""
-@inline function cmat(Xv::Vector{Matrix{T}}, Zv::Vector, iVv::Vector, θ::Vector)::Matrix where T <: AbstractFloat
-    p = size(Xv[1])[2]
-    C = zeros(p, p)
-    for i=1:length(Xv)
-        @inbounds C .+= Xv[i]' * iVv[i] * Xv[i]
-    end
-    return inv(C)
 end
 #println("θ₁: ", θ1, " θ₂: ",  θ2,  " θ₃: ", θ3)
 
@@ -135,174 +146,203 @@ function mlogdet(M::Matrix, cache::Dict)
         return iM
     end
 end
+#-------------------------------------------------------------------------------
+#             REML FOR OPT ALGORITHM
+#-------------------------------------------------------------------------------
+"""
+    -2 REML function for ForwardDiff
+"""
+function reml2(data::RBEDataStructure, θvec::Vector, β::Vector; memopt::Bool = true)
 
-"""
-    REML function for ForwardDiff
-"""
-function reml(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vector; memopt::Bool = true)
-    maxobs    = maximum(length.(yv))
-    #some memory optimizations to reduse allocations
-    mXviV     = Array{Array{eltype(θvec), 2}, 1}(undef, maxobs)
-    mXviVXv   = zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, p)
-    for i = 1:maxobs
-        mXviV[i] =  zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, i)
-    end
-    cache     = Dict()
-    cachel    = Dict()
-    cachem    = Dict()
+    #memory optimizations to reduse allocations (cache rebuild)
+    #empty!(data.mem.dict)
+    rebuildcache(data, promote_type(eltype(data.yv[1]), eltype(θvec)))
+    cache     = Dict{Matrix, Tuple{Matrix, Matrix, Number}}()
+    #cache     = data.mem.dict
     #---------------------------------------------------------------------------
-    n         = length(yv)
-    N         = sum(length.(yv))
     G         = gmat(θvec[3:5])
-    c         = (N - p) * LOG2PI
     θ1        = 0
-    θ2        = zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, p)
+    θ2        = zeros(promote_type(eltype(data.yv[1]), eltype(θvec)), data.p, data.p)
     θ3        = 0
     iV        = nothing
-    for i = 1:n
+    for i = 1:data.n
         if MEMOPT && memopt
-            #@inbounds R    = mrmat(θr, Zv[i], cacher)
-            #@inbounds V    = memvmat(memzgz(G, Zv[i]), R)
-            @inbounds V    = mvmat(G, θvec[1:2], Zv[i], cachem)
-            iV   = minv(V, cache)
-            θ1  += mlogdet(V, cachel)
-        else
-            @inbounds V    = vmat(G, rmat(θvec[1:2], Zv[i]), Zv[i])
-            iV   = inv(V)
-            θ1  += logdet(V)
-        end
 
+            V, iV, ldV         = mvmatall(G, θvec[1:2], data.Zv[i], first(data.mem.svec), cache)
+            θ1                += ldV
+        else
+            @inbounds V    = vmat(G, rmat(θvec[1:2], data.Zv[i]), data.Zv[i])
+            iV             = inv(V)
+            θ1            += logdet(V)
+        end
         #-----------------------------------------------------------------------
         #θ2 += Xv[i]'*iV*Xv[i]
-        @inbounds mul!(mXviV[size(Xv[i])[1]], Xv[i]', iV)
-        @inbounds mul!(mXviVXv, mXviV[size(Xv[i])[1]], Xv[i])
-        θ2  += mXviVXv
+        @inbounds mulαtβαinc!(θ2, data.Xv[i], iV, first(data.mem.svec))
         #-----------------------------------------------------------------------
-        @inbounds r    = yv[i] - Xv[i] * β
-        θ3  += r' * iV * r
+        #r    = yv[i] - Xv[i] * β
+        #θ3  += r' * iV * r
+        @inbounds θ3  += mulθ₃(data.yv[i], data.Xv[i], β, iV, first(data.mem.svec))
     end
-    return   -(θ1 + logdet(θ2) + θ3 + c)/2
+    return   θ1 + logdet(θ2) + θ3 + data.remlc
 end
 """
-    REML estimation with β recalculation
+    -2 REML estimation with β recalculation for ForwardDiff
 """
-function remlb(yv::Vector, Zv::Vector, p::Int, Xv::Vector, θvec::Vector, β::Vector; memopt::Bool = true)
-    maxobs    = maximum(length.(yv))
-    #some memory optimizations to reduse allocations
-    mXviV     = Array{Array{eltype(θvec), 2}, 1}(undef, maxobs)
-    mXviVXv   = zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, p)
-    for i = 1:maxobs
-        mXviV[i] =  zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, i)
-    end
+function reml2bfd(data::RBEDataStructure, θvec::Vector; memopt::Bool = true)
+    return reml2b(data, θvec; memopt = memopt)[1]
+end
+function reml2b(data::RBEDataStructure, θvec::Vector; memopt::Bool = true)
+
+    rebuildcache(data, promote_type(eltype(data.yv[1]), eltype(θvec)))
     cache     = Dict()
-    cachel    = Dict()
-    cachem    = Dict()
     #---------------------------------------------------------------------------
-    n         = length(yv)
-    N         = sum(length.(yv))
     G         = gmat(θvec[3:5])
-    iVv       = Array{Array{eltype(θvec), 2}, 1}(undef, n)
-    c         = (N-p)*LOG2PI
+    iVv       = Array{Array{eltype(θvec), 2}, 1}(undef, data.n)
+    V         = nothing
+    ldV       = nothing
     θ1        = 0
-    θ2        = zeros(promote_type(eltype(yv[1]), eltype(θvec)), p, p)
+    θ2        = zeros(promote_type(eltype(first(data.yv)), eltype(θvec)), data.p, data.p)
     θ3        = 0
-    iV        = nothing
-    βm        = zeros(promote_type(eltype(yv[1]), eltype(θvec)), p)
-    βt        = zeros(promote_type(eltype(yv[1]), eltype(θvec)), p)
-    for i = 1:n
+    βm        = zeros(promote_type(eltype(first(data.yv)), eltype(θvec)), data.p)
+    β         = zeros(promote_type(eltype(first(data.yv)), eltype(θvec)), data.p)
+    for i = 1:data.n
         if MEMOPT && memopt
-            #@inbounds R        = memrmat(θr, Zv[i])
-            #@inbounds V        = memvmat(memzgz(G, Zv[i]), R)
-            @inbounds V        = mvmat(G, θvec[1:2], Zv[i], cachem)
-            @inbounds iVv[i]   = minv(V, cache)
-            θ1                += mlogdet(V, cachel)
+
+            @inbounds V, iVv[i], ldV = mvmatall(G, θvec[1:2], data.Zv[i], first(data.mem.svec), cache)
+            θ1                      += ldV
         else
-            @inbounds R        = rmat(θvec[1:2], Zv[i])
-            @inbounds V        = vmat(G, R, Zv[i])
+            @inbounds R        = rmat(θvec[1:2], data.Zv[i])
+            @inbounds V        = vmat(G, R, data.Zv[i])
             @inbounds iVv[i]   = inv(V)
             θ1                += logdet(V)
         end
-
         #-----------------------------------------------------------------------
-        #θ2 += Xv[i]'*iV*Xv[i]
-        @inbounds mul!(mXviV[size(Xv[i])[1]], Xv[i]', iVv[i])
-        @inbounds mul!(mXviVXv, mXviV[size(Xv[i])[1]], Xv[i])
-        θ2  += mXviVXv
-        @inbounds βm  .+= mXviV[size(Xv[i])[1]] * yv[i]
+        #θ2 += Xv[i]'*iVv[i]*Xv[i]
+        #βm += Xv[i]'*iVv[i]*yv[i]
+        mulθβinc!(θ2, βm, data.Xv[i], iVv[i], data.yv[i], first(data.mem.svec))
         #-----------------------------------------------------------------------
-        #tm   = Xv[i]'*iVv[i]    #Temp matrix for Xv[i]'*iV*Xv[i] and Xv[i]'*iV*yv[i] calc
-        #θ2m .+= tm*Xv[i]
-        #βm  .+= tm*yv[i]
     end
-    mul!(βt, inv(θ2), βm)
-    for i = 1:n
-        @inbounds r    = yv[i] - Xv[i] * βt
-        @inbounds θ3  += r' * iVv[i] * r
+    mul!(β, inv(θ2), βm)
+    for i = 1:data.n
+        # r    = yv[i] - Xv[i] * β
+        # θ3  += r' * iVv[i] * r
+        @inbounds θ3  += mulθ₃(data.yv[i], data.Xv[i], β, iVv[i], first(data.mem.svec))
     end
 
-    return   -(θ1 + logdet(θ2) + θ3 + c)/2
+    return   θ1 + logdet(θ2) + θ3 + data.remlc,  β, θ2
+end
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# C matrix derivation
+#-------------------------------------------------------------------------------
+"""
+non inverted C matrix gradient function
+"""
+function cmatgf(Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
+    p      = size(Xv[1], 2)
+    jC     = ForwardDiff.jacobian(x -> cmatvec(Xv, Zv, x; memopt = memopt), θ)
+    result = Vector{Matrix}(undef, 0)
+    for i in 1:length(θ)
+        push!(result, reshape(jC[:,i], p, p))
+    end
+    return result
 end
 """
-Satterthwaite DF gradient function.
+non inverted C matrix in vector form for gradient
 """
-function lclgf(L, Lt, Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
-    p     = size(Xv[1])[2]
+function cmatvec(Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
+    p     = size(Xv[1], 2)
     G     = gmat(θ[3:5])
     C     = zeros(promote_type(eltype(Zv[1]), eltype(θ)), p, p)
     cache     = Dict()
     cachem    = Dict()
     for i = 1:length(Xv)
-        if MEMOPT && memopt
+        if memopt
             iV   = minv(mvmat(G, θ[1:2], Zv[i], cachem), cache)
         else
             R   = rmat(θ[1:2], Zv[i])
             iV  = inv(vmat(G, R, Zv[i]))
         end
-        C  += Xv[i]' * iV * Xv[i]
+        #C  += Xv[i]' * iV * Xv[i]
+        mulαtβαinc!(C, Xv[i], iV)
     end
-    return (L * inv(C) * Lt)[1]
+    return C[:]
+end
+"""
+C matrix gradients
+"""
+function cmatg(Xv::Vector, Zv::Vector, θ::Vector, C::Matrix; memopt::Bool = true)
+    g  = Vector{Matrix}(undef, length(θ))
+    jC = cmatgf(Xv, Zv, θ; memopt = memopt)
+    for i = 1:length(θ)
+        g[i] = (- C * jC[i] * C)
+    end
+    return g
+end
+"""
+L * C * L' for all C gradient marices
+"""
+function lclg(gradc, L)
+    g  = Vector{eltype(gradc[1])}(undef, length(gradc))
+    for i = 1:length(gradc)
+        g[i] = (L * gradc[i] * L')[1]
+    end
+    return g
+end
+"""
+"""
+function contrastvec(data, res, L)
+    lcl     = L*res.C*L'
+    lclr    = rank(lcl)
+    F       = res.β'*L'*inv(lcl)*L*res.β/lclr
+    df      = sattdf(data, res, L, lcl)
+    pval    = ccdf(FDist(lclr, df), F)
+    return F, lclr, df, pval
+end
+function estimatevec(data, res, L)
+    lcl     = L*res.C*L'
+    β       = copy(res.β)
+    est     = (L*β)[1]
+    lclr    = rank(lcl)
+    se      = sqrt((lcl)[1])
+    t       = ((est)/se)
+    return est, se, t
+end
+function sattdf(data, res, L, lcl)
+    lclr    = rank(lcl)
+    if lclr ≥ 2
+        vm  = Vector{eltype(res.C)}(undef, lclr)
+        # Spectral decomposition ?
+        #ev  = eigen(lcl)
+        #pl  = eigvecs(ev)
+        #dm  = eigvals(ev)
+        #ei  = pl * L
+        for i = 1:lclr
+            g         = lclg(res.gradc, L[i:i,:])
+            #g         = lclg(res.gradc, ei[i:i, :])
+            dfi       = 2*((L[i:i,:]*res.C*L[i:i,:]')[1])^2/(g'*res.A*g)
+            #dfi       = 2*dm[i]^2/(g'*res.A*g)
+            if dfi > 2
+                vm[i] = dfi/(dfi-2)
+            else
+                vm[i] = 0
+            end
+        end
+        E   = sum(vm)
+        if E > lclr
+            dfi = 2 * E / (E - lclr)
+        else
+            dfi = 0
+        end
+    else
+        g   = lclg(res.gradc, L)
+        dfi = 2*((lcl)[1])^2/(g'*res.A*g)
+    end
+    return max(1, dfi)
 end
 #-------------------------------------------------------------------------------
-#             REML FOR OPT ALGORITHM
 #-------------------------------------------------------------------------------
-"""
-    REML with β final update
-"""
-function reml2b!(yv::Vector, Zv::Vector, p::Int, n::Int, N::Int,
-        Xv::Vector, G::Matrix{T}, Rv::Vector, Vv::Vector, iVv::Vector,
-        θvec::Vector{T}, β::Vector{T}, mem::MemAlloc) where T <: AbstractFloat
-    gmat!(G, θvec[3:5])
-    c  = (N-p)*LOG2PI #log(2π)
-    θ1 = 0
-    θ2  = zeros(p, p)
-    θ3 = 0
-    iV   = nothing
-    #fill!(mem.mem4, 0)
-    βm   = zeros(p)
-    cache     = Dict()
-    cachel    = Dict()
-    @inbounds for i = 1:n
-        rmat!(Rv[i], θvec[1:2], Zv[i])
-        vmat!(Vv[i], G, Rv[i], Zv[i], mem.mem1)
-        #Memopt!
-        copyto!(iVv[i], minv(Vv[i], cache))
-        θ1  += mlogdet(Vv[i], cachel)
-        #-
-        mul!(mem.mem2[size(Xv[i])[1]], Xv[i]', iVv[i])
-        θ2    .+= mem.mem2[size(Xv[i])[1]] * Xv[i]
-        βm    .+= mem.mem2[size(Xv[i])[1]] * yv[i]
-    end
-    mul!(β, inv(θ2), βm)
-    for i = 1:n
-        copyto!(mem.mem3[length(yv[i])], yv[i])
-        mem.mem3[length(yv[i])] .-= Xv[i] * β
-        θ3  += mem.mem3[length(yv[i])]' * iVv[i] * mem.mem3[length(yv[i])]
-        #Same:
-        #r    = yv[i] - Xv[i]*β
-        #θ3  += r'*iVv[i]*r
-    end
-    return   -(θ1 + logdet(θ2) + θ3 + c)
-end
 #-------------------------------------------------------------------------------
 """
     Initial variance computation
@@ -323,11 +363,15 @@ function initvar(df::DataFrame, dv::Symbol, fac::Symbol, sbj::Symbol)::Vector
     push!(fv, mean(sb))
     return fv
 end
-#------------------------------------------------------------------------------
-function vlink(σ)
+#-------------------------------------------------------------------------------
+function optimcallback(x)
+    false
+end
+#-------------------------------------------------------------------------------
+function vlink(σ::T) where T <: Real
     exp(σ)
 end
-function vlinkr(σ)
+function vlinkr(σ::T) where T <: Real
     log(σ)
 end
 
@@ -348,11 +392,11 @@ end
 function rholinksigmoid2(ρ, m)
     return atan(ρ)
 end
-function rholinksigmoidr2(ρ, m)
+function rholinksigmoid2r(ρ, m)
     return tan(ρ)
 end
 
-function varlinkmap(θ, r1, r2, f1, f2)
+function varlinkmap(θ::Vector, r1::Union{Int, UnitRange}, r2::Union{Int, UnitRange}, f1::Function, f2::Function)
     θl      = similar(θ)
     θl[r1]  = f1.(θ[r1])
     θl[r2]  = f2.(θ[r2])

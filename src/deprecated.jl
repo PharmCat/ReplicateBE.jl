@@ -1,3 +1,98 @@
+
+struct MemAlloc{T <: AbstractFloat}
+    mem1::Vector{Matrix{T}}
+    mem2::Vector{Matrix{T}}
+    mem3::Vector{Vector{T}}
+    #mem4::Array{Float64, 2}
+    function MemAlloc(p, zs, yv::Vector{Vector{T}}) where T <: AbstractFloat
+        maxobs  = maximum(length.(yv))
+        yvtype = eltype(yv[1])
+        memc1 = Vector{Matrix{yvtype}}(undef, maxobs)
+        memc2 = Vector{Matrix{yvtype}}(undef, maxobs)
+        memc3 = Vector{Vector{yvtype}}(undef, maxobs)
+        for i = 1:maxobs
+            memc1[i] = zeros(i, zs)
+            memc2[i] = zeros(p, i)
+            memc3[i] = zeros(i)
+        end
+        #memc4 = zeros(p, p)
+        new{T}(memc1, memc2, memc3)::MemAlloc
+    end
+end
+
+
+"""
+    Return C matrix
+    var(β) p×p variance-covariance matrix
+"""
+@inline function cmat(Xv::Vector{Matrix{T}}, Zv::Vector, iVv::Vector, θ::Vector)::Matrix where T <: AbstractFloat
+    p = size(Xv[1])[2]
+    C = zeros(p, p)
+    for i=1:length(Xv)
+        #@inbounds C .+= Xv[i]' * iVv[i] * Xv[i]
+        mulαtβαinc!(C, Xv[i], iVv[i])
+    end
+    return pinv(C)
+end
+
+
+
+"""
+    -2 REML with β final update
+"""
+function reml2b!(data::RBEDataStructure, G::Matrix{T}, Rv::Vector, Vv::Vector, iVv::Vector,
+        θvec::Vector{T}, β::Vector{T}, mem::MemAlloc) where T <: AbstractFloat
+
+    rebuildcache(data, promote_type(eltype(first(data.yv)), eltype(θvec)))
+    gmat!(G, θvec[3:5])
+
+    θ1 = 0
+    θ2 = zeros(data.p, data.p)
+    θ3 = 0
+    βm   = zeros(data.p)
+    cache     = Dict()
+    cachel    = Dict()
+    @inbounds for i = 1:data.n
+        #rmat!(Rv[i], θvec[1:2], data.Zv[i])
+        #Memopt!
+        Vv[i], iVv[i], ldV         = mvmatall(G, θvec[1:2], data.Zv[i], first(data.mem.svec), cache)
+        θ1  += ldV
+        #-
+        #θ2 += Xv[i]'*iVv[i]*Xv[i]
+        mulθβinc!(θ2, βm, data.Xv[i], iVv[i], data.yv[i], first(data.mem.svec))
+    end
+    mul!(β, inv(θ2), βm)
+    for i = 1:data.n
+        #Same:
+        #r    = yv[i] - Xv[i]*β
+        #θ3  += r'*iVv[i]*r
+        @inbounds θ3  += mulθ₃(data.yv[i], data.Xv[i], β, iVv[i], first(data.mem.svec))
+    end
+    return   θ1 + logdet(θ2) + θ3 + data.remlc
+end
+
+"""
+Satterthwaite DF gradient function.
+"""
+function lclgf(L, Lt, Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
+    p     = size(Xv[1])[2]
+    G     = gmat(θ[3:5])
+    C     = zeros(promote_type(eltype(Zv[1]), eltype(θ)), p, p)
+    cache     = Dict()
+    cachem    = Dict()
+    for i = 1:length(Xv)
+        if MEMOPT && memopt
+            iV   = minv(mvmat(G, θ[1:2], Zv[i], cachem), cache)
+        else
+            R   = rmat(θ[1:2], Zv[i])
+            iV  = inv(vmat(G, R, Zv[i]))
+        end
+        #C  += Xv[i]' * iV * Xv[i]
+        mulall!(C, Xv[i], iV)
+    end
+    return (L * inv(C) * Lt)[1]
+end
+
 #=
 function mrmat(σ::Vector{S}, Z::Matrix{T}, cache)::Matrix where S <: Real where T <: Real
     h = hash(tuple(σ, Z))

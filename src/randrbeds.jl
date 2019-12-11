@@ -28,31 +28,44 @@ mutable struct RandRBEDS
     seqcoef::Vector
     periodcoef::Vector
     formcoef::Vector
-    dropsubj::Real                #Deprecated
+    #dropsubj::Real                #Deprecated
     dropobs::Int
     seed
-    function RandRBEDS(;n=24, sequence=[1,1],
-        design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
-        inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2],
-        intercept = 0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0],
-        dropsubj = 0, dropobs::Int = 0, seed = 0)
-        new(n, sequence,
-            design,
-            inter, intra,
-            intercept, seqcoef, periodcoef, formcoef,
-            dropsubj, dropobs, seed)::RandRBEDS
-    end
     function RandRBEDS(n::Int, sequence::Vector,
         design::Matrix,
         θinter::Vector, θintra::Vector,
         intercept::Real, seqcoef::Vector, periodcoef::Vector, formcoef::Vector,
-        dropsubj::Float64, dropobs::Int, seed)
+        dropobs::Int, seed)
         new(n, sequence,
             design,
             θinter, θintra,
             intercept, seqcoef, periodcoef, formcoef,
-            dropsubj, dropobs, seed)::RandRBEDS
+            dropobs, seed)::RandRBEDS
     end
+end
+
+"""
+```julia
+randrbetask(;n=24, sequence=[1,1],
+        design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
+        inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2],
+        intercept = 0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0],
+        dropsubj = 0, dropobs::Int = 0, seed = 0)::RandRBEDS
+```
+
+Make task for random dataset generation.
+"""
+function randrbetask(;n=24, sequence=[1,1],
+        design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
+        inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2],
+        intercept = 0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0],
+        dropobs::Int = 0, seed = 0)::RandRBEDS
+
+    return RandRBEDS(n, sequence,
+            design,
+            inter, intra,
+            intercept, seqcoef, periodcoef, formcoef,
+            dropobs, seed)
 end
 
 struct RBEDSSimResult
@@ -108,8 +121,8 @@ function randrbeds(;n=24, sequence=[1,1],
     design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
     inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2],
     intercept = 0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0],
-    dropsubj = 0.0, dropobs::Int = 0, seed = 0)
-    return randrbeds(n, sequence, design, inter, intra, intercept, seqcoef, periodcoef, formcoef, dropsubj, dropobs, seed)
+    dropobs::Int = 0, seed = 0)
+    return randrbeds(n, sequence, design, inter, intra, intercept, seqcoef, periodcoef, formcoef, dropobs, seed)
 end
 
 """
@@ -127,7 +140,7 @@ function randrbeds(n::Int, sequence::Vector,
     design::Matrix,
     θinter::Vector, θintra::Vector,
     intercept::Real, seqcoef::Vector, periodcoef::Vector, formcoef::Vector,
-    dropsubj::Real, dropobs::Int, seed)
+    dropobs::Int, seed)
     if seed != 0
         rng = MersenneTwister(seed)
     else
@@ -203,7 +216,7 @@ function randrbeds(task::RandRBEDS)
     return randrbeds(task.n, task.sequence, task.design,
                     task.inter, task.intra,
                     task.intercept, task.seqcoef, task.periodcoef, task.formcoef,
-                    task.dropsubj, task.dropobs, task.seed)
+                    task.dropobs, task.seed)
 end
 
 """
@@ -270,7 +283,7 @@ function simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l 
             #!
             if verbose
                 if !optstat(be) printstyled(io, "Iteration: ", i, ", seed ", seeds[i], ": unconverged! \n"; color = :yellow) end
-                if be.detH <= 0
+                if !isposdef(Symmetric(be.H))
                     printstyled(io, "Iteration: ", i, ", seed ", seeds[i], ": Hessian not positive defined! \n"; color = :yellow)
                 end
             end

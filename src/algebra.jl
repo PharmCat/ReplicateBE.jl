@@ -163,12 +163,7 @@ function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, c:
         c .= 0
         for n = 1:q
             for m = 1:q
-                try
                 c[n] +=  A[i, m] * B[n, m]
-                catch
-                    println("$q, $p, $i, $n, $m" )
-                    error()
-                end
             end
         end
         for n = 1:p
@@ -221,4 +216,32 @@ function mulαβαtc!(O::AbstractMatrix, A::AbstractMatrix, B::AbstractMatrix, C
         end
     end
     O .+= C
+end
+
+function invchol(M::Matrix)
+    q  = size(M, 1)
+    v  = zeros(eltype(M), q, q)
+    if q == 1
+        v[1,1] = 1/M[1,1]
+        return v
+    end
+    il = inv(cholesky(M).U)
+    for n = 1:q
+        for m = n:q
+            v[n, n] += il[n, m]^2
+        end
+    end
+    for n = 1:(q-1)
+        for m = (n+1):q
+            for i = m:q
+                v[n, m] += il[n, i] * il[m, i]
+            end
+        end
+    end
+    for n = 1:q-1
+        for m = 2:q
+            v[m, n] = v[n, m]
+        end
+    end
+    return v
 end

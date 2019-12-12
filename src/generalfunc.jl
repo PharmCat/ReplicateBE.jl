@@ -78,24 +78,24 @@ end
     return
 end
 function mvmat(G::AbstractMatrix, σ::Vector, Z::Matrix, cache)::Matrix
-    h = hash(tuple(σ, Z))
-    if h in keys(cache)
-        return cache[h]
+    #h = hash(tuple(σ, Z))
+    if Z in keys(cache)
+        return cache[Z]
     else
         #V  = mulαβαtc(Z, G, Diagonal(Z*σ), mem)
         V   = Z * G * Z' + Diagonal(Z*σ)
-        cache[h] = V
+        cache[Z] = V
         return V
     end
 end
 function mvmat(G::AbstractMatrix, σ::Vector, Z::Matrix, mem, cache)::Matrix
-    h = hash(tuple(σ, Z))
-    if h in keys(cache)
-        return cache[h]
+    #h = hash(tuple(σ, Z))
+    if Z in keys(cache)
+        return cache[Z]
     else
         V  = mulαβαtc(Z, G, Diagonal(Z*σ), mem)
         #V   = Z * G * Z' + Diagonal(Z*σ)
-        cache[h] = V
+        cache[Z] = V
         return V
     end
 end
@@ -108,7 +108,8 @@ function mvmatall(G::AbstractMatrix, σ::Vector, Z::Matrix, mem, cache)
     else
         V   = mulαβαtc(Z, G, Diagonal(Z*σ), mem)
         #V   = Z * G * Z' + Diagonal(Z*σ)
-        iV  = inv(V)
+        iV  = invchol(V)
+        #iV  = inv(V)
         ldV = logdet(V)
         cache[Z] = (V, iV, ldV)
         return V, iV, ldV
@@ -126,23 +127,29 @@ function matvecz!(M, Zv)
 end
 #println("θ₁: ", θ1, " θ₂: ",  θ2,  " θ₃: ", θ3)
 
-function minv(M::Matrix, cache::Dict)::Matrix
-    h = hash(M)
-    if h in keys(cache)
-        return cache[h]
+function minv(G::AbstractMatrix, σ::Vector, Z::Matrix, cache::Dict)::Matrix
+    #h = hash(M)
+    if Z in keys(cache)
+        #return cache[h]
+        return cache[Z]
     else
-        iM = inv(M)
-        cache[h] = iM
-        return iM
+        V   = mulαβαtc(Z, G, Diagonal(Z*σ))
+        #V   = Z * G * Z' + Diagonal(Z*σ)
+        iV  = invchol(V)
+        #iV  = inv(V)
+        #ldV = logdet(V)
+        cache[Z] = iV
+        return iV
     end
 end
+
 function mlogdet(M::Matrix, cache::Dict)
-    h = hash(M)
-    if h in keys(cache)
-        return cache[h]
+    #h = hash(M)
+    if M in keys(cache)
+        return cache[M]
     else
         iM = logdet(M)
-        cache[h] = iM
+        cache[M] = iM
         return iM
     end
 end
@@ -172,7 +179,7 @@ function reml2(data::RBEDataStructure, θvec::Vector, β::Vector; memopt::Bool =
             θ1                += ldV
         else
             @inbounds V    = vmat(G, rmat(θvec[1:2], data.Zv[i]), data.Zv[i])
-            iV             = inv(V)
+            iV             = invchol(V)
             θ1            += logdet(V)
         end
         #-----------------------------------------------------------------------
@@ -213,7 +220,7 @@ function reml2b(data::RBEDataStructure, θvec::Vector; memopt::Bool = true)
         else
             @inbounds R        = rmat(θvec[1:2], data.Zv[i])
             @inbounds V        = vmat(G, R, data.Zv[i])
-            @inbounds iVv[i]   = inv(V)
+            @inbounds iVv[i]   = invchol(V)
             θ1                += logdet(V)
         end
         #-----------------------------------------------------------------------
@@ -256,13 +263,13 @@ function cmatvec(Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
     G     = gmat(θ[3:5])
     C     = zeros(promote_type(eltype(Zv[1]), eltype(θ)), p, p)
     cache     = Dict()
-    cachem    = Dict()
+    #cachem    = Dict()
     for i = 1:length(Xv)
         if memopt
-            iV   = minv(mvmat(G, θ[1:2], Zv[i], cachem), cache)
+            iV   = minv(G, θ[1:2], Zv[i], cache)
         else
             R   = rmat(θ[1:2], Zv[i])
-            iV  = inv(vmat(G, R, Zv[i]))
+            iV  = invchol(vmat(G, R, Zv[i]))
         end
         #C  += Xv[i]' * iV * Xv[i]
         mulαtβαinc!(C, Xv[i], iV)

@@ -168,9 +168,10 @@ function rbe(df; dvar::Symbol,
     if length(init) == 5
         θvec0 = init
     else
-        iv = initvar(df, dvar, formulation, subject)
+        intra = sum(replace!(var.(yv) .* (length.(yv) .- 1), NaN => 0))/(sum(length.(yv))-1)
+        iv = initvar(df, dvar, formulation)
         iv = iv .+ eps()
-        θvec0 = [iv[3], iv[3], iv[1], iv[2], 0.5]
+        θvec0 = [intra, intra, iv[1], iv[2], 0.5]
     end
 
     #Variance link function

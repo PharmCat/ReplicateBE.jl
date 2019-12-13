@@ -353,20 +353,12 @@ end
 """
     Initial variance computation
 """
-function initvar(df::DataFrame, dv::Symbol, fac::Symbol, sbj::Symbol)::Vector
-    u  = unique(df[:, sbj])
+function initvar(df::DataFrame, dv::Symbol, fac::Symbol)::Vector
     f  = unique(df[:, fac])
-
     fv = Array{eltype(df[!, dv]), 1}(undef, 0)
-    sb = Array{eltype(df[!, dv]), 1}(undef, 0)
     for i in f
         push!(fv, var(df[df[!, fac] .== i, dv]))
     end
-    for i in u
-        sv = var(df[df[!, sbj] .== i, dv])
-        if sv > 0 push!(sb, sv) end
-    end
-    push!(fv, mean(sb))
     return fv
 end
 #-------------------------------------------------------------------------------

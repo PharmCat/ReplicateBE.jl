@@ -119,7 +119,7 @@ function mvmatall(G::AbstractMatrix, σ::Vector, Z::Matrix, mem, cache)
             end
         end
         #V⁻¹  = inv(V)
-        log│V│ = logdet(V)
+        log│V│   = logdet(V)
         cache[Z] = (V, V⁻¹, log│V│)
         return V, V⁻¹, log│V│
     end
@@ -132,7 +132,7 @@ function minv(G::AbstractMatrix, σ::Vector, Z::Matrix, cache::Dict)::Matrix
         #return cache[h]
         return cache[Z]
     else
-        V   = mulαβαtc(Z, G, Diagonal(Z*σ))
+        V    = mulαβαtc(Z, G, Diagonal(Z*σ))
         #V   = Z * G * Z' + Diagonal(Z*σ)
         V⁻¹  = invchol(V)
         #V⁻¹  = inv(V)
@@ -170,7 +170,7 @@ function reml2(data::RBEDataStructure, θ, β::Vector; memopt::Bool = true)
     θ₁        = 0
     θ₂        = zeros(promote_type(eltype(data.yv[1]), eltype(θ)), data.p, data.p)
     θ₃        = 0
-    V⁻¹        = nothing
+    V⁻¹       = nothing
     for i = 1:data.n
         if MEMOPT && memopt
 

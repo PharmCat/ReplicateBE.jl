@@ -82,8 +82,8 @@ function mvmat(G::AbstractMatrix, σ::Vector, Z::Matrix, cache)::Matrix
     if Z in keys(cache)
         return cache[Z]
     else
-        #V  = mulαβαtc(Z, G, Diagonal(Z*σ), mem)
-        V   = Z * G * Z' + Diagonal(Z*σ)
+        V  = mulαβαtc(Z, G, Diagonal(Z*σ))
+        #V   = Z * G * Z' + Diagonal(Z*σ)
         cache[Z] = V
         return V
     end

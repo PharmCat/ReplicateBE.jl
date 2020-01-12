@@ -386,7 +386,7 @@ function randrbeds(n::Int, sequence::Vector,
         sqname[i] = join(design[i,:])
     end
     Zv = Array{Matrix, 1}(undef, sqnum)
-    Vv = Array{Matrix, 1}(undef, sqnum)
+    Vv = Array{Vector, 1}(undef, sqnum)
     for i = 1:size(design)[1]
         Z = Array{Int, 2}(undef, pnum, length(u))
         for c = 1:pnum
@@ -395,7 +395,7 @@ function randrbeds(n::Int, sequence::Vector,
             end
         end
         Zv[i] = Z
-        Vv[i] = rmat(intra, Z)
+        Vv[i] = Z * intra
     end
     Mv = Array{Array{Float64, 1}, 1}(undef, sqnum)
     for i = 1:sqnum
@@ -415,7 +415,7 @@ function randrbeds(n::Int, sequence::Vector,
             subjmx[:, 5] .+= rand(rng, ndist)*sqrt(inter)
             subj += 1
             for c = 1:pnum
-                subjmx[c, 5] += Mv[i][c] + rand(rng, ndist)*sqrt(Vv[i][c,c])
+                subjmx[c, 5] += Mv[i][c] + rand(rng, ndist)*sqrt(Vv[i][c])
                 push!(subjds, subjmx[c, :])
             end
         end

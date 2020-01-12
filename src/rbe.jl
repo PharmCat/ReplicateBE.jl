@@ -329,6 +329,21 @@ function rbe!(df; dvar::Symbol,
     rholink = rholink, singlim = singlim)
 
 end
+
+function rbe(df, settings::RBESettings;
+    dvar::Symbol,
+    subject::Symbol,
+    formulation::Symbol,
+    period::Symbol,
+    sequence::Symbol)
+end
+function rbe!(df, settings::RBESettings;
+    dvar::Symbol,
+    subject::Symbol,
+    formulation::Symbol,
+    period::Symbol,
+    sequence::Symbol)
+end
 #-------------------------------------------------------------------------------
 #returm -2REML
 """
@@ -537,7 +552,7 @@ end
 function Base.show(io::IO, rbe::RBE)
     rcoef = coefnames(rbe.rmodel);
     θ     = theta(rbe)
-    println(io, "Bioequivalence Linear Mixed Effect Model (status: $(Optim.converged(rbe.optim) ? "converged" : printstyled(io, "not converged"; color = :red)))")
+    print(io, "Bioequivalence Linear Mixed Effect Model (status:"); Optim.converged(rbe.optim) ? print(io,"converged") : printstyled(io, "not converged"; color = :red); println(io, ")")
     if !isposdef(Symmetric(rbe.H))
         printstyled(io, "Hessian not positive defined!"; color = :yellow)
         println(io, "")

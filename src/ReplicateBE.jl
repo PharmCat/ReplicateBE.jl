@@ -16,6 +16,7 @@ using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlge
 const LOG2PI = log(2π)
 const MEMOPT = true
 
+include("rbesettings.jl")
 include("rbetable.jl")
 include("memalloc.jl")
 include("design.jl")

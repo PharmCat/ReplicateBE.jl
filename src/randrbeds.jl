@@ -347,6 +347,64 @@ function simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l 
     return RBEDSSimResult(seed, num, seeds, cnt/(num - err), err)
 end
 
+
+
+"""
+```julia
+simulation!(task::RandRBEDS, out, simfunc!::Function; io = stdout, verbose = false, num = 100, seed = 0)
+```
+
+Generalized simulation method.
+
+"""
+function simulation!(task::RandRBEDS, out, simfunc!::Function; io = stdout, verbose = false, num = 100, seed = 0)
+    task.seed = 0
+    if isa(seed, Array)
+        seeds = seed
+    else
+        if seed != 0
+            rng = MersenneTwister(seed)
+        else
+            rng = MersenneTwister()
+        end
+        seeds = Array{UInt32, 1}(undef, num)
+        for i = 1:num
+            seeds[i] = rand(rng, UInt32)
+        end
+    end
+    n     = 0
+    err   = 0
+    if verbose
+        printstyled(io, "Custom simulation start...\n"; color = :green)
+        if isa(seed, Array)
+            println(io, "Simulation seed: Array")
+        else
+            println(io, "Simulation seed: $(seed)")
+        end
+        println(io, "Task hash: $(hash(task))")
+    end
+    for i = 1:num
+        task.seed = seeds[i]
+        rds       = randrbeds(task)
+        try
+            be        = rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+            simfunc!(out, be)
+            if n > 1000
+                println(io, "Iteration: $i")
+                println(io, "Mem: $(Sys.free_memory()/2^20)")
+                println(io, "Pow: $(cnt/i)")
+                println(io, "-------------------------------")
+                n = 0
+            end
+            n += 1
+        catch
+            err += 1
+            printstyled(io, "Iteration: $i, seed $(seeds[i]): $(err): ERROR! \n"; color = :red)
+        end
+    end
+    return out
+end
+
 function Base.show(io::IO, obj::RBEDSSimResult)
     if isa(obj.seed, Array)
         println(io, "Simulation seed: Array")

@@ -307,11 +307,11 @@ function simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l 
             end
             # If RSABE is true - calculating CI limits
             if rsabe
-                ivar = intravar(be)[reference]
-                if geocv(ivar) > 0.30
-                    bconst = rsabeconst * sqrt(ivar)
-                    tl  = -bconst
-                    tu  = bconst
+                σ² = intravar(be)[reference]
+                if geocv(σ²) > 0.30
+                    bconst = rsabeconst * sqrt(σ²)
+                    tl     = -bconst
+                    tu     =  bconst
                     if tu > log(1.4319) || tl < log(0.6984)
                         tu = log(1.4319)
                         tl = log(0.6984)

@@ -11,7 +11,6 @@ function matvecz!(M, Zv)
 end
 
 
-
 struct MemAlloc{T <: AbstractFloat}
     mem1::Vector{Matrix{T}}
     mem2::Vector{Matrix{T}}

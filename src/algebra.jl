@@ -57,7 +57,6 @@ function mulθβinc!(θ, β, A::AbstractMatrix, B::AbstractMatrix, C::Vector, c)
             end
             @inbounds β[i] += c[n] * C[n]
         end
-
         for n = 1:p
             for m = 1:q
                 @inbounds θ[i, n] += A[m, n] * c[m]
@@ -78,7 +77,6 @@ function mulall(A::Vector, B::AbstractMatrix)
             for m = 1:q
                 #@inbounds c[n] += B[m, n] * A[m]
                 @inbounds θ += B[m, n] * A[m] * A[n]
-
             end
             #@inbounds θ += A[n] * c[n]
         end
@@ -102,9 +100,7 @@ function mulθ₃(y::Vector, X::AbstractMatrix, β::Vector, V::AbstractMatrix, c
     end
     for n = 1:q
         for m = 1:q
-
             @inbounds θ += V[m, n] * (y[m] - c[m]) * (y[n] - c[n])
-
         end
     end
     return θ
@@ -123,15 +119,12 @@ function mulαβαt(A::AbstractMatrix, B::AbstractMatrix)
         c .= 0
         for n = 1:q
             for m = 1:q
-
                 @inbounds c[n] +=  A[i, m] * B[n, m]
-
             end
         end
         for n = 1:p
             for m = 1:q
                  @inbounds mx[i, n] += A[n, m] * c[m]
-
             end
         end
     end
@@ -150,7 +143,6 @@ function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix)
         for n = 1:q
             for m = 1:q
                 @inbounds c[n] +=  A[i, m] * B[n, m]
-
             end
         end
         for n = 1:p
@@ -172,7 +164,6 @@ function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, c:
         for n = 1:q
             for m = 1:q
                 @inbounds c[n] +=  A[i, m] * B[n, m]
-
             end
         end
         for n = 1:p
@@ -198,13 +189,11 @@ function mulαβαtc!(O::AbstractMatrix, A::AbstractMatrix, B::AbstractMatrix, C
         for n = 1:q
             for m = 1:q
                 @inbounds c[n] +=  A[i, m] * B[n, m]
-
             end
         end
         for n = 1:p
             for m = 1:q
                  @inbounds O[i, n] += A[n, m] * c[m]
-
             end
         end
     end
@@ -220,13 +209,11 @@ function mulαβαtc!(O::AbstractMatrix, A::AbstractMatrix, B::AbstractMatrix, C
         for n = 1:q
             for m = 1:q
                 @inbounds c[n] +=  A[i, m] * B[n, m]
-
             end
         end
         for n = 1:p
             for m = 1:q
                  @inbounds O[i, n] += A[n, m] * c[m]
-
             end
         end
     end
@@ -260,4 +247,3 @@ function invchol(M)
     end
     return v
 end
-

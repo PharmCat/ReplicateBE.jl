@@ -85,7 +85,6 @@ function mvmat(G::AbstractMatrix, σ::Vector, Z::Matrix, cache)::Matrix
         V  = mulαβαtc(Z, G, Diagonal(Z*σ))
         #V   = Z * G * Z' + Diagonal(Z*σ)
         cache[Z] = V
-
         return V
     end
 end
@@ -98,7 +97,6 @@ function mvmat(G::AbstractMatrix, σ::Vector, Z::Matrix, mem, cache)::Matrix
         #V   = Z * G * Z' + Diagonal(Z*σ)
         cache[Z] = V
         return V
-
     end
 end
 
@@ -162,7 +160,6 @@ end
     -2 REML function for ForwardDiff
 """
 function reml2(data::RBEDataStructure, θ, β::Vector; memopt::Bool = true)
-
     #memory optimizations to reduse allocations (cache rebuild)
     #empty!(data.mem.dict)
     rebuildcache(data, promote_type(eltype(data.yv[1]), eltype(θ)))
@@ -217,7 +214,6 @@ function reml2b(data::RBEDataStructure, θ; memopt::Bool = true)
     β         = zeros(promote_type(eltype(first(data.yv)), eltype(θ)), data.p)
     for i = 1:data.n
         if MEMOPT && memopt
-
             @inbounds V, V⁻¹[i], log│V│ = mvmatall(G, θ[1:2], data.Zv[i], first(data.mem.svec), cache)
             θ₁                         += log│V│
         else
@@ -225,7 +221,6 @@ function reml2b(data::RBEDataStructure, θ; memopt::Bool = true)
             @inbounds V        = vmat(G, R, data.Zv[i])
             @inbounds V⁻¹[i]   = invchol(V)
             θ₁                += logdet(V)
-
         end
         #-----------------------------------------------------------------------
         #θ2 += Xv[i]'*iVv[i]*Xv[i]

@@ -20,6 +20,7 @@ mutable struct RBE{T <: AbstractFloat}
     Z::Matrix{T}                    # Matrix for random effects
     data::RBEDataStructure          # Data for model fitting
     result::RBEResults
+
     detH::T                         # Hessian determinant
     preoptim::Union{Optim.MultivariateOptimizationResults, Nothing}             # Pre-optimization result object
     optim::Optim.MultivariateOptimizationResults                                # Optimization result object

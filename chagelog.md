@@ -1,3 +1,4 @@
+
 - v1.0.7
     * settings: initial 
     * randrbeds "light" generation
@@ -6,6 +7,7 @@
     * "generalized" simulation
     * Optim 0.20
     * Julia 1.3
+
 
 
 - v1.0.6

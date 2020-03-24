@@ -188,7 +188,8 @@ function randrbeds(n::Int, sequence::Vector,
             subjmx[:, 2]  = design[i,:]
             subjmx[:, 3]  = collect(1:pnum)
             subjmx[:, 4] .= sqname[i]
-            subjmx[:, 5]  = rand(rng, MvNormal(PDMat(Vv[i]))) + Mv[i]
+            #subjmx[:, 5]  = rand(rng, MvNormal(PDMat(Vv[i]))) + Mv[i]
+            subjmx[:, 5]  = rand(rng, MvNormal(Vv[i])) + Mv[i]
             subj += 1
             for c = 1:pnum
                 push!(subjds, subjmx[c, :])

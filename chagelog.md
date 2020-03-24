@@ -1,5 +1,5 @@
 - v1.0.7
-    * settings
+    * settings: initial 
     * randrbeds "light" generation
     * optimizations
     * Distributions bump

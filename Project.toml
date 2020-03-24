@@ -19,6 +19,7 @@ ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 LineSearches = "d3d80556-e9d4-5f37-9878-2ab0fcc64255"
 PDMats = "90014a1f-27ba-587c-ab20-58faa44d9150"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [extras]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
@@ -40,3 +41,4 @@ PDMats = "0.9"
 ForwardDiff = "0.10"
 Optim = "0.19, 0.20"
 LineSearches = "7.0"
+StaticArrays = "0.11, 0.12"

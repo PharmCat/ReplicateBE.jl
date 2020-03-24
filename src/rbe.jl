@@ -52,6 +52,7 @@ mutable struct RBE{T <: AbstractFloat}
     optim::Optim.MultivariateOptimizationResults                                # Optimization result object
 end
 
+
 """
 ```julia
 rbe(df; dvar::Symbol,
@@ -327,23 +328,18 @@ function rbe!(df; dvar::Symbol,
     store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace,
     memopt = memopt, init = init, postopt = postopt, vlm = vlm, maxopttry = maxopttry, rhoadjstep = rhoadjstep,
     rholink = rholink, singlim = singlim)
-
 end
 
-function rbe(df, settings::RBESettings;
-    dvar::Symbol,
+function fit!(rbe::RBE)
+end
+
+function rbe(df, settings; dvar::Symbol,
     subject::Symbol,
     formulation::Symbol,
     period::Symbol,
     sequence::Symbol)
 end
-function rbe!(df, settings::RBESettings;
-    dvar::Symbol,
-    subject::Symbol,
-    formulation::Symbol,
-    period::Symbol,
-    sequence::Symbol)
-end
+
 #-------------------------------------------------------------------------------
 #returm -2REML
 """

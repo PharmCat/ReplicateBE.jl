@@ -85,6 +85,7 @@ function mvmat(G::AbstractMatrix, σ::Vector, Z::Matrix, cache)::Matrix
         V  = mulαβαtc(Z, G, Diagonal(Z*σ))
         #V   = Z * G * Z' + Diagonal(Z*σ)
         cache[Z] = V
+
         return V
     end
 end
@@ -97,8 +98,10 @@ function mvmat(G::AbstractMatrix, σ::Vector, Z::Matrix, mem, cache)::Matrix
         #V   = Z * G * Z' + Diagonal(Z*σ)
         cache[Z] = V
         return V
+
     end
 end
+
 function mvmatall(G::AbstractMatrix, σ::Vector, Z::Matrix, mem, cache)
     #h = hash(Z)
     #if h in keys(cache)
@@ -190,6 +193,7 @@ function reml2(data::RBEDataStructure, θ, β::Vector; memopt::Bool = true)
         @inbounds θ₃  += mulθ₃(data.yv[i], data.Xv[i], β, V⁻¹, first(data.mem.svec))
     end
     return   θ₁ + logdet(θ₂) + θ₃ + data.remlc
+
 end
 """
     -2 REML estimation with β recalculation for ForwardDiff
@@ -221,6 +225,7 @@ function reml2b(data::RBEDataStructure, θ; memopt::Bool = true)
             @inbounds V        = vmat(G, R, data.Zv[i])
             @inbounds V⁻¹[i]   = invchol(V)
             θ₁                += logdet(V)
+
         end
         #-----------------------------------------------------------------------
         #θ2 += Xv[i]'*iVv[i]*Xv[i]
@@ -347,6 +352,49 @@ function sattdf(data, res, L, lcl)
     end
     return max(1, dfi)
 end
+function estimatevec(data, res, L)
+    lcl     = L*res.C*L'
+    β       = copy(res.β)
+    est     = (L*β)[1]
+    lclr    = rank(lcl)
+    se      = sqrt((lcl)[1])
+    t       = ((est)/se)
+    return est, se, t
+end
+function sattdf(data, res, L, lcl)
+    lclr    = rank(lcl)
+    if lclr ≥ 2
+        vm  = Vector{eltype(res.C)}(undef, lclr)
+        # Spectral decomposition ?
+        #ev  = eigen(lcl)
+        #pl  = eigvecs(ev)
+        #dm  = eigvals(ev)
+        #ei  = pl * L
+        for i = 1:lclr
+            g         = lclg(res.gradc, L[i:i,:])
+            #g         = lclg(res.gradc, ei[i:i, :])
+            dfi       = 2*((L[i:i,:]*res.C*L[i:i,:]')[1])^2/(g'*res.A*g)
+            #dfi       = 2*dm[i]^2/(g'*res.A*g)
+            if dfi > 2
+                vm[i] = dfi/(dfi-2)
+            else
+                vm[i] = 0
+            end
+        end
+        E   = sum(vm)
+        if E > lclr
+            dfi = 2 * E / (E - lclr)
+        else
+            dfi = 0
+        end
+    else
+        g   = lclg(res.gradc, L)
+        dfi = 2*((lcl)[1])^2/(g'*res.A*g)
+    end
+    return max(1, dfi)
+end
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------

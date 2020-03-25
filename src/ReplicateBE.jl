@@ -5,7 +5,7 @@
 
 module ReplicateBE
 
-using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlgebra, Random, PDMats, Optim, LineSearches, CategoricalArrays, Printf
+using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlgebra, Random, PDMats, Optim, LineSearches, CategoricalArrays, Printf, StaticArrays
 
     export rbe, rbe!, reml2, nobs, coef, stderror, dof, coefnum, fixed, theta, typeiii, design, show, confint, contrast, estimate, optstat, randrbeds, randrbetask
     import Base.show
@@ -16,6 +16,7 @@ using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlge
 const LOG2PI = log(2π)
 const MEMOPT = true
 
+include("rbesettings.jl")
 include("rbetable.jl")
 include("memalloc.jl")
 include("design.jl")

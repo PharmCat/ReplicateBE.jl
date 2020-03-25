@@ -57,7 +57,6 @@ function mulθβinc!(θ, β, A::AbstractMatrix, B::AbstractMatrix, C::Vector, c)
             end
             @inbounds β[i] += c[n] * C[n]
         end
-
         for n = 1:p
             for m = 1:q
                 @inbounds θ[i, n] += A[m, n] * c[m]
@@ -77,7 +76,7 @@ function mulall(A::Vector, B::AbstractMatrix)
         for n = 1:q
             for m = 1:q
                 #@inbounds c[n] += B[m, n] * A[m]
-                θ += B[m, n] * A[m] * A[n]
+                @inbounds θ += B[m, n] * A[m] * A[n]
             end
             #@inbounds θ += A[n] * c[n]
         end
@@ -101,7 +100,7 @@ function mulθ₃(y::Vector, X::AbstractMatrix, β::Vector, V::AbstractMatrix, c
     end
     for n = 1:q
         for m = 1:q
-            θ += V[m, n] * (y[m] - c[m]) * (y[n] - c[n])
+            @inbounds θ += V[m, n] * (y[m] - c[m]) * (y[n] - c[n])
         end
     end
     return θ
@@ -120,12 +119,12 @@ function mulαβαt(A::AbstractMatrix, B::AbstractMatrix)
         c .= 0
         for n = 1:q
             for m = 1:q
-                c[n] +=  A[i, m] * B[n, m]
+                @inbounds c[n] +=  A[i, m] * B[n, m]
             end
         end
         for n = 1:p
             for m = 1:q
-                 mx[i, n] += A[n, m] * c[m]
+                 @inbounds mx[i, n] += A[n, m] * c[m]
             end
         end
     end
@@ -143,16 +142,17 @@ function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix)
         c .= 0
         for n = 1:q
             for m = 1:q
-                c[n] +=  A[i, m] * B[n, m]
+                @inbounds c[n] +=  A[i, m] * B[n, m]
             end
         end
         for n = 1:p
             for m = 1:q
-                 mx[i, n] += A[n, m] * c[m]
+                 @inbounds mx[i, n] += A[n, m] * c[m]
             end
         end
     end
-    mx .+ C
+    mx .+= C
+
 end
 function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, c::AbstractVector)
     q  = size(B, 1)
@@ -163,21 +163,18 @@ function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, c:
         c .= 0
         for n = 1:q
             for m = 1:q
-                try
-                c[n] +=  A[i, m] * B[n, m]
-                catch
-                    println("$q, $p, $i, $n, $m" )
-                    error()
-                end
+                @inbounds c[n] +=  A[i, m] * B[n, m]
             end
         end
         for n = 1:p
             for m = 1:q
-                 mx[i, n] += A[n, m] * c[m]
+                 @inbounds mx[i, n] += A[n, m] * c[m]
             end
         end
     end
-    mx .+ C
+    mx .+= C
+    #SMatrix{p,p,eltype(mx)}(mx)
+
 end
 """
 A * B * A' + C -> O
@@ -191,12 +188,12 @@ function mulαβαtc!(O::AbstractMatrix, A::AbstractMatrix, B::AbstractMatrix, C
         c .= 0
         for n = 1:q
             for m = 1:q
-                c[n] +=  A[i, m] * B[n, m]
+                @inbounds c[n] +=  A[i, m] * B[n, m]
             end
         end
         for n = 1:p
             for m = 1:q
-                 O[i, n] += A[n, m] * c[m]
+                 @inbounds O[i, n] += A[n, m] * c[m]
             end
         end
     end
@@ -211,14 +208,42 @@ function mulαβαtc!(O::AbstractMatrix, A::AbstractMatrix, B::AbstractMatrix, C
         c .= 0
         for n = 1:q
             for m = 1:q
-                c[n] +=  A[i, m] * B[n, m]
+                @inbounds c[n] +=  A[i, m] * B[n, m]
             end
         end
         for n = 1:p
             for m = 1:q
-                 O[i, n] += A[n, m] * c[m]
+                 @inbounds O[i, n] += A[n, m] * c[m]
             end
         end
     end
     O .+= C
+end
+
+function invchol(M)
+    q  = size(M, 1)
+    v  = zeros(eltype(M), q, q)
+    if q == 1
+        v[1,1] = 1/M[1,1]
+        return v
+    end
+    il = inv(cholesky(M).U)
+    for n = 1:q
+        for m = n:q
+            @inbounds v[n, n] += il[n, m]^2
+        end
+    end
+    for n = 1:(q-1)
+        for m = (n+1):q
+            for i = m:q
+                @inbounds v[n, m] += il[n, i] * il[m, i]
+            end
+        end
+    end
+    for n = 1:q-1
+        for m = 2:q
+            @inbounds v[m, n] = v[n, m]
+        end
+    end
+    return v
 end

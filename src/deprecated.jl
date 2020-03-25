@@ -1,4 +1,16 @@
 
+"""
+    Feel M with zero feeled matrices
+"""
+function matvecz!(M, Zv)
+    n  = length(Zv)
+    for i = 1:n
+        M[i] = zeros(size(Zv[i])[1], size(Zv[i])[1])
+    end
+    return
+end
+
+
 struct MemAlloc{T <: AbstractFloat}
     mem1::Vector{Matrix{T}}
     mem2::Vector{Matrix{T}}

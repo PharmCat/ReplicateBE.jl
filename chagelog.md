@@ -1,3 +1,15 @@
+
+- v1.0.7
+    * settings: initial 
+    * randrbeds "light" generation
+    * optimizations
+    * Distributions bump
+    * "generalized" simulation
+    * Optim 0.20
+    * Julia 1.3
+
+
+
 - v1.0.6
     * many optimizations
     * linear algebra custom functions

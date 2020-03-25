@@ -11,6 +11,7 @@ Mixed model solution for replicate designed bioequivalence study. This can be us
 [![codecov](https://codecov.io/gh/PharmCat/ReplicateBE.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/PharmCat/ReplicateBE.jl)
 [![Latest docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://pharmcat.github.io/ReplicateBE.jl/latest/)
 [![doi](https://img.shields.io/badge/doi-10.13140%2FRG.2.2.27418.39363-blue)](https://doi.org/10.13140/RG.2.2.27418.39363)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3543823.svg)](https://doi.org/10.5281/zenodo.3543823)
 
 Install:
 ```

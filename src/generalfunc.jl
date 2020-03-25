@@ -78,27 +78,28 @@ end
     return
 end
 function mvmat(G::AbstractMatrix, σ::Vector, Z::Matrix, cache)::Matrix
-    h = hash(tuple(σ, Z))
-    if h in keys(cache)
-        return cache[h]
+    #h = hash(tuple(σ, Z))
+    if Z in keys(cache)
+        return cache[Z]
     else
-        #V  = mulαβαtc(Z, G, Diagonal(Z*σ), mem)
-        V   = Z * G * Z' + Diagonal(Z*σ)
-        cache[h] = V
+        V  = mulαβαtc(Z, G, Diagonal(Z*σ))
+        #V   = Z * G * Z' + Diagonal(Z*σ)
+        cache[Z] = V
         return V
     end
 end
 function mvmat(G::AbstractMatrix, σ::Vector, Z::Matrix, mem, cache)::Matrix
-    h = hash(tuple(σ, Z))
-    if h in keys(cache)
-        return cache[h]
+    #h = hash(tuple(σ, Z))
+    if Z in keys(cache)
+        return cache[Z]
     else
         V  = mulαβαtc(Z, G, Diagonal(Z*σ), mem)
         #V   = Z * G * Z' + Diagonal(Z*σ)
-        cache[h] = V
+        cache[Z] = V
         return V
     end
 end
+
 function mvmatall(G::AbstractMatrix, σ::Vector, Z::Matrix, mem, cache)
     #h = hash(Z)
     #if h in keys(cache)
@@ -108,41 +109,47 @@ function mvmatall(G::AbstractMatrix, σ::Vector, Z::Matrix, mem, cache)
     else
         V   = mulαβαtc(Z, G, Diagonal(Z*σ), mem)
         #V   = Z * G * Z' + Diagonal(Z*σ)
-        iV  = inv(V)
-        ldV = logdet(V)
-        cache[Z] = (V, iV, ldV)
-        return V, iV, ldV
+        V⁻¹ = nothing
+        try
+            V⁻¹  = invchol(V)
+        catch e
+            if typeof(e) <: PosDefException
+                V⁻¹  = inv(V)
+            else
+                throw(e)
+            end
+        end
+        #V⁻¹  = inv(V)
+        log│V│   = logdet(V)
+        cache[Z] = (V, V⁻¹, log│V│)
+        return V, V⁻¹, log│V│
     end
-end
-"""
-    Feel M with zero feeled matrices
-"""
-function matvecz!(M, Zv)
-    n  = length(Zv)
-    for i = 1:n
-        M[i] = zeros(size(Zv[i])[1], size(Zv[i])[1])
-    end
-    return
 end
 #println("θ₁: ", θ1, " θ₂: ",  θ2,  " θ₃: ", θ3)
 
-function minv(M::Matrix, cache::Dict)::Matrix
-    h = hash(M)
-    if h in keys(cache)
-        return cache[h]
+function minv(G::AbstractMatrix, σ::Vector, Z::Matrix, cache::Dict)::Matrix
+    #h = hash(M)
+    if Z in keys(cache)
+        #return cache[h]
+        return cache[Z]
     else
-        iM = inv(M)
-        cache[h] = iM
-        return iM
+        V    = mulαβαtc(Z, G, Diagonal(Z*σ))
+        #V   = Z * G * Z' + Diagonal(Z*σ)
+        V⁻¹  = invchol(V)
+        #V⁻¹  = inv(V)
+        #ldV = logdet(V)
+        cache[Z] = V⁻¹
+        return V⁻¹
     end
 end
+
 function mlogdet(M::Matrix, cache::Dict)
-    h = hash(M)
-    if h in keys(cache)
-        return cache[h]
+    #h = hash(M)
+    if M in keys(cache)
+        return cache[M]
     else
         iM = logdet(M)
-        cache[h] = iM
+        cache[M] = iM
         return iM
     end
 end
@@ -152,84 +159,83 @@ end
 """
     -2 REML function for ForwardDiff
 """
-function reml2(data::RBEDataStructure, θvec::Vector, β::Vector; memopt::Bool = true)
-
+function reml2(data::RBEDataStructure, θ, β::Vector; memopt::Bool = true)
     #memory optimizations to reduse allocations (cache rebuild)
     #empty!(data.mem.dict)
-    rebuildcache(data, promote_type(eltype(data.yv[1]), eltype(θvec)))
+    rebuildcache(data, promote_type(eltype(data.yv[1]), eltype(θ)))
     cache     = Dict{Matrix, Tuple{Matrix, Matrix, Number}}()
     #cache     = data.mem.dict
     #---------------------------------------------------------------------------
-    G         = gmat(θvec[3:5])
-    θ1        = 0
-    θ2        = zeros(promote_type(eltype(data.yv[1]), eltype(θvec)), data.p, data.p)
-    θ3        = 0
-    iV        = nothing
+    G         = gmat(θ[3:5])
+    θ₁        = 0
+    θ₂        = zeros(promote_type(eltype(data.yv[1]), eltype(θ)), data.p, data.p)
+    θ₃        = 0
+    V⁻¹       = nothing
     for i = 1:data.n
         if MEMOPT && memopt
 
-            V, iV, ldV         = mvmatall(G, θvec[1:2], data.Zv[i], first(data.mem.svec), cache)
-            θ1                += ldV
+            V, V⁻¹, log│V│         = mvmatall(G, θ[1:2], data.Zv[i], first(data.mem.svec), cache)
+            θ₁                    += log│V│
         else
-            @inbounds V    = vmat(G, rmat(θvec[1:2], data.Zv[i]), data.Zv[i])
-            iV             = inv(V)
-            θ1            += logdet(V)
+            @inbounds V     = vmat(G, rmat(θ[1:2], data.Zv[i]), data.Zv[i])
+            V⁻¹             = invchol(V)
+            θ₁             += logdet(V)
         end
         #-----------------------------------------------------------------------
         #θ2 += Xv[i]'*iV*Xv[i]
-        @inbounds mulαtβαinc!(θ2, data.Xv[i], iV, first(data.mem.svec))
+        @inbounds mulαtβαinc!(θ₂, data.Xv[i], V⁻¹, first(data.mem.svec))
         #-----------------------------------------------------------------------
         #r    = yv[i] - Xv[i] * β
         #θ3  += r' * iV * r
-        @inbounds θ3  += mulθ₃(data.yv[i], data.Xv[i], β, iV, first(data.mem.svec))
+        @inbounds θ₃  += mulθ₃(data.yv[i], data.Xv[i], β, V⁻¹, first(data.mem.svec))
     end
-    return   θ1 + logdet(θ2) + θ3 + data.remlc
+    return   θ₁ + logdet(θ₂) + θ₃ + data.remlc
+
 end
 """
     -2 REML estimation with β recalculation for ForwardDiff
 """
-function reml2bfd(data::RBEDataStructure, θvec::Vector; memopt::Bool = true)
-    return reml2b(data, θvec; memopt = memopt)[1]
+function reml2bfd(data::RBEDataStructure, θ; memopt::Bool = true)
+    return reml2b(data, θ; memopt = memopt)[1]
 end
-function reml2b(data::RBEDataStructure, θvec::Vector; memopt::Bool = true)
+function reml2b(data::RBEDataStructure, θ; memopt::Bool = true)
 
-    rebuildcache(data, promote_type(eltype(data.yv[1]), eltype(θvec)))
+    rebuildcache(data, promote_type(eltype(data.yv[1]), eltype(θ)))
     cache     = Dict()
     #---------------------------------------------------------------------------
-    G         = gmat(θvec[3:5])
-    iVv       = Array{Array{eltype(θvec), 2}, 1}(undef, data.n)
+    G         = gmat(θ[3:5])
+    V⁻¹       = Vector{Matrix{eltype(θ)}}(undef, data.n)                        # Vector of  V⁻¹ matrices
     V         = nothing
-    ldV       = nothing
-    θ1        = 0
-    θ2        = zeros(promote_type(eltype(first(data.yv)), eltype(θvec)), data.p, data.p)
-    θ3        = 0
-    βm        = zeros(promote_type(eltype(first(data.yv)), eltype(θvec)), data.p)
-    β         = zeros(promote_type(eltype(first(data.yv)), eltype(θvec)), data.p)
+    log│V│    = nothing                                                         # Vector log determinant of V matrix
+    θ₁        = 0
+    θ₂        = zeros(promote_type(eltype(first(data.yv)), eltype(θ)), data.p, data.p)
+    θ₃        = 0
+    βm        = zeros(promote_type(eltype(first(data.yv)), eltype(θ)), data.p)
+    β         = zeros(promote_type(eltype(first(data.yv)), eltype(θ)), data.p)
     for i = 1:data.n
         if MEMOPT && memopt
-
-            @inbounds V, iVv[i], ldV = mvmatall(G, θvec[1:2], data.Zv[i], first(data.mem.svec), cache)
-            θ1                      += ldV
+            @inbounds V, V⁻¹[i], log│V│ = mvmatall(G, θ[1:2], data.Zv[i], first(data.mem.svec), cache)
+            θ₁                         += log│V│
         else
-            @inbounds R        = rmat(θvec[1:2], data.Zv[i])
+            @inbounds R        = rmat(θ[1:2], data.Zv[i])
             @inbounds V        = vmat(G, R, data.Zv[i])
-            @inbounds iVv[i]   = inv(V)
-            θ1                += logdet(V)
+            @inbounds V⁻¹[i]   = invchol(V)
+            θ₁                += logdet(V)
         end
         #-----------------------------------------------------------------------
         #θ2 += Xv[i]'*iVv[i]*Xv[i]
         #βm += Xv[i]'*iVv[i]*yv[i]
-        mulθβinc!(θ2, βm, data.Xv[i], iVv[i], data.yv[i], first(data.mem.svec))
+        mulθβinc!(θ₂, βm, data.Xv[i], V⁻¹[i], data.yv[i], first(data.mem.svec))
         #-----------------------------------------------------------------------
     end
-    mul!(β, inv(θ2), βm)
+    mul!(β, inv(θ₂), βm)
     for i = 1:data.n
         # r    = yv[i] - Xv[i] * β
         # θ3  += r' * iVv[i] * r
-        @inbounds θ3  += mulθ₃(data.yv[i], data.Xv[i], β, iVv[i], first(data.mem.svec))
+        @inbounds θ₃  += mulθ₃(data.yv[i], data.Xv[i], β, V⁻¹[i], first(data.mem.svec))
     end
 
-    return   θ1 + logdet(θ2) + θ3 + data.remlc,  β, θ2
+    return   θ₁ + logdet(θ₂) + θ₃ + data.remlc,  β, θ₂
 end
 #-------------------------------------------------------------------------------
 
@@ -241,7 +247,7 @@ non inverted C matrix gradient function
 """
 function cmatgf(Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
     p      = size(Xv[1], 2)
-    jC     = ForwardDiff.jacobian(x -> cmatvec(Xv, Zv, x; memopt = memopt), θ)
+    jC     = ForwardDiff.jacobian(x -> cmatvec(Xv, Zv, x; memopt = memopt),  SVector{length(θ), eltype(θ)}(θ))
     result = Vector{Matrix}(undef, 0)
     for i in 1:length(θ)
         push!(result, reshape(jC[:,i], p, p))
@@ -251,21 +257,21 @@ end
 """
 non inverted C matrix in vector form for gradient
 """
-function cmatvec(Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
+function cmatvec(Xv::Vector, Zv::Vector, θ; memopt::Bool = true)
     p     = size(Xv[1], 2)
     G     = gmat(θ[3:5])
     C     = zeros(promote_type(eltype(Zv[1]), eltype(θ)), p, p)
     cache     = Dict()
-    cachem    = Dict()
+    #cachem    = Dict()
     for i = 1:length(Xv)
         if memopt
-            iV   = minv(mvmat(G, θ[1:2], Zv[i], cachem), cache)
+            V⁻¹   = minv(G, θ[1:2], Zv[i], cache)
         else
             R   = rmat(θ[1:2], Zv[i])
-            iV  = inv(vmat(G, R, Zv[i]))
+            V⁻¹  = invchol(vmat(G, R, Zv[i]))
         end
-        #C  += Xv[i]' * iV * Xv[i]
-        mulαtβαinc!(C, Xv[i], iV)
+        #C  += Xv[i]' * V⁻¹ * Xv[i]
+        mulαtβαinc!(C, Xv[i], V⁻¹)
     end
     return C[:]
 end
@@ -344,23 +350,17 @@ end
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 """
     Initial variance computation
 """
-function initvar(df::DataFrame, dv::Symbol, fac::Symbol, sbj::Symbol)::Vector
-    u  = unique(df[:, sbj])
+function initvar(df::DataFrame, dv::Symbol, fac::Symbol)::Vector
     f  = unique(df[:, fac])
-
     fv = Array{eltype(df[!, dv]), 1}(undef, 0)
-    sb = Array{eltype(df[!, dv]), 1}(undef, 0)
     for i in f
         push!(fv, var(df[df[!, fac] .== i, dv]))
     end
-    for i in u
-        sv = var(df[df[!, sbj] .== i, dv])
-        if sv > 0 push!(sb, sv) end
-    end
-    push!(fv, mean(sb))
     return fv
 end
 #-------------------------------------------------------------------------------
@@ -396,7 +396,7 @@ function rholinksigmoid2r(ρ, m)
     return tan(ρ)
 end
 
-function varlinkmap(θ::Vector, r1::Union{Int, UnitRange}, r2::Union{Int, UnitRange}, f1::Function, f2::Function)
+function varlinkmap(θ, r1::Union{Int, UnitRange}, r2::Union{Int, UnitRange}, f1::Function, f2::Function)
     θl      = similar(θ)
     θl[r1]  = f1.(θ[r1])
     θl[r2]  = f2.(θ[r2])

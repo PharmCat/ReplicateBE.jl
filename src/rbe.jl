@@ -3,21 +3,24 @@
 #
 """
 ```julia
-struct RBE{T <: AbstractFloat}
+mutable struct RBE{T <: AbstractFloat}
     model::ModelFrame               # Model frame
     rmodel::ModelFrame              # Random effect model
     design::Design
-    factors::Vector{Symbol}         # Factor list
     θ0::Vector{T}                   # Initial variance paramethers
     vlm::T
     θ::Tuple{Vararg{T}}             # Final variance paramethers
     reml::T                         # -2REML
     fixed::EffectTable
-    typeiii::ContrastTable
-    G::Matrix{T}                    # G matrix
+    G::AbstractMatrix{T}            # G matrix
     C::Matrix{T}                    # C var(β) p×p variance-covariance matrix
     A::Matrix{T}                    # asymptotic variance-covariance matrix ofb θ
     H::Matrix{T}                    # Hessian matrix
+    X::Matrix{T}                    # Matrix for fixed effects
+    Z::Matrix{T}                    # Matrix for random effects
+    data::RBEDataStructure          # Data for model fitting
+    result::RBEResults
+
     detH::T                         # Hessian determinant
     preoptim::Union{Optim.MultivariateOptimizationResults, Nothing}             # Pre-optimization result object
     optim::Optim.MultivariateOptimizationResults                                # Optimization result object
@@ -49,6 +52,7 @@ mutable struct RBE{T <: AbstractFloat}
     preoptim::Union{Optim.MultivariateOptimizationResults, Nothing}             # Pre-optimization result object
     optim::Optim.MultivariateOptimizationResults                                # Optimization result object
 end
+
 
 """
 ```julia
@@ -118,7 +122,7 @@ function rbe(df; dvar::Symbol,
     #Check
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
     if !(eltype(df[!,dvar]) <: AbstractFloat)
-        @warn "Responce variable ∉ Float!"
+        @warn "Responce variable ∉ AbstractFloat!"
     end
     if !(typeof(df[!,subject]) <: CategoricalArray)
         @warn "Subject variable not Categorical, use rbe!()!"
@@ -168,9 +172,10 @@ function rbe(df; dvar::Symbol,
     if length(init) == 5
         θvec0 = init
     else
-        iv = initvar(df, dvar, formulation, subject)
+        intra = sum(replace!(var.(yv) .* (length.(yv) .- 1), NaN => 0))/(sum(length.(yv))-1)
+        iv = initvar(df, dvar, formulation)
         iv = iv .+ eps()
-        θvec0 = [iv[3], iv[3], iv[1], iv[2], 0.5]
+        θvec0 = [intra, intra, iv[1], iv[2], 0.5]
     end
 
     #Variance link function
@@ -184,8 +189,7 @@ function rbe(df; dvar::Symbol,
         varlink  = (x, y) ->  varlinkmap(x, 1:4, 5,  vlink,  z -> rholinksigmoid2(z, y))
         rvarlink = (x, y) ->  varlinkmap(x, 1:4, 5,  vlinkr, z -> rholinksigmoid2r(z, y))
     else
-        varlink  = (x, y) ->  varlinkmap(x, 1:4, 5,  vlink,  z -> rholinkpsigmoid(z, y))
-        rvarlink = (x, y) ->  varlinkmap(x, 1:4, 5,  vlinkr, z -> rholinkpsigmoidr(z, y))
+        throw(ArgumentError("Unknown link function! Check rholink!"))
     end
     θvec0   = rvarlink(θvec0, vlm)
 
@@ -265,9 +269,10 @@ function rbe(df; dvar::Symbol,
         lcl     = L*C*Lt                                                        #lcl     = L*C*L'
         lclr    = rank(lcl)
         se[i]   = sqrt((lcl)[1])
-        F[i]    = β'*L'*inv(lcl)*L*β/lclr                                       #F[i]    = (L*β)'*inv(L*C*L')*(L*β)/lclr
-        g       = lclg(gradc, L)
-        df[i]   = max(1, 2*((lcl)[1])^2/(g'*(A)*g))
+        F[i]    = β'*L'*inv(lcl)*L*β/lclr
+        df[i]   = sattdf(data, result, L, lcl)                                   #F[i]    = (L*β)'*inv(L*C*L')*(L*β)/lclr
+        #g       = lclg(gradc, L)
+        #df[i]   = max(1, 2*((lcl)[1])^2/(g'*(A)*g))
         t[i]    = ((L*β)/se[i])[1]
         pval[i] = ccdf(TDist(df[i]), abs(t[i]))*2
     end
@@ -319,13 +324,23 @@ function rbe!(df; dvar::Symbol,
         categorical!(df, sequence);
     end
     sort!(df, [subject, formulation, period])
-    return rbe(df, dvar=dvar, subject=subject, formulation=formulation, period=period, sequence=sequence,
-    g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, iterations=iterations,
-    store_trace=store_trace, extended_trace=extended_trace, show_trace=show_trace,
-    memopt=memopt, init=init, postopt=postopt, vlm = vlm, maxopttry = maxopttry, rhoadjstep = rhoadjstep,
+    return rbe(df, dvar = dvar, subject = subject, formulation = formulation, period = period, sequence = sequence,
+    g_tol = g_tol, x_tol = x_tol, f_tol = f_tol, iterations = iterations,
+    store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace,
+    memopt = memopt, init = init, postopt = postopt, vlm = vlm, maxopttry = maxopttry, rhoadjstep = rhoadjstep,
     rholink = rholink, singlim = singlim)
-
 end
+
+function fit!(rbe::RBE)
+end
+
+function rbe(df, settings; dvar::Symbol,
+    subject::Symbol,
+    formulation::Symbol,
+    period::Symbol,
+    sequence::Symbol)
+end
+
 #-------------------------------------------------------------------------------
 #returm -2REML
 """
@@ -534,7 +549,7 @@ end
 function Base.show(io::IO, rbe::RBE)
     rcoef = coefnames(rbe.rmodel);
     θ     = theta(rbe)
-    println(io, "Bioequivalence Linear Mixed Effect Model (status: $(Optim.converged(rbe.optim) ? "converged" : printstyled(io, "not converged"; color = :red)))")
+    print(io, "Bioequivalence Linear Mixed Effect Model (status:"); Optim.converged(rbe.optim) ? print(io,"converged") : printstyled(io, "not converged"; color = :red); println(io, ")")
     if !isposdef(Symmetric(rbe.H))
         printstyled(io, "Hessian not positive defined!"; color = :yellow)
         println(io, "")

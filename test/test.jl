@@ -500,6 +500,7 @@ end
 end
 
 @testset "  #  Simulation                                  " begin
+    #Power simulation by task
     io = IOBuffer()
     task = ReplicateBE.randrbetask(
         ;
@@ -517,4 +518,18 @@ end
     )
     pow = ReplicateBE.simulation(task; io = io, num = 100, seed = 1234, verbose = true)
     @test pow.result == 0.04
+
+    #Custom simulation
+
+    task = ReplicateBE.randrbetask(;n=24,
+    sequence=[1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T"],
+    inter=[0.04, 0.04, 1.0], intra=[0.02, 0.02],
+    intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0],
+    formcoef = [0.0, log(0.8)], seed = 0, dropobs = 0)
+    out = zeros(Float64, 0)
+    function simfunc!(out, be)
+        push!(out, ReplicateBE.theta(be)[5])
+    end
+    result             = ReplicateBE.simulation!(task, out, simfunc!; num = 10, seed = 10, verbose = false)
+    @test mean(result) ≈ 0.8904498245891423
 end

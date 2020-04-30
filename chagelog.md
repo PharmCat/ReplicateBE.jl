@@ -1,6 +1,15 @@
 
+- v1.0.8
+
+    * Changing in RBE struct!
+    * Optim 0.21
+    * StatsBase 0.33
+    * All output now in result: theta, reml, G, H, C, A, optim results
+    * fix test with accordance with public API
+    * change RBEResult
+
 - v1.0.7
-    * settings: initial 
+    * settings: initial
     * randrbeds "light" generation
     * optimizations
     * Distributions bump

@@ -11,10 +11,10 @@ include("testdata.jl")
 
 @testset "  Basic mixed model test                         " begin
     be = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
-    e1 = be.fixed.est[6]
-    @test be.fixed.est[6]       ≈  -0.0791666 atol=1E-5
-    @test be.fixed.se[6]        ≈   0.09037378448083119 atol=1E-5
-    @test be.reml               ≈   10.065238638105903 atol=1E-5
+    e1 = ReplicateBE.fixed(be).est[6]
+    @test ReplicateBE.fixed(be).est[6]       ≈  -0.0791666 atol=1E-5
+    @test ReplicateBE.fixed(be).se[6]        ≈   0.09037378448083119 atol=1E-5
+    @test ReplicateBE.reml2(be) ≈   10.065238638105903 atol=1E-5
     ci = confint(be, 0.1, expci = false, inv = false)
     @test ci[end][1]            ≈  -0.25791330363201714 atol=1E-5
     @test ci[end][2]            ≈   0.09957997029868393 atol=1E-5
@@ -33,14 +33,14 @@ include("testdata.jl")
     @test dof(be)[end]          ≈   5.463110799437906 atol=1E-5
 
     be = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10, memopt = false);
-    @test be.fixed.est[6]       ≈ e1 atol=1E-10
+    @test ReplicateBE.fixed(be).est[6]       ≈ e1 atol=1E-10
     @test ReplicateBE.estimate(be, [0 0 0 0 0 1], df = :cont, name = "Formulation")[1,4] == 8
     ci0 = confint(be)[end]
     io = IOBuffer();
     Base.show(io, be)
     Base.show(io, ci)
     Base.show(io, be.design)
-    Base.show(io, be.fixed)
+    Base.show(io, ReplicateBE.fixed(be))
     #Base.show(io, be.typeiii)
     Base.show(io, ReplicateBE.estimate(be, [0 0 0 0 0 1]))
 
@@ -110,10 +110,10 @@ end
     #df4[!,:var1] = float.(df4[!,:var1])
     be = ReplicateBE.rbe!(df4, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     ci = ReplicateBE.confint(be, 0.1, expci = true, inv = true)
-    @test be.reml  ≈  530.1445137281626  atol=1E-5
-    @test be.fixed.se[6] ≈    0.04650123700721 atol=1E-5
-    @test be.fixed.f[6]  ≈    9.78552229238432 atol=1E-4
-    @test be.fixed.df[6] ≈  208.08115303672898 atol=1E-2
+    @test ReplicateBE.reml2(be)  ≈  530.1445137281626  atol=1E-5
+    @test ReplicateBE.fixed(be).se[6] ≈    0.04650123700721 atol=1E-5
+    @test ReplicateBE.fixed(be).f[6]  ≈    9.78552229238432 atol=1E-4
+    @test ReplicateBE.fixed(be).df[6] ≈  208.08115303672898 atol=1E-2
     @test ci[end][1]     ≈    1.071047105  atol=1E-5
     @test ci[end][2]     ≈    1.248935873  atol=1E-5
 end
@@ -125,7 +125,7 @@ end
     df5[!,:var] = float.(df5[!,:var])
     be = ReplicateBE.rbe!(df5, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     ci = ReplicateBE.confint(be, 0.1, expci = true)
-    @test be.reml                           ≈  314.2217688405106 atol=1E-5
+    @test ReplicateBE.reml2(be)                           ≈  314.2217688405106 atol=1E-5
     #1.0.4
     @test ci[end][1]                        ≈  0.6307479743996646 atol=1E-4 #1.187496 SPSS
     @test ci[end][2]                        ≈  0.8420705538500828 atol=1E-4 #1.585490 SPSS
@@ -146,7 +146,7 @@ end
     be = ReplicateBE.rbe!(df6, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     ci = confint(be, 0.1, expci = true)
     @test ReplicateBE.reml2(be)  ≈  329.25749377843033 atol=1E-5
-    @test be.fixed.f[end]        ≈  2.399661661708039 atol=1E-5
+    @test ReplicateBE.fixed(be).f[end]        ≈  2.399661661708039 atol=1E-5
     @test ci[end][1]             ≈  0.994999  atol=1E-5
     @test ci[end][2]             ≈  1.143044  atol=1E-5
 end

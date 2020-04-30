@@ -1,4 +1,220 @@
+"""
+A' * B * A
+"""
+function mulall(A::Vector, B::AbstractMatrix)
+    q = size(B, 1)
+    θ = 0
+    #c .= 0
+        for n = 1:q
+            for m = 1:q
+                #@inbounds c[n] += B[m, n] * A[m]
+                @inbounds θ += B[m, n] * A[m] * A[n]
+            end
+            #@inbounds θ += A[n] * c[n]
+        end
+        #for n = 1:q
+        #    @inbounds θ += A[n] * c[n]
+        #end
+    θ
+end
 
+"""
+A * B * A'
+"""
+function mulαβαt(A::AbstractMatrix, B::AbstractMatrix)
+    q  = size(B, 1)
+    p  = size(A, 1)
+    c  = zeros(eltype(B), q)
+    mx = zeros(eltype(B), p, p)
+    for i = 1:p
+        c .= 0
+        for n = 1:q
+            for m = 1:q
+                @inbounds c[n] +=  A[i, m] * B[n, m]
+            end
+        end
+        for n = 1:p
+            for m = 1:q
+                 @inbounds mx[i, n] += A[n, m] * c[m]
+            end
+        end
+    end
+    mx
+end
+
+"""
+A * B * A' + C -> O
+"""
+function mulαβαtc!(O::AbstractMatrix, A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix)
+    q  = size(B, 1)
+    p  = size(A, 1)
+    c  = zeros(eltype(B), q)
+    O .= 0
+    for i = 1:p
+        c .= 0
+        for n = 1:q
+            for m = 1:q
+                @inbounds c[n] +=  A[i, m] * B[n, m]
+            end
+        end
+        for n = 1:p
+            for m = 1:q
+                 @inbounds O[i, n] += A[n, m] * c[m]
+            end
+        end
+    end
+    O .+= C
+end
+function mulαβαtc!(O::AbstractMatrix, A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, mem::MemCache)
+    q  = size(B, 1)
+    p  = size(A, 1)
+    c  = mem.svec[p]
+    O .= 0
+    for i = 1:p
+        c .= 0
+        for n = 1:q
+            for m = 1:q
+                @inbounds c[n] +=  A[i, m] * B[n, m]
+            end
+        end
+        for n = 1:p
+            for m = 1:q
+                 @inbounds O[i, n] += A[n, m] * c[m]
+            end
+        end
+    end
+    O .+= C
+end
+#-------------------------------------------------------------------------------
+#Return term levels count by symbol
+function termmodelleveln(MF::ModelFrame, symbol::Symbol)::Int
+    id = findterm(MF, symbol)
+    return length(MF.f.rhs.terms[id].contrasts.levels)
+end
+#=
+
+"""
+    lsm(rbe::RBE, L::Matrix)
+
+Deprecated.
+"""
+#Deprecated
+function lsm(rbe::RBE, L::Matrix)
+    lcl  = L*rbe.C*L'
+    return L*coef(rbe), sqrt.(lcl)
+end
+#
+"""
+    emm(obj::RBE, fm::Matrix, lm::Matrix)
+
+Matrix mask.
+"""
+function emm(obj::RBE, fm::Matrix, lm::Matrix)
+    La = lmean(obj::RBE)
+    L  = La .* fm
+    L  = L  .+ lm
+    return lsm(obj, Matrix(L))
+end
+#General mean contrast L matrix 1xp
+"""
+    lmean(obj::RBE)
+
+Return L-matrix for general mean.
+"""
+function lmean(obj::RBE)
+    L    = zeros(1, length(fixed(obj).est))
+    L[1] = 1.0
+    it    = 2
+    for f in obj.data.factors
+        term = findterm(obj.model, f)
+        len  = length(obj.model.f.rhs.terms[term].contrasts.termnames)
+        dev  = 1/length(obj.model.f.rhs.terms[term].contrasts.levels)
+        for i = 1:len
+            L[it] = dev
+            it  += 1
+        end
+    end
+    return L
+end
+
+=#
+#-------------------------------------------------------------------------------
+
+#=
+function randrbeds(n::Int, sequence::Vector,
+    design::Matrix,
+    inter::Real, intra::Vector,
+    intercept::Real, seqcoef::Vector, periodcoef::Vector, formcoef::Vector,
+    dropobs::Int, seed)
+    if seed != 0
+        rng = MersenneTwister(seed)
+    else
+        rng = MersenneTwister()
+    end
+
+    r = n/sum(sequence)
+    sn = Array{Int, 1}(undef, length(sequence))
+    for i = 1:(length(sequence)-1)
+        sn[i] = round(r*sequence[i])
+    end
+    sn[length(sequence)] = n - sum(sn[1:(length(sequence)-1)])
+
+    u      = unique(design)
+    sqname = Array{String, 1}(undef,size(design)[1])
+    sqnum  = size(design)[1]
+    pnum   = size(design)[2]
+    for i = 1:sqnum
+        sqname[i] = join(design[i,:])
+    end
+    Zv = Array{Matrix, 1}(undef, sqnum)
+    Vv = Array{Vector, 1}(undef, sqnum)
+    for i = 1:size(design)[1]
+        Z = Array{Int, 2}(undef, pnum, length(u))
+        for c = 1:pnum
+            for uc = 1:length(u)
+                if design[i, c] == u[uc] Z[c, uc] = 1 else Z[c, uc] = 0 end
+            end
+        end
+        Zv[i] = Z
+        Vv[i] = Z * intra
+    end
+    Mv = Array{Array{Float64, 1}, 1}(undef, sqnum)
+    for i = 1:sqnum
+        Mv[i] = zeros(pnum) .+ intercept .+ seqcoef[i] + periodcoef + Zv[i]*formcoef
+    end
+    ndist  = Normal()
+    subjds = DataFrame(subject = Int[], formulation = String[], period = Int[], sequence = String[], var = Float64[])
+    subj   = 1
+    subjmx = Array{Any, 2}(undef, pnum, 5)
+    for i = 1:sqnum
+        for sis = 1:sn[i]
+            subjmx[:, 1] .= subj
+            subjmx[:, 2]  = design[i,:]
+            subjmx[:, 3]  = collect(1:pnum)
+            subjmx[:, 4] .= sqname[i]
+            subjmx[:, 5] .= 0
+            subjmx[:, 5] .+= rand(rng, ndist)*sqrt(inter)
+            subj += 1
+            for c = 1:pnum
+                subjmx[c, 5] += Mv[i][c] + rand(rng, ndist)*sqrt(Vv[i][c])
+                push!(subjds, subjmx[c, :])
+            end
+        end
+    end
+    if dropobs > 0 && dropobs < size(subjds, 1)
+        dellist = sample(rng, 1:size(subjds, 1), dropobs, replace = false)
+        deleterows!(subjds, sort!(dellist))
+    end
+    categorical!(subjds, :subject);
+    categorical!(subjds, :formulation);
+    categorical!(subjds, :period);
+    categorical!(subjds, :sequence);
+    return subjds
+end
+=#
+
+#-------------------------------------------------------------------------------
+#=
 """
     Feel M with zero feeled matrices
 """
@@ -104,7 +320,7 @@ function lclgf(L, Lt, Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
     end
     return (L * inv(C) * Lt)[1]
 end
-
+=#
 #=
 function mrmat(σ::Vector{S}, Z::Matrix{T}, cache)::Matrix where S <: Real where T <: Real
     h = hash(tuple(σ, Z))

@@ -363,8 +363,8 @@ end
 
 Returm -2logREML for rbe model with θ variance vector.
 """
-function reml2(rbe::RBE, θ::Vector{T}) where T <: AbstractFloat
-    return reml2(rbe.data, θ, coef(rbe))
+function reml2(rbe::RBE, θ::Vector{T}; memopt::Bool = true) where T <: AbstractFloat
+    return reml2(rbe.data, θ, coef(rbe); memopt = memopt)
 end
 """
     reml2(rbe::RBE)

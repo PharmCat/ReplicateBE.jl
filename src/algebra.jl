@@ -43,7 +43,7 @@ function mulαtβαinc!(θ, A::AbstractMatrix, B::AbstractMatrix)
 end
 #-------------------------------------------------------------------------------
 """
-A' * B * A -> +θ
+A' * B * A -> +θ (cache)
 A' * B * C -> +β
 """
 function mulθβinc!(θ, β, A::AbstractMatrix, B::AbstractMatrix, C::Vector, c)
@@ -67,26 +67,7 @@ function mulθβinc!(θ, β, A::AbstractMatrix, B::AbstractMatrix, C::Vector, c)
 end
 #-------------------------------------------------------------------------------
 """
-A' * B * A
-"""
-function mulall(A::Vector, B::AbstractMatrix)
-    q = size(B, 1)
-    θ = 0
-    #c .= 0
-        for n = 1:q
-            for m = 1:q
-                #@inbounds c[n] += B[m, n] * A[m]
-                @inbounds θ += B[m, n] * A[m] * A[n]
-            end
-            #@inbounds θ += A[n] * c[n]
-        end
-        #for n = 1:q
-        #    @inbounds θ += A[n] * c[n]
-        #end
-    θ
-end
-"""
-(y - X * β)' * V * (y - X * β)
+(y - X * β)' * V * (y - X * β) (cache)
 """
 function mulθ₃(y::Vector, X::AbstractMatrix, β::Vector, V::AbstractMatrix, c)
     q = size(V, 1)
@@ -106,30 +87,6 @@ function mulθ₃(y::Vector, X::AbstractMatrix, β::Vector, V::AbstractMatrix, c
     return θ
 end
 
-
-"""
-A * B * A'
-"""
-function mulαβαt(A::AbstractMatrix, B::AbstractMatrix)
-    q  = size(B, 1)
-    p  = size(A, 1)
-    c  = zeros(eltype(B), q)
-    mx = zeros(eltype(B), p, p)
-    for i = 1:p
-        c .= 0
-        for n = 1:q
-            for m = 1:q
-                @inbounds c[n] +=  A[i, m] * B[n, m]
-            end
-        end
-        for n = 1:p
-            for m = 1:q
-                 @inbounds mx[i, n] += A[n, m] * c[m]
-            end
-        end
-    end
-    mx
-end
 """
 A * B * A' + C
 """
@@ -154,6 +111,9 @@ function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix)
     mx .+= C
 
 end
+"""
+A * B * A' + C (cache)
+"""
 function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, c::AbstractVector)
     q  = size(B, 1)
     p  = size(A, 1)
@@ -175,49 +135,6 @@ function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, c:
     mx .+= C
     #SMatrix{p,p,eltype(mx)}(mx)
 
-end
-"""
-A * B * A' + C -> O
-"""
-function mulαβαtc!(O::AbstractMatrix, A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix)
-    q  = size(B, 1)
-    p  = size(A, 1)
-    c  = zeros(eltype(B), q)
-    O .= 0
-    for i = 1:p
-        c .= 0
-        for n = 1:q
-            for m = 1:q
-                @inbounds c[n] +=  A[i, m] * B[n, m]
-            end
-        end
-        for n = 1:p
-            for m = 1:q
-                 @inbounds O[i, n] += A[n, m] * c[m]
-            end
-        end
-    end
-    O .+= C
-end
-function mulαβαtc!(O::AbstractMatrix, A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, mem::MemCache)
-    q  = size(B, 1)
-    p  = size(A, 1)
-    c  = mem.svec[p]
-    O .= 0
-    for i = 1:p
-        c .= 0
-        for n = 1:q
-            for m = 1:q
-                @inbounds c[n] +=  A[i, m] * B[n, m]
-            end
-        end
-        for n = 1:p
-            for m = 1:q
-                 @inbounds O[i, n] += A[n, m] * c[m]
-            end
-        end
-    end
-    O .+= C
 end
 
 function invchol(M)

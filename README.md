@@ -80,7 +80,7 @@ Ratio: 106.65, CI: 99.5 - 114.3 (%)
 
 # Validation
 
-Validation information: [here](https://pharmcat.github.io/ReplicateBE.jl/latest/testval/), validation results you can find in [table](https://github.com/PharmCat/ReplicateBE.jl/blob/master/validation/validation_results_table.csv).
+Validation information: [here](https://pharmcat.github.io/ReplicateBE.jl/latest/testval/), validation results you can find in [table](https://github.com/PharmCat/ReplicateBE.jl/blob/master/validation/Validation%20results.csv).
 
 # Basic methods
 

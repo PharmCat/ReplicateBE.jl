@@ -9,21 +9,11 @@ mutable struct RBE{T <: AbstractFloat}
     design::Design
     θ0::Vector{T}                   # Initial variance paramethers
     vlm::T
-    θ::Tuple{Vararg{T}}             # Final variance paramethers
-    reml::T                         # -2REML
     fixed::EffectTable
-    G::AbstractMatrix{T}            # G matrix
-    C::Matrix{T}                    # C var(β) p×p variance-covariance matrix
-    A::Matrix{T}                    # asymptotic variance-covariance matrix ofb θ
-    H::Matrix{T}                    # Hessian matrix
     X::Matrix{T}                    # Matrix for fixed effects
     Z::Matrix{T}                    # Matrix for random effects
     data::RBEDataStructure          # Data for model fitting
     result::RBEResults
-
-    detH::T                         # Hessian determinant
-    preoptim::Union{Optim.MultivariateOptimizationResults, Nothing}             # Pre-optimization result object
-    optim::Optim.MultivariateOptimizationResults                                # Optimization result object
 end
 ```
 
@@ -37,20 +27,20 @@ mutable struct RBE{T <: AbstractFloat}
     #factors::Vector{Symbol}        # Factor list
     θ0::Vector{T}                   # Initial variance paramethers
     vlm::T
-    θ::Tuple{Vararg{T}}             # Final variance paramethers
-    reml::T                         # -2REML
-    fixed::EffectTable
-    G::AbstractMatrix{T}            # G matrix
-    C::Matrix{T}                    # C var(β) p×p variance-covariance matrix
-    A::Matrix{T}                    # asymptotic variance-covariance matrix ofb θ
-    H::Matrix{T}                    # Hessian matrix
+    #θ::Tuple{Vararg{T}}             # Final variance paramethers
+    #reml::T                         # -2REML
+    #fixed::EffectTable
+    #G::AbstractMatrix{T}            # G matrix
+    #C::Matrix{T}                    # C var(β) p×p variance-covariance matrix
+    #A::Matrix{T}                    # asymptotic variance-covariance matrix ofb θ
+    #H::Matrix{T}                    # Hessian matrix
     X::Matrix{T}                    # Matrix for fixed effects
     Z::Matrix{T}                    # Matrix for random effects
     data::RBEDataStructure          # Data for model fitting
     result::RBEResults
-    detH::T                         # Hessian determinant
-    preoptim::Union{Optim.MultivariateOptimizationResults, Nothing}             # Pre-optimization result object
-    optim::Optim.MultivariateOptimizationResults                                # Optimization result object
+    #detH::T                         # Hessian determinant
+    #preoptim::Union{Optim.MultivariateOptimizationResults, Nothing}             # Pre-optimization result object
+    #optim::Optim.MultivariateOptimizationResults                                # Optimization result object
 end
 
 
@@ -244,7 +234,7 @@ function rbe(df; dvar::Symbol,
         H[:,5] .= 0
         H[5,:] .= 0
     end
-    dH          = det(H)
+    #dH          = det(H)
 
     #Secondary parameters calculation
     # if inv(H) incorrect pinv(H) used
@@ -260,7 +250,7 @@ function rbe(df; dvar::Symbol,
     t           = Vector{eltype(C)}(undef, p)
     pval        = Vector{eltype(C)}(undef, p)
     gradc       = cmatg(Xv, Zv, θ, C; memopt = memopt)
-    result      = RBEResults(-remlv/2,  β, θ, H, A, C, gradc)
+
 
     for i = 1:p
         L       = zeros(1, p)
@@ -270,20 +260,24 @@ function rbe(df; dvar::Symbol,
         lclr    = rank(lcl)
         se[i]   = sqrt((lcl)[1])
         F[i]    = β'*L'*inv(lcl)*L*β/lclr
-        df[i]   = sattdf(data, result, L, lcl)                                   #F[i]    = (L*β)'*inv(L*C*L')*(L*β)/lclr
+        df[i]   = sattdf(data, gradc, A, C, L, lcl)                                   #F[i]    = (L*β)'*inv(L*C*L')*(L*β)/lclr
+
         #g       = lclg(gradc, L)
         #df[i]   = max(1, 2*((lcl)[1])^2/(g'*(A)*g))
         t[i]    = ((L*β)/se[i])[1]
         pval[i] = ccdf(TDist(df[i]), abs(t[i]))*2
     end
     fixed       = EffectTable(coefnames(MF), β, se, F, df, t, pval)
+
+    result      = RBEResults(-remlv/2,  β, θ, fixed, gmat(θ[3:5]), H, A, C, gradc, pO, O)
+
     design      = Design(N, n,
     sn + 1,
     pn + 1,
     fn + 1,
     sbf,
     p, zxr)
-    return RBE(MF, RMF, design, varlink(θvec0, vlm), vlm, Tuple(θ), remlv, fixed,  gmat(θ[3:5]), C, A, H, X, Z, data, result, dH, pO, O)
+    return RBE(MF, RMF, design, varlink(θvec0, vlm), vlm, #=Tuple(θ), remlv, fixed, gmat(θ[3:5]), C, A, H,=# X, Z, data, result, #=dH, pO, O=#)
 
 end #END OF rbe()
 """
@@ -332,6 +326,8 @@ function rbe!(df; dvar::Symbol,
 end
 
 function fit!(rbe::RBE)
+
+function fit!(rbe::RBE)
 end
 
 function rbe(df, settings; dvar::Symbol,
@@ -339,6 +335,27 @@ function rbe(df, settings; dvar::Symbol,
     formulation::Symbol,
     period::Symbol,
     sequence::Symbol)
+
+    #Check
+    if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
+    if !(eltype(df[!,dvar]) <: AbstractFloat)
+        @warn "Responce variable ∉ AbstractFloat!"
+    end
+    if !(typeof(df[!,subject]) <: CategoricalArray)
+        @warn "Subject variable not Categorical, use rbe!()!"
+    end
+    if !(typeof(df[!,formulation]) <: CategoricalArray)
+        @warn "Formulation variable not Categorical, use rbe!()!"
+    end
+    if !(typeof(df[!,period]) <: CategoricalArray)
+        @warn "Period variable not Categorical, use rbe!()!"
+    end
+    if !(typeof(df[!,sequence]) <: CategoricalArray)
+        @warn "Sequence variable not Categorical, use rbe!()!"
+    end
+
+
+
 end
 
 #-------------------------------------------------------------------------------
@@ -364,7 +381,7 @@ logREML(\\theta,\\beta) = -\\frac{N-p}{2} - \\frac{1}{2}\\sum_{i=1}^nlog|V_{i}|-
 
 """
 function reml2(rbe::RBE)
-    return rbe.reml
+    return -2*rbe.result.reml
 end
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
@@ -393,7 +410,7 @@ C = (\\sum_{i=1}^{n} X_i'V_i^{-1}X_i)^{-1}
 ```
 """
 function StatsBase.stderror(rbe::RBE)
-    return collect(rbe.fixed.se)
+    return collect(fixed(rbe).se)
 end
 """
     coef(rbe::RBE)
@@ -405,7 +422,7 @@ Return model coefficients.
 ```
 """
 function StatsBase.coef(rbe::RBE)
-    return collect(rbe.fixed.est)
+    return collect(fixed(rbe).est)
 end
 """
     dof(rbe::RBE)
@@ -414,7 +431,7 @@ Return the number of degrees of freedom for the coefficients of the model.
 
 """
 function StatsBase.dof(rbe::RBE)
-    return collect(rbe.fixed.df)
+    return collect(fixed(rbe).df)
 end
 #Confidence interval
 """
@@ -446,32 +463,32 @@ function StatsBase.confint(obj::RBE, alpha::Real; expci::Bool = false, inv::Bool
     ifv = 1
     if inv ifv = -1 end
     if isa(df, Array)
-        if length(obj.fixed.df) != length(df)
-            df = obj.fixed.df
+        if length(fixed(obj).df) != length(df)
+            df = fixed(obj).df
         else
             @warn "length(df) not equal parameters count, default df used!"
-            df = obj.fixed.df
+            df = fixed(obj).df
         end
     elseif isa(df, Symbol)
         if df == :df2
-            df  = zeros(length(obj.fixed.df))
+            df  = zeros(length(fixed(obj).df))
             df .= obj.design.df2
         elseif df == :df3 || df == :cont
-            df  = zeros(length(obj.fixed.df))
+            df  = zeros(length(fixed(obj).df))
             df .= obj.design.df3
         elseif df == :contw
-            df  = zeros(length(obj.fixed.df))
+            df  = zeros(length(fixed(obj).df))
             df .= sum(obj.design.sbf) - length(obj.design.sbf)*obj.design.sqn
         elseif df == :sat
-            df = obj.fixed.df
+            df = fixed(obj).df
         else
             @warn "df unknown, default df used!"
-            df = obj.fixed.df
+            df = fixed(obj).df
         end
     end
-    a = Array{Tuple{eltype(obj.fixed.est), eltype(obj.fixed.est)},1}(undef, length(obj.fixed.est))
-    for i = 1:length(obj.fixed.est)
-        a[i] = calcci(obj.fixed.est[i]*ifv, obj.fixed.se[i], df[i], alpha, expci)
+    a = Array{Tuple{eltype(fixed(obj).est), eltype(fixed(obj).est)},1}(undef, length(fixed(obj).est))
+    for i = 1:length(fixed(obj).est)
+        a[i] = calcci(fixed(obj).est[i]*ifv, fixed(obj).se[i], df[i], alpha, expci)
     end
     return Tuple(a)
 end
@@ -490,7 +507,7 @@ end
 Return theta (θ) vector (vector of variation parameters from optimization procedure).
 """
 function theta(rbe::RBE)
-    return collect(rbe.θ)
+    return collect(rbe.result.theta)
 end
 """
     coefnum(rbe::RBE)
@@ -498,7 +515,7 @@ end
 Return number of coefficients (length β).
 """
 function coefnum(rbe::RBE)
-    return length(rbe.fixed.se)
+    return length(fixed(rbe).se)
 end
 """
     design(rbe::RBE)::Design
@@ -514,7 +531,7 @@ end
 Return fixed effect table (β).
 """
 function fixed(rbe::RBE)
-    return rbe.fixed
+    return rbe.result.fixed
 end
 """
     typeiii(rbe::RBE)
@@ -543,14 +560,14 @@ Return optimization status.
 * false - not converged
 """
 function optstat(rbe::RBE)
-    return Optim.converged(rbe.optim)
+    return Optim.converged(rbe.result.optim)
 end
 #-------------------------------------------------------------------------------
 function Base.show(io::IO, rbe::RBE)
     rcoef = coefnames(rbe.rmodel);
     θ     = theta(rbe)
-    print(io, "Bioequivalence Linear Mixed Effect Model (status:"); Optim.converged(rbe.optim) ? print(io,"converged") : printstyled(io, "not converged"; color = :red); println(io, ")")
-    if !isposdef(Symmetric(rbe.H))
+    print(io, "Bioequivalence Linear Mixed Effect Model (status:"); optstat(rbe) ? print(io,"converged") : printstyled(io, "not converged"; color = :red); println(io, ")")
+    if !isposdef(Symmetric(rbe.result.H))
         printstyled(io, "Hessian not positive defined!"; color = :yellow)
         println(io, "")
     end
@@ -559,10 +576,10 @@ function Base.show(io::IO, rbe::RBE)
         println(io, "")
     end
     println(io, "")
-    println(io, "-2REML: $(round(rbe.reml, sigdigits=6))    REML: $(round(-rbe.reml/2, sigdigits=6))")
+    println(io, "-2REML: $(round(-2*rbe.result.reml, sigdigits=6))    REML: $(round(rbe.result.reml, sigdigits=6))")
     println(io, "")
     println(io, "Fixed effect:")
-    println(io, rbe.fixed)
+    println(io, fixed(rbe))
     println(io, "Intra-individual variance:")
 
     printmatrix(io,[rcoef[1] round(θ[1], sigdigits=6) "CVᵂ:" round(geocv(θ[1])*100, digits=2) "%";

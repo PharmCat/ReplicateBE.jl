@@ -103,7 +103,7 @@ L = [0 0 0 1 0 0]
 function estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = true, alpha = 0.05)::EstimateTable
     est, se, t = estimatevec(rbe.data, rbe.result, L)
     if df == :sat
-        df      = sattdf(rbe.data, rbe.result, L, L*rbe.result.C*L')
+        df      = sattdf(rbe.data, rbe.result.gradc, rbe.result.A, rbe.result.C, L, L*rbe.result.C*L')
     elseif df == :cont
         df      = rbe.design.df3
     else
@@ -199,7 +199,7 @@ end
 Return L-matrix for general mean.
 """
 function lmean(obj::RBE)
-    L    = zeros(1, length(obj.fixed.est))
+    L    = zeros(1, length(fixed(obj).est))
     L[1] = 1.0
     it    = 2
     for f in obj.data.factors

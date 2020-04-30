@@ -16,13 +16,17 @@ function rebuildcache(data, type)
 end
 
 struct RBEResults{T <: AbstractFloat}
-    reml::T
-    β::Vector{T}
-    theta::Vector{T}
-    H::Matrix{T}
-    A::Matrix{T}
-    C::Matrix{T}
+    reml::T                         # logREML
+    β::Vector{T}                    # β Vector
+    theta::Vector{T}                # Variance parameter vector
+    fixed::EffectTable
+    G::AbstractMatrix{T}            # G matrix
+    H::Matrix{T}                    # Hessian matrix
+    A::Matrix{T}                    # asymptotic variance-covariance matrix ofb θ
+    C::Matrix{T}                    # C var(β) p×p variance-covariance matrix
     gradc::Vector{Matrix}
+    preoptim::Union{Optim.MultivariateOptimizationResults, Nothing}             # Pre-optimization result object
+    optim::Optim.MultivariateOptimizationResults                                # Optimization result object
 end
 
 #Design structure

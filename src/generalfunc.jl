@@ -302,7 +302,7 @@ function contrastvec(data, res, L)
     lcl     = L*res.C*L'
     lclr    = rank(lcl)
     F       = res.β'*L'*inv(lcl)*L*res.β/lclr
-    df      = sattdf(data, res, L, lcl)
+    df      = sattdf(data, res.gradc, res.A, res.C, L, lcl)
     pval    = ccdf(FDist(lclr, df), F)
     return F, lclr, df, pval
 end
@@ -315,19 +315,19 @@ function estimatevec(data, res, L)
     t       = ((est)/se)
     return est, se, t
 end
-function sattdf(data, res, L, lcl)
+function sattdf(data, gradc, A, C, L, lcl)
     lclr    = rank(lcl)
     if lclr ≥ 2
-        vm  = Vector{eltype(res.C)}(undef, lclr)
+        vm  = Vector{eltype(C)}(undef, lclr)
         # Spectral decomposition ?
         #ev  = eigen(lcl)
         #pl  = eigvecs(ev)
         #dm  = eigvals(ev)
         #ei  = pl * L
         for i = 1:lclr
-            g         = lclg(res.gradc, L[i:i,:])
+            g         = lclg(gradc, L[i:i,:])
             #g         = lclg(res.gradc, ei[i:i, :])
-            dfi       = 2*((L[i:i,:]*res.C*L[i:i,:]')[1])^2/(g'*res.A*g)
+            dfi       = 2*((L[i:i,:]*C*L[i:i,:]')[1])^2/(g'*A*g)
             #dfi       = 2*dm[i]^2/(g'*res.A*g)
             if dfi > 2
                 vm[i] = dfi/(dfi-2)
@@ -342,8 +342,8 @@ function sattdf(data, res, L, lcl)
             dfi = 0
         end
     else
-        g   = lclg(res.gradc, L)
-        dfi = 2*((lcl)[1])^2/(g'*res.A*g)
+        g   = lclg(gradc, L)
+        dfi = 2*((lcl)[1])^2/(g'*A*g)
     end
     return max(1, dfi)
 end

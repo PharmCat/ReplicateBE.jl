@@ -326,6 +326,8 @@ function rbe!(df; dvar::Symbol,
 end
 
 function fit!(rbe::RBE)
+
+function fit!(rbe::RBE)
 end
 
 function rbe(df, settings; dvar::Symbol,

@@ -1,6 +1,5 @@
 
 - v1.0.8
-
     * Changing in RBE struct!
     * Optim 0.21
     * StatsBase 0.33
@@ -10,6 +9,7 @@
 
 - v1.0.7
     * settings: initial
+    * settings: initial 
     * randrbeds "light" generation
     * optimizations
     * Distributions bump

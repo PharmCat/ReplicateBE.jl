@@ -261,6 +261,7 @@ function rbe(df; dvar::Symbol,
         se[i]   = sqrt((lcl)[1])
         F[i]    = β'*L'*inv(lcl)*L*β/lclr
         df[i]   = sattdf(data, gradc, A, C, L, lcl)                                   #F[i]    = (L*β)'*inv(L*C*L')*(L*β)/lclr
+
         #g       = lclg(gradc, L)
         #df[i]   = max(1, 2*((lcl)[1])^2/(g'*(A)*g))
         t[i]    = ((L*β)/se[i])[1]
@@ -326,6 +327,7 @@ end
 
 function fit!(rbe::RBE)
 
+function fit!(rbe::RBE)
 end
 
 function rbe(df, settings; dvar::Symbol,
@@ -351,6 +353,7 @@ function rbe(df, settings; dvar::Symbol,
     if !(typeof(df[!,sequence]) <: CategoricalArray)
         @warn "Sequence variable not Categorical, use rbe!()!"
     end
+
 
 
 end

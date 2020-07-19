@@ -6,6 +6,7 @@ struct RBEDataStructure
     p::Int
     N::Int
     n::Int
+    vs::VarianceStruct
     remlc::AbstractFloat
     maxobs::Int
     mem::MemCache

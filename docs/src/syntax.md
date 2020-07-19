@@ -9,7 +9,7 @@ rbe!(df; dvar::Symbol, subject::Symbol, formulation::Symbol, period::Symbol, seq
 ## Simple (non-modifying) syntax
 
 ```julia
-rbe!(df; dvar::Symbol, subject::Symbol, formulation::Symbol, period::Symbol, sequence::Symbol)
+rbe(df; dvar::Symbol, subject::Symbol, formulation::Symbol, period::Symbol, sequence::Symbol)
 ```
 
 ## Random dataset

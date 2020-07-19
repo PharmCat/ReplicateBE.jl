@@ -107,7 +107,9 @@ function rbe(df; dvar::Symbol,
     init = [],
     postopt = false, vlm = 1.0, maxopttry = 100, rhoadjstep = 0.15,
     rholink = :psigmoid,
-    singlim = 1e-10)
+    singlim = 1e-10,
+    random = heterogeneousCompoundSymmetry,
+    repeated = varianceComponents)
 
     #Check
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
@@ -156,7 +158,10 @@ function rbe(df; dvar::Symbol,
     checkdata(X, Z, Xv, Zv, y)
     maxobs = maximum(length.(yv))
     #
-    data = RBEDataStructure([sequence, period, formulation], Xv, Zv, yv, p, N, n, (N - p) * LOG2PI, maxobs, MemCache(maxobs))
+    #vs = VarianceStruct(HeterogeneousCompoundSymmetry(3:4, 5), VarianceComponents(1:2))
+    vs = makevariancestruct(random, repeated, length(fl))
+    #
+    data = RBEDataStructure([sequence, period, formulation], Xv, Zv, yv, p, N, n, vs, (N - p) * LOG2PI, maxobs, MemCache(maxobs))
 
     #Calculate initial variance
     if length(init) == 5
@@ -165,7 +170,7 @@ function rbe(df; dvar::Symbol,
         intra = sum(replace!(var.(yv) .* (length.(yv) .- 1), NaN => 0))/(sum(length.(yv))-1)
         iv = initvar(df, dvar, formulation)
         iv = iv .+ eps()
-        θvec0 = [intra, intra, iv[1], iv[2], 0.5]
+        θvec0 = [sqrt(intra), sqrt(intra), sqrt(iv[1]), sqrt(iv[2]), 0.5]
     end
 
     #Variance link function
@@ -189,9 +194,12 @@ function rbe(df; dvar::Symbol,
     opttry  = true
     optnum  = 0
     rng     = MersenneTwister(hash(θvec0))
+
     while opttry
         try
+
             O       = optimize(td, θvec0, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace, callback = optimcallback)
+
             opttry  = false
         #try
         catch
@@ -201,9 +209,11 @@ function rbe(df; dvar::Symbol,
         optnum += 1
         if optnum > maxopttry
             opttry = false
+            println(data.vs)
             throw(ErrorException("Optimization faild! Iteration $(optnum), θvec = $(varlink(θvec0, vlm))"))
         end
     end
+
     θ          = Optim.minimizer(O)
 
     #Post optimization
@@ -249,7 +259,7 @@ function rbe(df; dvar::Symbol,
     df          = Vector{eltype(C)}(undef, p)
     t           = Vector{eltype(C)}(undef, p)
     pval        = Vector{eltype(C)}(undef, p)
-    gradc       = cmatg(Xv, Zv, θ, C; memopt = memopt)
+    gradc       = cmatg(data, θ, C; memopt = memopt)
 
 
     for i = 1:p
@@ -297,7 +307,9 @@ function rbe!(df; dvar::Symbol,
     init = [],
     postopt = false, vlm = 1.0, maxopttry = 50, rhoadjstep = 0.15,
     rholink = :psigmoid,
-    singlim = 1e-6)
+    singlim = 1e-6,
+    random = heterogeneousCompoundSymmetry,
+    repeated = varianceComponents)
 
 
     if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
@@ -322,7 +334,8 @@ function rbe!(df; dvar::Symbol,
     g_tol = g_tol, x_tol = x_tol, f_tol = f_tol, iterations = iterations,
     store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace,
     memopt = memopt, init = init, postopt = postopt, vlm = vlm, maxopttry = maxopttry, rhoadjstep = rhoadjstep,
-    rholink = rholink, singlim = singlim)
+    rholink = rholink, singlim = singlim,
+    random = random, repeated = repeated)
 end
 
 function fit!(rbe::RBE)
@@ -562,8 +575,9 @@ function optstat(rbe::RBE)
 end
 #-------------------------------------------------------------------------------
 function Base.show(io::IO, rbe::RBE)
-    rcoef = coefnames(rbe.rmodel);
-    θ     = theta(rbe)
+    rcoef  = coefnames(rbe.rmodel);
+    θ      = theta(rbe)
+    θ[1:4] = (θ[1:4]).^2
     print(io, "Bioequivalence Linear Mixed Effect Model (status:"); optstat(rbe) ? print(io,"converged") : printstyled(io, "not converged"; color = :red); println(io, ")")
     if !isposdef(Symmetric(rbe.result.H))
         printstyled(io, "Hessian not positive defined!"; color = :yellow)

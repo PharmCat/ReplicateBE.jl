@@ -168,7 +168,7 @@ end
     @test lsm[1][1]    ≈ 4.616254407007809     atol=1E-5
     @test lsm[2][1]    ≈ 0.08217365963420642   atol=1E-5
     =#
-    @test ReplicateBE.reml2(be, [0.1, 0.2, 0.3, 0.4, 1.0]) ≈ 357.238054967491   atol=1E-5
+    @test ReplicateBE.reml2(be, [sqrt(0.1), sqrt(0.2), sqrt(0.3), sqrt(0.4), 1.0]) ≈ 357.238054967491   atol=1E-5
     @test ReplicateBE.coefnum(be)      == 6
     @test ReplicateBE.reml2(be)        ≈ 329.25749377843044     atol=1E-5
     @test ReplicateBE.design(be).obs   == 256

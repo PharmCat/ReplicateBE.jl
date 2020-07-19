@@ -1,5 +1,7 @@
 - v1.0.9
-    * PDMats 0.10 
+    * PDMats 0.10
+    * CategoricalArrays 0.8
+    * Code cosmetics
 
 
 - v1.0.8

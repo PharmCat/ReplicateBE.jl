@@ -146,7 +146,11 @@ function randrbeds(n::Int, sequence::Vector,
     else
         rng = MersenneTwister()
     end
-
+    theta = sqrt.(copy(θintra))
+    append!(theta, θinter)
+    theta[3:4] = sqrt.(theta[3:4])
+    #θinter = sqrt.(θinter)
+    #θintra = sqrt.(θintra)
     r = n/sum(sequence)
     sn = Array{Int, 1}(undef, length(sequence))
     for i = 1:(length(sequence)-1)
@@ -163,7 +167,7 @@ function randrbeds(n::Int, sequence::Vector,
     end
     Zv = Array{Matrix, 1}(undef, sqnum)
     Vv = Array{Matrix, 1}(undef, sqnum)
-    G = gmat(θinter)
+    G = gmat(theta[3:5])
     for i = 1:size(design)[1]
         Z = Array{Int, 2}(undef, pnum, length(u))
         for c = 1:pnum
@@ -172,7 +176,7 @@ function randrbeds(n::Int, sequence::Vector,
             end
         end
         Zv[i] = Z
-        Vv[i] = vmat(G, rmat(θintra, Z), Z)
+        Vv[i] = vmat(G, rmat(theta[1:2], Z), Z)
     end
     Mv = Array{Array{Float64, 1}, 1}(undef, sqnum)
     for i = 1:sqnum

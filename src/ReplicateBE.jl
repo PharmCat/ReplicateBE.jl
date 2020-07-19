@@ -5,7 +5,7 @@
 
 module ReplicateBE
 
-using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlgebra, Random, PDMats, Optim, LineSearches, CategoricalArrays, Printf, StaticArrays
+using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlgebra, Random, PDMats, Optim, LineSearches, CategoricalArrays, Printf, StaticArrays, SparseArrays
 
     export rbe, rbe!, reml2, nobs, coef, stderror, dof, coefnum, fixed, theta, typeiii, design, show, confint, contrast, estimate, optstat, randrbeds, randrbetask
     import Base.show
@@ -19,6 +19,7 @@ const MEMOPT = true
 include("rbesettings.jl")
 include("rbetable.jl")
 include("memalloc.jl")
+include("corrstruct.jl")
 include("design.jl")
 include("randrbeds.jl")
 include("deprecated.jl")
@@ -26,6 +27,7 @@ include("rbe.jl")
 include("utils.jl")
 include("generalfunc.jl")
 include("algebra.jl")
+
 
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------

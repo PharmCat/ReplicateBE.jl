@@ -12,30 +12,10 @@ function sortsubjects(df::DataFrame, sbj::Symbol, X::Matrix, Z::Matrix, y::Vecto
     ya = Vector{Vector{eltype(y)}}(undef, length(u))
     for i = 1:length(u)
         v = findall(x->x==u[i], df[!, sbj])
-        #Xs = Vector{eltype(X)}(undef, 0)
-        #Zs = Vector{eltype(Z)}(undef, 0)
-        #ys = Vector{eltype(y)}(undef, 0)
-
-        #for r in v
-            #append!(Xs, X[r, :])
-            #append!(Zs, Z[r, :])
-            #push!(ys, y[r])
-        #end
         Xa[i] = view(X, v, :)
         Za[i] = view(Z, v, :)
         ya[i] = view(y, v)
-        #Xa[i] = Matrix(reshape(Xs, size(X)[2], :)')
-        #Za[i] = Matrix(reshape(Zs, size(Z)[2], :)')
-        #ya[i] = ys
     end
-    #=
-    for i = 1:length(u)
-        for c = 1:length(u)
-            if Za[i] == Za[c] && Za[i] !== Za[c] Za[i] = Za[c] end
-            if Xa[i] == Xa[c] && Xa[i] !== Xa[c] Xa[i] = Xa[c] end
-        end
-    end
-    =#
     return Xa, Za, ya
 end
 """

@@ -1,3 +1,11 @@
+function intravar(rbe::RBE)
+    terms = rbe.rmodel.f.rhs.terms[2].contrasts.termnames
+    θ     = theta(rbe)
+    return Dict(terms .=> θ[1:2])
+end
+
+#=
+
 """
 A' * B * A
 """
@@ -91,6 +99,8 @@ function termmodelleveln(MF::ModelFrame, symbol::Symbol)::Int
     id = findterm(MF, symbol)
     return length(MF.f.rhs.terms[id].contrasts.levels)
 end
+=#
+
 #=
 
 """

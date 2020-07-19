@@ -137,7 +137,7 @@ function rbe(df; dvar::Symbol,
     Z   = ModelMatrix(RMF).m
     p   = rank(X)
     zxr = rank(ModelMatrix(ModelFrame(@eval(@formula($dvar ~ $sequence + $period + $subject*$formulation)), df)).m)
-    y   = df[:, dvar]                                                           #Dependent variable
+    y   = df[!, dvar]                                                           #Dependent variable
     #Make pre located arrays with matrices for each subject
     Xv, Zv, yv = sortsubjects(df, subject, X, Z, y)
     n  = length(Xv)

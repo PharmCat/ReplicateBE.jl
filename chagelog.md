@@ -1,5 +1,6 @@
 - v1.0.9
-    * PDMats 0.10 
+    * PDMats 0.10
+    * Opimizations
 
 
 - v1.0.8

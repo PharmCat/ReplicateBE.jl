@@ -6,12 +6,12 @@
     Make X, Z matrices and vector y for each subject;
 """
 function sortsubjects(df::DataFrame, sbj::Symbol, X::Matrix, Z::Matrix, y::Vector)
-    u = unique(df[:, sbj])
+    u = unique(df[!, sbj])
     Xa = Vector{Matrix{eltype(X)}}(undef, length(u))
     Za = Vector{Matrix{eltype(Z)}}(undef, length(u))
     ya = Vector{Vector{eltype(y)}}(undef, length(u))
     for i = 1:length(u)
-        v = findall(x->x==u[i], df[:, sbj])
+        v = findall(x->x==u[i], df[!, sbj])
         Xs = Vector{eltype(X)}(undef, 0)
         Zs = Vector{eltype(Z)}(undef, 0)
         ys = Vector{eltype(y)}(undef, 0)

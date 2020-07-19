@@ -1,3 +1,7 @@
+- v1.0.9
+    * PDMats 0.10
+    * Opimizations
+
 
 - v1.0.8
     * Changing in RBE struct!
@@ -9,7 +13,7 @@
 
 - v1.0.7
     * settings: initial
-    * settings: initial 
+    * settings: initial
     * randrbeds "light" generation
     * optimizations
     * Distributions bump

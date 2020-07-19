@@ -6,30 +6,36 @@
     Make X, Z matrices and vector y for each subject;
 """
 function sortsubjects(df::DataFrame, sbj::Symbol, X::Matrix, Z::Matrix, y::Vector)
-    u = unique(df[:, sbj])
-    Xa = Vector{Matrix{eltype(X)}}(undef, length(u))
-    Za = Vector{Matrix{eltype(Z)}}(undef, length(u))
+    u = unique(df[!, sbj])
+    Xa = Vector{Matrix{eltype(y)}}(undef, length(u))
+    Za = Vector{Matrix{eltype(y)}}(undef, length(u))
     ya = Vector{Vector{eltype(y)}}(undef, length(u))
     for i = 1:length(u)
-        v = findall(x->x==u[i], df[:, sbj])
-        Xs = Vector{eltype(X)}(undef, 0)
-        Zs = Vector{eltype(Z)}(undef, 0)
-        ys = Vector{eltype(y)}(undef, 0)
-        for r in v
-            append!(Xs, X[r, :])
-            append!(Zs, Z[r, :])
-            push!(ys, y[r])
-        end
-        Xa[i] = Matrix(reshape(Xs, size(X)[2], :)')
-        Za[i] = Matrix(reshape(Zs, size(Z)[2], :)')
-        ya[i] = ys
+        v = findall(x->x==u[i], df[!, sbj])
+        #Xs = Vector{eltype(X)}(undef, 0)
+        #Zs = Vector{eltype(Z)}(undef, 0)
+        #ys = Vector{eltype(y)}(undef, 0)
+
+        #for r in v
+            #append!(Xs, X[r, :])
+            #append!(Zs, Z[r, :])
+            #push!(ys, y[r])
+        #end
+        Xa[i] = view(X, v, :)
+        Za[i] = view(Z, v, :)
+        ya[i] = view(y, v)
+        #Xa[i] = Matrix(reshape(Xs, size(X)[2], :)')
+        #Za[i] = Matrix(reshape(Zs, size(Z)[2], :)')
+        #ya[i] = ys
     end
+    #=
     for i = 1:length(u)
         for c = 1:length(u)
             if Za[i] == Za[c] && Za[i] !== Za[c] Za[i] = Za[c] end
             if Xa[i] == Xa[c] && Xa[i] !== Xa[c] Xa[i] = Xa[c] end
         end
     end
+    =#
     return Xa, Za, ya
 end
 """
@@ -52,13 +58,13 @@ end
 """
     R matrix (ForwardDiff+)
 """
-@inline function rmat(σ::Vector, Z::Matrix)::Matrix
+@inline function rmat(σ::Vector, Z::AbstractMatrix)::Matrix
     return Diagonal(Z*σ)
 end
 """
     R matrix  (memory pre-allocation)
 """
-@inline function rmat!(R::AbstractMatrix{T}, σ::Vector{T}, Z::Matrix{T}) where T <: AbstractFloat
+@inline function rmat!(R::AbstractMatrix{T}, σ::Vector{T}, Z::AbstractMatrix{T}) where T <: AbstractFloat
     copyto!(R, Diagonal(Z*σ))
     return
 end
@@ -67,17 +73,17 @@ end
 """
     Return variance-covariance matrix V
 """
-@inline function vmat(G::AbstractMatrix, R::AbstractMatrix, Z::Matrix)::AbstractMatrix
+@inline function vmat(G::AbstractMatrix, R::AbstractMatrix, Z::AbstractMatrix)::AbstractMatrix
     return  mulαβαtc(Z, G, R)
 end
-@inline function vmat!(V::Matrix{T}, G::AbstractMatrix{T}, R::AbstractMatrix{T}, Z::Matrix{T}, memc) where T <: AbstractFloat
+@inline function vmat!(V::Matrix{T}, G::AbstractMatrix{T}, R::AbstractMatrix{T}, Z::AbstractMatrix{T}, memc) where T <: AbstractFloat
     #copyto!(V, Z*G*Z')
     mul!(memc[size(Z)[1]], Z, G)
     mul!(V, memc[size(Z)[1]], Z')
     V .+= R
     return
 end
-function mvmat(G::AbstractMatrix, σ::Vector, Z::Matrix, cache)::Matrix
+function mvmat(G::AbstractMatrix, σ::Vector, Z::AbstractMatrix, cache)::Matrix
     #h = hash(tuple(σ, Z))
     if Z in keys(cache)
         return cache[Z]
@@ -88,7 +94,7 @@ function mvmat(G::AbstractMatrix, σ::Vector, Z::Matrix, cache)::Matrix
         return V
     end
 end
-function mvmat(G::AbstractMatrix, σ::Vector, Z::Matrix, mem, cache)::Matrix
+function mvmat(G::AbstractMatrix, σ::Vector, Z::AbstractMatrix, mem, cache)::Matrix
     #h = hash(tuple(σ, Z))
     if Z in keys(cache)
         return cache[Z]
@@ -100,7 +106,7 @@ function mvmat(G::AbstractMatrix, σ::Vector, Z::Matrix, mem, cache)::Matrix
     end
 end
 
-function mvmatall(G::AbstractMatrix, σ::Vector, Z::Matrix, mem, cache)
+function mvmatall(G::AbstractMatrix, σ::Vector, Z::AbstractMatrix, mem, cache)
     #h = hash(Z)
     #if h in keys(cache)
     if Z in keys(cache)
@@ -127,7 +133,7 @@ function mvmatall(G::AbstractMatrix, σ::Vector, Z::Matrix, mem, cache)
 end
 #println("θ₁: ", θ1, " θ₂: ",  θ2,  " θ₃: ", θ3)
 
-function minv(G::AbstractMatrix, σ::Vector, Z::Matrix, cache::Dict)::Matrix
+function minv(G::AbstractMatrix, σ::Vector, Z::AbstractMatrix, cache::Dict)::Matrix
     #h = hash(M)
     if Z in keys(cache)
         #return cache[h]

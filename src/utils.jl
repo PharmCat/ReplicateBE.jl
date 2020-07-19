@@ -164,55 +164,7 @@ function termmodellen(MF::ModelFrame, symbol::Symbol)::Int
     id = findterm(MF, symbol)
     return length(MF.f.rhs.terms[id].contrasts.termnames)
 end
-#Return term levels count by symbol
-function termmodelleveln(MF::ModelFrame, symbol::Symbol)::Int
-    id = findterm(MF, symbol)
-    return length(MF.f.rhs.terms[id].contrasts.levels)
-end
 #
-"""
-    lsm(rbe::RBE, L::Matrix)
-
-Deprecated.
-"""
-#Deprecated
-function lsm(rbe::RBE, L::Matrix)
-    lcl  = L*rbe.C*L'
-    return L*coef(rbe), sqrt.(lcl)
-end
-#
-"""
-    emm(obj::RBE, fm::Matrix, lm::Matrix)
-
-Matrix mask.
-"""
-function emm(obj::RBE, fm::Matrix, lm::Matrix)
-    La = lmean(obj::RBE)
-    L  = La .* fm
-    L  = L  .+ lm
-    return lsm(obj, Matrix(L))
-end
-#General mean contrast L matrix 1xp
-"""
-    lmean(obj::RBE)
-
-Return L-matrix for general mean.
-"""
-function lmean(obj::RBE)
-    L    = zeros(1, length(fixed(obj).est))
-    L[1] = 1.0
-    it    = 2
-    for f in obj.data.factors
-        term = findterm(obj.model, f)
-        len  = length(obj.model.f.rhs.terms[term].contrasts.termnames)
-        dev  = 1/length(obj.model.f.rhs.terms[term].contrasts.levels)
-        for i = 1:len
-            L[it] = dev
-            it  += 1
-        end
-    end
-    return L
-end
 #-------------------------------------------------------------------------------
 function checkdata(X::Matrix, Z::Matrix, Xv::Vector, Zv::Vector, y::Vector)
     if size(Z)[2] != 2 error("Size random effect matrix != 2. Not implemented yet!") end

@@ -15,6 +15,7 @@ include("testdata.jl")
     @test ReplicateBE.fixed(be).est[6]       ≈  -0.0791666 atol=1E-5
     @test ReplicateBE.fixed(be).se[6]        ≈   0.09037378448083119 atol=1E-5
     @test ReplicateBE.reml2(be) ≈   10.065238638105903 atol=1E-5
+    @test ReplicateBE.reml2(be, ReplicateBE.theta(be), memopt = false) ≈ ReplicateBE.reml2(be) atol=1E-8
     ci = confint(be, 0.1, expci = false, inv = false)
     @test ci[end][1]            ≈  -0.25791330363201714 atol=1E-5
     @test ci[end][2]            ≈   0.09957997029868393 atol=1E-5
@@ -531,5 +532,6 @@ end
         push!(out, ReplicateBE.theta(be)[5])
     end
     result             = ReplicateBE.simulation!(task, out, simfunc!; num = 10, seed = 10, verbose = false)
+    Base.show(io, result)
     @test mean(result) ≈ 0.8904498245891423
 end

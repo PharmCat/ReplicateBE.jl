@@ -1,9 +1,11 @@
+
+#=
 function intravar(rbe::RBE)
     terms = rbe.rmodel.f.rhs.terms[2].contrasts.termnames
     θ     = theta(rbe)
     return Dict(terms .=> θ[1:2])
 end
-
+=#
 #=
 
 """

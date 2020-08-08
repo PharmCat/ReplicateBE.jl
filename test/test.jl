@@ -44,7 +44,10 @@ include("testdata.jl")
     Base.show(io, ReplicateBE.fixed(be))
     #Base.show(io, be.typeiii)
     Base.show(io, ReplicateBE.estimate(be, [0 0 0 0 0 1]))
-
+    #StatsBase.coeftable
+    Base.show(io, coeftable(be))
+    #StatsBase.vcov
+    vcm = vcov(be)
     #POSTOPT+
     #Not recommended
     be = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10, postopt = true)
@@ -62,6 +65,8 @@ include("testdata.jl")
     #Experimental
     be  = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, rholink = :arctgsigmoid, singlim = 1e-4)
     ci2 = confint(be)[end]
+
+
 
 end
 

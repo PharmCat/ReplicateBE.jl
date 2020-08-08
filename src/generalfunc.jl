@@ -10,11 +10,11 @@ function sortsubjects(df::DataFrame, sbj::Symbol, X::Matrix, Z::Matrix, y::Vecto
     Xa = Vector{Matrix{eltype(y)}}(undef, length(u))
     Za = Vector{Matrix{eltype(y)}}(undef, length(u))
     ya = Vector{Vector{eltype(y)}}(undef, length(u))
-    for i = 1:length(u)
-        v = findall(x->x==u[i], df[!, sbj])
-        Xa[i] = view(X, v, :)
-        Za[i] = view(Z, v, :)
-        ya[i] = view(y, v)
+    @simd for i = 1:length(u)
+        @inbounds v = findall(x->x==u[i], df[!, sbj])
+        @inbounds Xa[i] = view(X, v, :)
+        @inbounds Za[i] = view(Z, v, :)
+        @inbounds ya[i] = view(y, v)
     end
     return Xa, Za, ya
 end

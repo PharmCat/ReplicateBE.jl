@@ -2,6 +2,8 @@
     * Cosmetics
     * StatsBase.coeftable
     * StatsBase.vcov
+    * Minor optimizations
+    * Some stable tests for 1.5
 
 - v1.0.9
     * PDMats 0.10

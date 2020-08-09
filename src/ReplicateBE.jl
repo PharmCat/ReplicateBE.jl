@@ -9,9 +9,9 @@ using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlge
 
     export rbe, rbe!, reml2, nobs, coef, stderror, dof, coefnum, fixed, theta, typeiii, design, show, confint, contrast, estimate, optstat, randrbeds, randrbetask
     import Base.show
-    import StatsBase.confint, StatsBase.coef, StatsBase.nobs, StatsBase.dof, StatsBase.stderror
+    import StatsBase.confint, StatsBase.coef, StatsBase.nobs, StatsBase.dof, StatsBase.stderror, StatsBase.coeftable, StatsBase.vcov
     import Statistics.var
-    #import StatsBase.vcov, StatsBase.coeftable, StatsBase.loglikelihood
+    #import StatsBase.loglikelihood
 
 const LOG2PI = log(2π)
 const MEMOPT = true

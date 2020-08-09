@@ -498,6 +498,28 @@ function calcci(x::T, se::T, df::T, alpha::T, expci::Bool) where T <: AbstractFl
         return exp(x-q*se), exp(x+q*se)
     end
 end
+"""
+    StatsBase.coeftable(rbe::RBE; level::Real=0.95, expci = false, inv = false)
+"""
+function StatsBase.coeftable(rbe::RBE; level::Real=0.95, expci = false, inv = false)
+    name  = coefnames(rbe.model)
+    est   = collect(rbe.result.fixed.est)
+    se    = collect(rbe.result.fixed.se)
+    df    = collect(rbe.result.fixed.df)
+    t     = collect(rbe.result.fixed.t)
+    p     = collect(rbe.result.fixed.p)
+    ci    = confint(rbe, 1.0 - level, expci = expci, inv = inv)
+    ll    = collect(map(x -> x[1], ci))
+    ul    = collect(map(x -> x[2], ci))
+    alpha = 1.0 - level
+    EstimateTable(name, est, se, df, t, p, ll, ul, alpha)
+end
+"""
+    StatsBase.vcov(rbe::RBE)
+"""
+function StatsBase.vcov(rbe::RBE)
+    return rbe.result.C
+end
 #-------------------------------------------------------------------------------
 """
     theta(rbe::RBE)

@@ -10,38 +10,18 @@ function sortsubjects(df::DataFrame, sbj::Symbol, X::Matrix, Z::Matrix, y::Vecto
     Xa = Vector{Matrix{eltype(y)}}(undef, length(u))
     Za = Vector{Matrix{eltype(y)}}(undef, length(u))
     ya = Vector{Vector{eltype(y)}}(undef, length(u))
-    for i = 1:length(u)
-        v = findall(x->x==u[i], df[!, sbj])
-        #Xs = Vector{eltype(X)}(undef, 0)
-        #Zs = Vector{eltype(Z)}(undef, 0)
-        #ys = Vector{eltype(y)}(undef, 0)
-
-        #for r in v
-            #append!(Xs, X[r, :])
-            #append!(Zs, Z[r, :])
-            #push!(ys, y[r])
-        #end
-        Xa[i] = view(X, v, :)
-        Za[i] = view(Z, v, :)
-        ya[i] = view(y, v)
-        #Xa[i] = Matrix(reshape(Xs, size(X)[2], :)')
-        #Za[i] = Matrix(reshape(Zs, size(Z)[2], :)')
-        #ya[i] = ys
+    @simd for i = 1:length(u)
+        @inbounds v = findall(x->x==u[i], df[!, sbj])
+        @inbounds Xa[i] = view(X, v, :)
+        @inbounds Za[i] = view(Z, v, :)
+        @inbounds ya[i] = view(y, v)
     end
-    #=
-    for i = 1:length(u)
-        for c = 1:length(u)
-            if Za[i] == Za[c] && Za[i] !== Za[c] Za[i] = Za[c] end
-            if Xa[i] == Xa[c] && Xa[i] !== Xa[c] Xa[i] = Xa[c] end
-        end
-    end
-    =#
     return Xa, Za, ya
 end
 """
     G matrix
 """
-@inline function gmat(σ::Vector)::AbstractMatrix
+@inline function gmat(σ::AbstractVector)::AbstractMatrix
     cov = sqrt(σ[1] * σ[2]) * σ[3]
     return Symmetric([σ[1] cov; cov σ[2]])
 end
@@ -58,7 +38,7 @@ end
 """
     R matrix (ForwardDiff+)
 """
-@inline function rmat(σ::Vector, Z::AbstractMatrix)::Matrix
+@inline function rmat(σ::AbstractVector, Z::AbstractMatrix)::Matrix
     return Diagonal(Z*σ)
 end
 """
@@ -106,7 +86,7 @@ function mvmat(G::AbstractMatrix, σ::Vector, Z::AbstractMatrix, mem, cache)::Ma
     end
 end
 
-function mvmatall(G::AbstractMatrix, σ::Vector, Z::AbstractMatrix, mem, cache)
+function mvmatall(G::AbstractMatrix, σ::AbstractVector, Z::AbstractMatrix, mem, cache)
     #h = hash(Z)
     #if h in keys(cache)
     if Z in keys(cache)
@@ -169,21 +149,23 @@ function reml2(data::RBEDataStructure, θ, β::Vector; memopt::Bool = true)
     #memory optimizations to reduse allocations (cache rebuild)
     #empty!(data.mem.dict)
     rebuildcache(data, promote_type(eltype(data.yv[1]), eltype(θ)))
-    cache     = Dict{Matrix, Tuple{Matrix, Matrix, Number}}()
+    cache     = Dict{Matrix, Tuple{Matrix, Matrix, eltype(θ)}}()
     #cache     = data.mem.dict
     #---------------------------------------------------------------------------
-    G         = gmat(θ[3:5])
+    G         = gmat(view(θ, 3:5))
     θ₁        = 0
     θ₂        = zeros(promote_type(eltype(data.yv[1]), eltype(θ)), data.p, data.p)
     θ₃        = 0
     V⁻¹       = nothing
-    for i = 1:data.n
+    #mVec      = pmap(x -> mvmatall(G, view(θ,1:2), x, first(data.mem.svec), cache), data.Zv)
+    @simd for i = 1:data.n
         if MEMOPT && memopt
 
-            V, V⁻¹, log│V│         = mvmatall(G, θ[1:2], data.Zv[i], first(data.mem.svec), cache)
+            V, V⁻¹, log│V│         = mvmatall(G, view(θ,1:2), data.Zv[i], first(data.mem.svec), cache)
+            #V, V⁻¹, log│V│         =mVec[i]
             θ₁                    += log│V│
         else
-            @inbounds V     = vmat(G, rmat(θ[1:2], data.Zv[i]), data.Zv[i])
+            @inbounds V     = vmat(G, rmat(view(θ,1:2), data.Zv[i]), data.Zv[i])
             V⁻¹             = invchol(V)
             θ₁             += logdet(V)
         end
@@ -209,7 +191,7 @@ function reml2b(data::RBEDataStructure, θ; memopt::Bool = true)
     rebuildcache(data, promote_type(eltype(data.yv[1]), eltype(θ)))
     cache     = Dict()
     #---------------------------------------------------------------------------
-    G         = gmat(θ[3:5])
+    G         = gmat(view(θ,3:5))
     V⁻¹       = Vector{Matrix{eltype(θ)}}(undef, data.n)                        # Vector of  V⁻¹ matrices
     V         = nothing
     log│V│    = nothing                                                         # Vector log determinant of V matrix
@@ -218,12 +200,14 @@ function reml2b(data::RBEDataStructure, θ; memopt::Bool = true)
     θ₃        = 0
     βm        = zeros(promote_type(eltype(first(data.yv)), eltype(θ)), data.p)
     β         = zeros(promote_type(eltype(first(data.yv)), eltype(θ)), data.p)
-    for i = 1:data.n
+    #mVec      = map(x -> mvmatall(G, θ[1:2], x, first(data.mem.svec), cache), data.Zv)
+    @simd for i = 1:data.n
         if MEMOPT && memopt
-            @inbounds V, V⁻¹[i], log│V│ = mvmatall(G, θ[1:2], data.Zv[i], first(data.mem.svec), cache)
+            @inbounds V, V⁻¹[i], log│V│ = mvmatall(G, view(θ,1:2), data.Zv[i], first(data.mem.svec), cache)
+            #V, V⁻¹[i], log│V│           = mVec[i]
             θ₁                         += log│V│
         else
-            @inbounds R        = rmat(θ[1:2], data.Zv[i])
+            @inbounds R        = rmat(view(θ,1:2), data.Zv[i])
             @inbounds V        = vmat(G, R, data.Zv[i])
             @inbounds V⁻¹[i]   = invchol(V)
             θ₁                += logdet(V)

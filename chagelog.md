@@ -1,7 +1,13 @@
+- v1.0.10
+    * Cosmetics
+    * StatsBase.coeftable
+    * StatsBase.vcov
+    * Minor optimizations
+    * Some stable tests for 1.5
+
 - v1.0.9
     * PDMats 0.10
     * Opimizations
-
 
 - v1.0.8
     * Changing in RBE struct!
@@ -20,8 +26,6 @@
     * "generalized" simulation
     * Optim 0.20
     * Julia 1.3
-
-
 
 - v1.0.6
     * many optimizations
@@ -58,7 +62,6 @@
     * theta() - return final estimates
 
 - v1.0.0 (unstable)
-
     * validation
     * test procedures
     * rho & df "problem" solved
@@ -70,7 +73,6 @@
     * documuntation
 
 - v0.2.0
-
     * bugfix
     * optimization
     * documentation
@@ -89,7 +91,6 @@
     * optimization, bugfix, cosmetics
 
 - v0.1.3
-
     * Performance optimization
     * Random DataSet function randrbeds()
     * Increase coverage
@@ -97,7 +98,6 @@
     * Code cosmetics
 
 - v0.1.2
-
     * change optimization algorithm
     * reml2(::RBE, Array{::Float64,1}) function for -REML2 calculation
     * contrast, lsm, emm, lmean utils
@@ -119,7 +119,5 @@
     * Show result
     * Bugfix
 
-
-
 - v0.1.0
-  * Initial alpha version
+    * Initial alpha version

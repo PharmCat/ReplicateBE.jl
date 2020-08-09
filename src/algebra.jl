@@ -46,7 +46,7 @@ end
 A' * B * A -> +θ (cache)
 A' * B * C -> +β
 """
-function mulθβinc!(θ, β, A::AbstractMatrix, B::AbstractMatrix, C::Vector, c)
+function mulθβinc!(θ, β, A::AbstractMatrix, B::AbstractMatrix, C::AbstractVector, c)
     q = size(B, 1)
     p = size(A, 2)
     for i = 1:p
@@ -109,7 +109,8 @@ function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix)
         end
     end
     mx .+= C
-
+    #Symmetric(mx)
+    #SMatrix{p,p}(mx)
 end
 """
 A * B * A' + C (cache)

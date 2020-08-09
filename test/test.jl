@@ -534,8 +534,8 @@ end
         seed = 10001,
         dropobs = 2,
     )
-    pow = ReplicateBE.simulation(task; io = io, num = 100, seed = 1234, verbose = true)
-    @test pow.result == 0.04
+    pow = ReplicateBE.simulation(task; io = io, num = 1007, seed = 1234, verbose = true)
+    @test pow.result ≈ 0.06 atol=1E-2
 
     #Custom simulation
 
@@ -550,5 +550,5 @@ end
     end
     result             = ReplicateBE.simulation!(task, out, simfunc!; num = 10, seed = 10, verbose = false)
     Base.show(io, result)
-    @test mean(result) ≈ 0.8904498245891423
+    @test mean(result) ≈ 0.8904498245891423 atol=1E-2
 end

@@ -7,9 +7,9 @@
 """
 function sortsubjects(df::DataFrame, sbj::Symbol, X::Matrix, Z::Matrix, y::Vector)
     u = unique(df[!, sbj])
-    Xa = Vector{Matrix{eltype(y)}}(undef, length(u))
-    Za = Vector{Matrix{eltype(y)}}(undef, length(u))
-    ya = Vector{Vector{eltype(y)}}(undef, length(u))
+    Xa = Vector{AbstractMatrix}(undef, length(u))
+    Za = Vector{AbstractMatrix}(undef, length(u))
+    ya = Vector{AbstractVector}(undef, length(u))
     @simd for i = 1:length(u)
         @inbounds v = findall(x->x==u[i], df[!, sbj])
         @inbounds Xa[i] = view(X, v, :)
@@ -113,7 +113,7 @@ function mvmatall(G::AbstractMatrix, σ::AbstractVector, Z::AbstractMatrix, mem,
         end
         #V⁻¹  = inv(V)
         log│V│   = logdet(V)
-        cache[Z] = (Matrix(V), Matrix(V⁻¹), log│V│)
+        cache[Z] = (Matrix(V⁻¹), log│V│)
         return cache[Z]
     end
 end
@@ -155,7 +155,7 @@ function reml2(data::RBEDataStructure, θ, β::Vector; memopt::Bool = true)
     #memory optimizations to reduse allocations (cache rebuild)
     #empty!(data.mem.dict)
     rebuildcache(data, promote_type(eltype(data.yv[1]), eltype(θ)))
-    cache     = Dict{Matrix, Tuple{Matrix, Matrix, eltype(θ)}}()
+    cache     = Dict{Matrix, Tuple{AbstractMatrix, eltype(θ)}}()
     #cache     = data.mem.dict
     #---------------------------------------------------------------------------
     G         = gmat(view(θ, 3:5))
@@ -167,7 +167,7 @@ function reml2(data::RBEDataStructure, θ, β::Vector; memopt::Bool = true)
     @simd for i = 1:data.n
         if MEMOPT && memopt
 
-            V, V⁻¹, log│V│         = mvmatall(G, view(θ,1:2), data.Zv[i], first(data.mem.svec), cache)
+            V⁻¹, log│V│         = mvmatall(G, view(θ,1:2), data.Zv[i], first(data.mem.svec), cache)
             #V, V⁻¹, log│V│         =mVec[i]
             θ₁                    += log│V│
         else
@@ -176,7 +176,7 @@ function reml2(data::RBEDataStructure, θ, β::Vector; memopt::Bool = true)
             θ₁             += logdet(V)
         end
         #-----------------------------------------------------------------------
-        #θ2 += Xv[i]'*iV*Xv[i]
+        #θ₂ += Xv[i]'*iV*Xv[i]
         @inbounds mulαtβαinc!(θ₂, data.Xv[i], V⁻¹, first(data.mem.svec))
         #-----------------------------------------------------------------------
         #r    = yv[i] - Xv[i] * β
@@ -195,11 +195,11 @@ end
 function reml2b(data::RBEDataStructure, θ; memopt::Bool = true)
 
     rebuildcache(data, promote_type(eltype(data.yv[1]), eltype(θ)))
-    cache     = Dict()
+    cache     = Dict{Matrix, Tuple{AbstractMatrix, eltype(θ)}}()
     #---------------------------------------------------------------------------
     G         = gmat(view(θ,3:5))
-    V⁻¹       = Vector{AbstractMatrix{eltype(θ)}}(undef, data.n)                        # Vector of  V⁻¹ matrices
-    V         = nothing
+    V⁻¹       = Vector{AbstractMatrix}(undef, data.n)                        # Vector of  V⁻¹ matrices
+    #V         = nothing
     log│V│    = nothing                                                         # Vector log determinant of V matrix
     θ₁        = 0
     θ₂        = zeros(promote_type(eltype(first(data.yv)), eltype(θ)), data.p, data.p)
@@ -209,7 +209,7 @@ function reml2b(data::RBEDataStructure, θ; memopt::Bool = true)
     #mVec      = map(x -> mvmatall(G, θ[1:2], x, first(data.mem.svec), cache), data.Zv)
     @simd for i = 1:data.n
         if MEMOPT && memopt
-            @inbounds V, V⁻¹[i], log│V│ = mvmatall(G, view(θ,1:2), data.Zv[i], first(data.mem.svec), cache)
+            @inbounds V⁻¹[i], log│V│ = mvmatall(G, view(θ,1:2), data.Zv[i], first(data.mem.svec), cache)
             #V, V⁻¹[i], log│V│           = mVec[i]
             θ₁                         += log│V│
         else
@@ -219,16 +219,16 @@ function reml2b(data::RBEDataStructure, θ; memopt::Bool = true)
             θ₁                += logdet(V)
         end
         #-----------------------------------------------------------------------
-        #θ₂ += Xv[i]'*iVv[i]*Xv[i]
-        #βm += Xv[i]'*iVv[i]*yv[i]
+        #θ₂ .+= data.Xv[i]'*V⁻¹[i]*data.Xv[i]
+        #βm .+= data.Xv[i]'*V⁻¹[i]*data.yv[i]
         mulθβinc!(θ₂, βm, data.Xv[i], V⁻¹[i], data.yv[i], first(data.mem.svec))
         #-----------------------------------------------------------------------
     end
-    #if data.p <= 14
-        #mul!(β, Matrix(inv(SMatrix{data.p, data.p}(θ₂))), βm)
-    #else
+    if data.p <= 14
+        mul!(β, Matrix(inv(SMatrix{data.p, data.p}(θ₂))), βm)
+    else
         mul!(β, inv(θ₂), βm)
-    #end
+    end
     for i = 1:data.n
         # r    = yv[i] - Xv[i] * β
         # θ3  += r' * iVv[i] * r

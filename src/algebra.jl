@@ -17,7 +17,7 @@ function mulαtβαinc!(θ, A::AbstractMatrix, B::AbstractMatrix, c)
             end
         end
     end
-    θ
+    #θ
 end
 """
 A' * B * A -> + θ
@@ -39,7 +39,7 @@ function mulαtβαinc!(θ, A::AbstractMatrix, B::AbstractMatrix)
             end
         end
     end
-    θ
+    #θ
 end
 #-------------------------------------------------------------------------------
 """
@@ -63,7 +63,7 @@ function mulθβinc!(θ, β, A::AbstractMatrix, B::AbstractMatrix, C::AbstractVe
             end
         end
     end
-    θ, β
+    #θ, β
 end
 #-------------------------------------------------------------------------------
 """

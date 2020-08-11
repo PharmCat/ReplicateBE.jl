@@ -306,12 +306,14 @@ end
     @test ReplicateBE.stderror(be)[end]     ≈ 0.1096846988112254   atol=1E-5
     ci = confint(be, 0.1, expci = true)
     #1.0.4
-    @test ci[end][1]                        ≈ 0.8719537380504332   atol=1E-5
-    @test ci[end][2]                        ≈ 1.2621358539962937   atol=1E-5
+    #@test ci[end][1]                        ≈ 0.8719537380504332   atol=1E-5
+    #@test ci[end][2]                        ≈ 1.2621358539962937   atol=1E-5
     #1.0.5
     #@test ci[end][1]                        ≈ 0.8719023753585434   atol=1E-3
     #@test ci[end][2]                        ≈ 1.2622102048603623   atol=1E-3
-
+    #1.0.11
+    @test ci[end][1]                        ≈ 0.8719313261195931   atol=1E-5
+    @test ci[end][2]                        ≈ 1.2621682956584102   atol=1E-5
 
     #DF contain 74
     #DF contain form 92

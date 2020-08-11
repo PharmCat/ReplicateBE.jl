@@ -96,19 +96,25 @@ function mvmatall(G::AbstractMatrix, σ::AbstractVector, Z::AbstractMatrix, mem,
         V   = mulαβαtc(Z, G, Diagonal(Z*σ), mem)
         #V   = Z * G * Z' + Diagonal(Z*σ)
         V⁻¹ = nothing
-        try
-            V⁻¹  = invchol(V)
-        catch e
-            if typeof(e) <: PosDefException
-                V⁻¹  = inv(V)
-            else
-                throw(e)
+        if size(V, 1) <= 14
+            V   = SHermitianCompact(SMatrix{size(V, 1),size(V, 1)}(V))
+            #V⁻¹ = Matrix(inv(SMatrix{size(V, 1),size(V, 1)}(V)))
+            V⁻¹ = inv(V)
+        else
+            try
+                V⁻¹  = invchol(V)
+            catch e
+                if typeof(e) <: PosDefException
+                    V⁻¹  = inv(V)
+                else
+                    throw(e)
+                end
             end
         end
         #V⁻¹  = inv(V)
         log│V│   = logdet(V)
-        cache[Z] = (V, V⁻¹, log│V│)
-        return V, V⁻¹, log│V│
+        cache[Z] = (Matrix(V), Matrix(V⁻¹), log│V│)
+        return cache[Z]
     end
 end
 #println("θ₁: ", θ1, " θ₂: ",  θ2,  " θ₃: ", θ3)
@@ -192,7 +198,7 @@ function reml2b(data::RBEDataStructure, θ; memopt::Bool = true)
     cache     = Dict()
     #---------------------------------------------------------------------------
     G         = gmat(view(θ,3:5))
-    V⁻¹       = Vector{Matrix{eltype(θ)}}(undef, data.n)                        # Vector of  V⁻¹ matrices
+    V⁻¹       = Vector{AbstractMatrix{eltype(θ)}}(undef, data.n)                        # Vector of  V⁻¹ matrices
     V         = nothing
     log│V│    = nothing                                                         # Vector log determinant of V matrix
     θ₁        = 0
@@ -213,12 +219,16 @@ function reml2b(data::RBEDataStructure, θ; memopt::Bool = true)
             θ₁                += logdet(V)
         end
         #-----------------------------------------------------------------------
-        #θ2 += Xv[i]'*iVv[i]*Xv[i]
+        #θ₂ += Xv[i]'*iVv[i]*Xv[i]
         #βm += Xv[i]'*iVv[i]*yv[i]
         mulθβinc!(θ₂, βm, data.Xv[i], V⁻¹[i], data.yv[i], first(data.mem.svec))
         #-----------------------------------------------------------------------
     end
-    mul!(β, inv(θ₂), βm)
+    #if data.p <= 14
+        #mul!(β, Matrix(inv(SMatrix{data.p, data.p}(θ₂))), βm)
+    #else
+        mul!(β, inv(θ₂), βm)
+    #end
     for i = 1:data.n
         # r    = yv[i] - Xv[i] * β
         # θ3  += r' * iVv[i] * r

@@ -537,6 +537,9 @@ end
     pow = ReplicateBE.simulation(task; io = io, num = 1007, seed = 1234, verbose = true)
     @test pow.result ≈ 0.06 atol=1E-2
 
+    pow = ReplicateBE.simulation(task; io = io, num = 100, seed = 1234, verbose = true, rsabe = true)
+    #@test pow.result ≈ 0.06 atol=1E-2
+
     #Custom simulation
 
     task = ReplicateBE.randrbetask(;n=24,

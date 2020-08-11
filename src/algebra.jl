@@ -1,7 +1,7 @@
 """
 A' * B * A -> + θ (cache)
 """
-function mulαtβαinc!(θ, A::AbstractMatrix, B::Matrix, c)
+function mulαtβαinc!(θ, A::AbstractMatrix, B::AbstractMatrix, c)
     q = size(B, 1)
     p = size(A, 2)
     for i = 1:p
@@ -69,7 +69,7 @@ end
 """
 (y - X * β)' * V * (y - X * β) (cache)
 """
-function mulθ₃(y::Vector, X::AbstractMatrix, β::Vector, V::AbstractMatrix, c)
+function mulθ₃(y::AbstractVector, X::AbstractMatrix, β::AbstractVector, V::AbstractMatrix, c)
     q = size(V, 1)
     p = size(X, 2)
     θ = 0
@@ -138,7 +138,7 @@ function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, c:
 
 end
 
-function invchol(M)
+function invchol(M::AbstractMatrix)
     q  = size(M, 1)
     v  = zeros(eltype(M), q, q)
     if q == 1

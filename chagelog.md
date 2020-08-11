@@ -1,3 +1,8 @@
+- v1.0.11
+    * Optimizations
+    * Cosmetics
+    * PDMats exclude
+
 - v1.0.10
     * Cosmetics
     * StatsBase.coeftable

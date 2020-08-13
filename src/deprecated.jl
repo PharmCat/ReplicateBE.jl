@@ -1,4 +1,65 @@
+"""
+    G matrix  (memory pre-allocation)
+"""
+@inline function gmat!(G::Matrix{T}, σ::Vector) where T <: AbstractFloat
+    G[1, 1] = σ[1]
+    G[2, 2] = σ[2]
+    G[1, 2] = G[2, 1] = sqrt(σ[1] * σ[2]) * σ[3]
+    return
+end
 
+"""
+    R matrix  (memory pre-allocation)
+"""
+@inline function rmat!(R::AbstractMatrix{T}, σ::Vector{T}, Z::AbstractMatrix{T}) where T <: AbstractFloat
+    copyto!(R, Diagonal(Z*σ))
+    return
+end
+
+@inline function vmat!(V::Matrix{T}, G::AbstractMatrix{T}, R::AbstractMatrix{T}, Z::AbstractMatrix{T}, memc) where T <: AbstractFloat
+    #copyto!(V, Z*G*Z')
+    mul!(memc[size(Z)[1]], Z, G)
+    mul!(V, memc[size(Z)[1]], Z')
+    V .+= R
+    return
+end
+@inline function vmatupdate!(Vv::Vector, G::AbstractMatrix, σ::AbstractVector, Zv::AbstractVector, mem)
+    for i = 1:length(Vv)
+        mulαβαtcupd!(Vv[i], Zv[i], G, σ, mem)
+    end
+end
+function mvmat(G::AbstractMatrix, σ::Vector, Z::AbstractMatrix, cache)::Matrix
+    if Z in keys(cache)
+        return cache[Z]
+    else
+        V  = mulαβαtc(Z, G, Diagonal(Z*σ))
+        #V   = Z * G * Z' + Diagonal(Z*σ)
+        cache[Z] = V
+        return V
+    end
+end
+function mvmat(G::AbstractMatrix, σ::Vector, Z::AbstractMatrix, mem, cache)::Matrix
+    if Z in keys(cache)
+        return cache[Z]
+    else
+        V  = mulαβαtc(Z, G, Diagonal(Z*σ), mem)
+        #V   = Z * G * Z' + Diagonal(Z*σ)
+        cache[Z] = V
+        return V
+    end
+end
+"""
+    log det of matrix, cache
+"""
+function mlogdet(M::Matrix, cache::Dict)
+    if M in keys(cache)
+        return cache[M]
+    else
+        iM = logdet(M)
+        cache[M] = iM
+        return iM
+    end
+end
 #=
 function intravar(rbe::RBE)
     terms = rbe.rmodel.f.rhs.terms[2].contrasts.termnames

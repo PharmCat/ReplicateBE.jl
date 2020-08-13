@@ -312,8 +312,11 @@ end
     #@test ci[end][1]                        ≈ 0.8719023753585434   atol=1E-3
     #@test ci[end][2]                        ≈ 1.2622102048603623   atol=1E-3
     #1.0.11
-    @test ci[end][1]                        ≈ 0.8719313261195931   atol=1E-5
-    @test ci[end][2]                        ≈ 1.2621682956584102   atol=1E-5
+    #@test ci[end][1]                        ≈ 0.8719313261195931   atol=1E-5
+    #@test ci[end][2]                        ≈ 1.2621682956584102   atol=1E-5
+    #J1.4.0
+    @test ci[end][1]                        ≈ 0.8719537380504332   atol=1E-4
+    @test ci[end][2]                        ≈ 1.2621358539962937   atol=1E-4
 
     #DF contain 74
     #DF contain form 92
@@ -431,7 +434,7 @@ end
     #v1.0.5
     #@test ci[end][1]                        ≈ 0.8293880338983111             atol=1E-3
     #@test ci[end][2]                        ≈ 1.1480342197874598             atol=1E-3
-
+    #1.4.0
 
     #DF contain 35
     #22
@@ -449,6 +452,7 @@ end
     #v1.0.5
     #@test ci[end][1]                        ≈ 0.9064394831113237             atol=1E-3
     #@test ci[end][2]                        ≈ 1.3055658048846954             atol=1E-3
+    #1.4.0
 
     #DF contain 32
 

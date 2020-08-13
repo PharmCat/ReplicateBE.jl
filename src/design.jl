@@ -12,7 +12,12 @@ struct RBEDataStructure
 end
 
 function rebuildcache(data, type)
-        data.mem.svec[1] = zeros(type, data.maxobs)
+        if !(eltype(data.mem.svec[1]) <: type)
+            data.mem.svec[1] = zeros(type, data.maxobs)
+            for i = 1:data.maxobs
+                data.mem.mvec[i] = zeros(type, i, i)
+            end
+        end
 end
 
 struct RBEResults{T <: AbstractFloat}

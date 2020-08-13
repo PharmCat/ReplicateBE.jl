@@ -25,15 +25,7 @@ end
     cov = sqrt(σ[1] * σ[2]) * σ[3]
     return Symmetric([σ[1] cov; cov σ[2]])
 end
-"""
-    G matrix  (memory pre-allocation)
-"""
-@inline function gmat!(G::Matrix{T}, σ::Vector) where T <: AbstractFloat
-    G[1, 1] = σ[1]
-    G[2, 2] = σ[2]
-    G[1, 2] = G[2, 1] = sqrt(σ[1] * σ[2]) * σ[3]
-    return
-end
+
 
 """
     R matrix (ForwardDiff+)
@@ -41,13 +33,7 @@ end
 @inline function rmat(σ::AbstractVector, Z::AbstractMatrix)::Matrix
     return Diagonal(Z*σ)
 end
-"""
-    R matrix  (memory pre-allocation)
-"""
-@inline function rmat!(R::AbstractMatrix{T}, σ::Vector{T}, Z::AbstractMatrix{T}) where T <: AbstractFloat
-    copyto!(R, Diagonal(Z*σ))
-    return
-end
+
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 """
@@ -56,46 +42,16 @@ end
 @inline function vmat(G::AbstractMatrix, R::AbstractMatrix, Z::AbstractMatrix)::AbstractMatrix
     return  mulαβαtc(Z, G, R)
 end
-@inline function vmat!(V::Matrix{T}, G::AbstractMatrix{T}, R::AbstractMatrix{T}, Z::AbstractMatrix{T}, memc) where T <: AbstractFloat
-    #copyto!(V, Z*G*Z')
-    mul!(memc[size(Z)[1]], Z, G)
-    mul!(V, memc[size(Z)[1]], Z')
-    V .+= R
-    return
-end
-function mvmat(G::AbstractMatrix, σ::Vector, Z::AbstractMatrix, cache)::Matrix
-    #h = hash(tuple(σ, Z))
-    if Z in keys(cache)
-        return cache[Z]
-    else
-        V  = mulαβαtc(Z, G, Diagonal(Z*σ))
-        #V   = Z * G * Z' + Diagonal(Z*σ)
-        cache[Z] = V
-        return V
-    end
-end
-function mvmat(G::AbstractMatrix, σ::Vector, Z::AbstractMatrix, mem, cache)::Matrix
-    #h = hash(tuple(σ, Z))
-    if Z in keys(cache)
-        return cache[Z]
-    else
-        V  = mulαβαtc(Z, G, Diagonal(Z*σ), mem)
-        #V   = Z * G * Z' + Diagonal(Z*σ)
-        cache[Z] = V
-        return V
-    end
-end
-
+"""
+    Return logdet and inverce of variance-covariance matrix V
+"""
 function mvmatall(G::AbstractMatrix, σ::AbstractVector, Z::AbstractMatrix, mem, cache)
-    #h = hash(Z)
-    #if h in keys(cache)
     if Z in keys(cache)
-        #return cache[h]
         return cache[Z]
     else
-        V   = mulαβαtc(Z, G, Diagonal(Z*σ), mem)
+        V = mulαβαtcupd!(mem.mvec[size(Z, 1)], Z, G, σ, first(mem.svec))
+        #V   = mulαβαtc(Z, G, σ, first(mem.svec))
         #V   = Z * G * Z' + Diagonal(Z*σ)
-        V⁻¹ = nothing
         if size(V, 1) <= 14
             V   = SHermitianCompact(SMatrix{size(V, 1),size(V, 1)}(V))
             #V⁻¹ = Matrix(inv(SMatrix{size(V, 1),size(V, 1)}(V)))
@@ -111,7 +67,6 @@ function mvmatall(G::AbstractMatrix, σ::AbstractVector, Z::AbstractMatrix, mem,
                 end
             end
         end
-        #V⁻¹  = inv(V)
         log│V│   = logdet(V)
         cache[Z] = (Matrix(V⁻¹), log│V│)
         return cache[Z]
@@ -120,31 +75,31 @@ end
 #println("θ₁: ", θ1, " θ₂: ",  θ2,  " θ₃: ", θ3)
 
 function minv(G::AbstractMatrix, σ::Vector, Z::AbstractMatrix, cache::Dict)::Matrix
-    #h = hash(M)
     if Z in keys(cache)
-        #return cache[h]
         return cache[Z]
     else
         V    = mulαβαtc(Z, G, Diagonal(Z*σ))
         #V   = Z * G * Z' + Diagonal(Z*σ)
         V⁻¹  = invchol(V)
-        #V⁻¹  = inv(V)
-        #ldV = logdet(V)
         cache[Z] = V⁻¹
         return V⁻¹
     end
 end
-
-function mlogdet(M::Matrix, cache::Dict)
-    #h = hash(M)
-    if M in keys(cache)
-        return cache[M]
+function minv(V::T, cache::Dict) where T <: AbstractMatrix
+    if V in keys(cache)
+        return cache[V]
     else
-        iM = logdet(M)
-        cache[M] = iM
-        return iM
+        if size(V, 1) <= 14
+            V⁻¹  = Matrix(inv(SMatrix{size(V, 1), size(V, 2)}(V)))
+        else
+            V⁻¹  = invchol(V)
+        end
+        cache[V] = V⁻¹
+        return V⁻¹
     end
 end
+
+
 #-------------------------------------------------------------------------------
 #             REML FOR OPT ALGORITHM
 #-------------------------------------------------------------------------------
@@ -153,22 +108,17 @@ end
 """
 function reml2(data::RBEDataStructure, θ, β::Vector; memopt::Bool = true)
     #memory optimizations to reduse allocations (cache rebuild)
-    #empty!(data.mem.dict)
-    rebuildcache(data, promote_type(eltype(data.yv[1]), eltype(θ)))
+    rebuildcache(data, promote_type(eltype(first(data.yv)), eltype(θ)))
     cache     = Dict{Matrix, Tuple{AbstractMatrix, eltype(θ)}}()
-    #cache     = data.mem.dict
     #---------------------------------------------------------------------------
     G         = gmat(view(θ, 3:5))
     θ₁        = 0
     θ₂        = zeros(promote_type(eltype(data.yv[1]), eltype(θ)), data.p, data.p)
     θ₃        = 0
-    V⁻¹       = nothing
-    #mVec      = pmap(x -> mvmatall(G, view(θ,1:2), x, first(data.mem.svec), cache), data.Zv)
+    #V⁻¹       = nothing
     @simd for i = 1:data.n
         if MEMOPT && memopt
-
-            V⁻¹, log│V│         = mvmatall(G, view(θ,1:2), data.Zv[i], first(data.mem.svec), cache)
-            #V, V⁻¹, log│V│         =mVec[i]
+            V⁻¹, log│V│         = mvmatall(G, view(θ,1:2), data.Zv[i], data.mem, cache)
             θ₁                    += log│V│
         else
             @inbounds V     = vmat(G, rmat(view(θ,1:2), data.Zv[i]), data.Zv[i])
@@ -193,24 +143,21 @@ function reml2bfd(data::RBEDataStructure, θ; memopt::Bool = true)
     return reml2b(data, θ; memopt = memopt)[1]
 end
 function reml2b(data::RBEDataStructure, θ; memopt::Bool = true)
-
-    rebuildcache(data, promote_type(eltype(data.yv[1]), eltype(θ)))
+    rebuildcache(data, promote_type(eltype(first(data.yv)), eltype(θ)))
     cache     = Dict{Matrix, Tuple{AbstractMatrix, eltype(θ)}}()
     #---------------------------------------------------------------------------
-    G         = gmat(view(θ,3:5))
+    G         = gmat(view(θ, 3:5))
     V⁻¹       = Vector{AbstractMatrix}(undef, data.n)                        # Vector of  V⁻¹ matrices
     #V         = nothing
-    log│V│    = nothing                                                         # Vector log determinant of V matrix
+    #log│V│    = nothing                                                         # Vector log determinant of V matrix
     θ₁        = 0
     θ₂        = zeros(promote_type(eltype(first(data.yv)), eltype(θ)), data.p, data.p)
     θ₃        = 0
     βm        = zeros(promote_type(eltype(first(data.yv)), eltype(θ)), data.p)
     β         = zeros(promote_type(eltype(first(data.yv)), eltype(θ)), data.p)
-    #mVec      = map(x -> mvmatall(G, θ[1:2], x, first(data.mem.svec), cache), data.Zv)
     @simd for i = 1:data.n
         if MEMOPT && memopt
-            @inbounds V⁻¹[i], log│V│ = mvmatall(G, view(θ,1:2), data.Zv[i], first(data.mem.svec), cache)
-            #V, V⁻¹[i], log│V│           = mVec[i]
+            @inbounds V⁻¹[i], log│V│ = mvmatall(G, view(θ,1:2), data.Zv[i], data.mem, cache)
             θ₁                         += log│V│
         else
             @inbounds R        = rmat(view(θ,1:2), data.Zv[i])
@@ -262,7 +209,6 @@ function cmatvec(Xv::Vector, Zv::Vector, θ; memopt::Bool = true)
     G     = gmat(θ[3:5])
     C     = zeros(promote_type(eltype(Zv[1]), eltype(θ)), p, p)
     cache     = Dict()
-    #cachem    = Dict()
     for i = 1:length(Xv)
         if memopt
             V⁻¹   = minv(G, θ[1:2], Zv[i], cache)

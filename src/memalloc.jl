@@ -1,8 +1,11 @@
 struct MemCache
     svec::Vector{Vector}
+    mvec::Vector{Matrix}
     #dict::Dict
     function MemCache(maxobs)
-        svec  = Vector{Vector}(undef, 1)
-        new(svec, #=Dict{Matrix, Tuple{Matrix, Matrix, Number}}()=#)::MemCache
+        svec    = Vector{Vector}(undef, 1)
+        svec[1] = zeros(1)
+        mvec    = Vector{Matrix}(undef, maxobs)
+        new(svec, mvec)::MemCache
     end
 end

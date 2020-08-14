@@ -206,3 +206,8 @@ function invchol(M::AbstractMatrix)
     #end
     return Symmetric(v, :U)
 end
+
+function mullcl!(L, C)
+end
+function mulcjc!(C, J)
+end

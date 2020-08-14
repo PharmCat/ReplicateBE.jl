@@ -106,7 +106,7 @@ end
 """
     -2 REML function for ForwardDiff
 """
-function reml2(data::RBEDataStructure, θ, β::Vector; memopt::Bool = true)
+function reml2(data::RBEDataStructure, θ::AbstractVector, β::Vector; memopt::Bool = true)
     #memory optimizations to reduse allocations (cache rebuild)
     rebuildcache(data, promote_type(eltype(first(data.yv)), eltype(θ)))
     cache     = Dict{Matrix, Tuple{AbstractMatrix, eltype(θ)}}()
@@ -139,10 +139,10 @@ end
 """
     -2 REML estimation with β recalculation for ForwardDiff
 """
-function reml2bfd(data::RBEDataStructure, θ; memopt::Bool = true)
+function reml2bfd(data::RBEDataStructure, θ::AbstractVector; memopt::Bool = true)
     return reml2b(data, θ; memopt = memopt)[1]
 end
-function reml2b(data::RBEDataStructure, θ; memopt::Bool = true)
+function reml2b(data::RBEDataStructure, θ::AbstractVector; memopt::Bool = true)
     rebuildcache(data, promote_type(eltype(first(data.yv)), eltype(θ)))
     cache     = Dict{Matrix, Tuple{AbstractMatrix, eltype(θ)}}()
     #---------------------------------------------------------------------------
@@ -195,9 +195,9 @@ non inverted C matrix gradient function
 function cmatgf(Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
     p      = size(Xv[1], 2)
     jC     = ForwardDiff.jacobian(x -> cmatvec(Xv, Zv, x; memopt = memopt),  SVector{length(θ), eltype(θ)}(θ))
-    result = Vector{Matrix}(undef, 0)
+    result = Vector{Matrix}(undef, length(θ))
     for i in 1:length(θ)
-        push!(result, reshape(jC[:,i], p, p))
+        result[i] = reshape(view(jC, :, i), p, p)
     end
     return result
 end
@@ -206,7 +206,7 @@ non inverted C matrix in vector form for gradient
 """
 function cmatvec(Xv::Vector, Zv::Vector, θ; memopt::Bool = true)
     p     = size(Xv[1], 2)
-    G     = gmat(θ[3:5])
+    G     = gmat(view(θ, 3:5))
     C     = zeros(promote_type(eltype(Zv[1]), eltype(θ)), p, p)
     cache     = Dict()
     for i = 1:length(Xv)
@@ -219,7 +219,8 @@ function cmatvec(Xv::Vector, Zv::Vector, θ; memopt::Bool = true)
         #C  += Xv[i]' * V⁻¹ * Xv[i]
         mulαtβαinc!(C, Xv[i], V⁻¹)
     end
-    return C[:]
+    #return C[:]
+    return C
 end
 """
 C matrix gradients
@@ -235,7 +236,7 @@ end
 """
 L * C * L' for all C gradient marices
 """
-function lclg(gradc, L)
+function lclg(gradc::AbstractVecOrMat, L::AbstractVecOrMat)
     g  = Vector{eltype(gradc[1])}(undef, length(gradc))
     for i = 1:length(gradc)
         g[i] = (L * gradc[i] * L')[1]
@@ -244,7 +245,7 @@ function lclg(gradc, L)
 end
 """
 """
-function contrastvec(data, res, L)
+function contrastvec(data, res, L::AbstractVecOrMat)
     lcl     = L*res.C*L'
     lclr    = rank(lcl)
     F       = res.β'*L'*inv(lcl)*L*res.β/lclr
@@ -252,7 +253,7 @@ function contrastvec(data, res, L)
     pval    = ccdf(FDist(lclr, df), F)
     return F, lclr, df, pval
 end
-function estimatevec(data, res, L)
+function estimatevec(data, res, L::AbstractVecOrMat)
     lcl     = L*res.C*L'
     β       = copy(res.β)
     est     = (L*β)[1]
@@ -261,7 +262,7 @@ function estimatevec(data, res, L)
     t       = ((est)/se)
     return est, se, t
 end
-function sattdf(data, gradc, A, C, L, lcl)
+function sattdf(data, gradc, A, C, L::AbstractVecOrMat, lcl)
     lclr    = rank(lcl)
     if lclr ≥ 2
         vm  = Vector{eltype(C)}(undef, lclr)
@@ -347,4 +348,9 @@ function varlinkmap(θ, r1::Union{Int, UnitRange}, r2::Union{Int, UnitRange}, f1
     θl[r1]  = f1.(θ[r1])
     θl[r2]  = f2.(θ[r2])
     return θl
+end
+
+@inline function lvecupd!(L::AbstractVector, fac)
+    L .= 0.
+    L[fac] .= 1.
 end

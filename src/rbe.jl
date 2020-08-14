@@ -261,9 +261,9 @@ function rbe(df; dvar::Symbol,
     pval        = Vector{eltype(C)}(undef, p)
     gradc       = cmatg(data, θ, C; memopt = memopt)
 
-
+    L       = zeros(1, p)
     for i = 1:p
-        L       = zeros(1, p)
+        L       .= 0
         L[i]    = 1
         Lt      = L'
         lcl     = L*C*Lt                                                        #lcl     = L*C*L'

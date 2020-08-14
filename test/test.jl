@@ -103,7 +103,8 @@ end
     @test ci[1]                             ≈  1.0290230615220375 atol=1E-5  #0.841779
     @test ci[2]                             ≈  1.1880048531419543 atol=1E-5  #0.971759
 end
-
+## Data set I given by the EMA (Q&A document)
+#https://www.ema.europa.eu/en/documents/scientific-guideline/questions-answers-positions-specific-questions-addressed-pharmacokinetics-working-party_en.pdf
 @testset "  #4 QA 1 Bioequivalence 2x2x4, UnB, NC Dataset  " begin
     #REML 530.14451303
     #SE 0.04650

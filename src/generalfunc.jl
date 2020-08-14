@@ -407,3 +407,8 @@ function varlinkmap(θ, r1::Union{Int, UnitRange}, r2::Union{Int, UnitRange}, f1
     θl[r2]  = f2.(θ[r2])
     return θl
 end
+#-------------------------------------------------------------------------------
+@inline function lvecupd!(L::AbstractVector, fac)
+    L .= 0.
+    L[fac] .= 1.
+end

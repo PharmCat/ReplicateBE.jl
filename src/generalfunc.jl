@@ -192,9 +192,9 @@ end
 """
 non inverted C matrix gradient function
 """
-function cmatgf(Xv::Vector, Zv::Vector, θ::Vector; memopt::Bool = true)
-    p      = size(Xv[1], 2)
-    jC     = ForwardDiff.jacobian(x -> cmatvec(Xv, Zv, x; memopt = memopt),  SVector{length(θ), eltype(θ)}(θ))
+function cmatgf(data, θ::AbstractVector; memopt::Bool = true)
+    p      = size(data.Xv[1], 2)
+    jC     = ForwardDiff.jacobian(x -> cmatvec(data, x; memopt = memopt),  SVector{length(θ), eltype(θ)}(θ))
     result = Vector{Matrix}(undef, length(θ))
     for i in 1:length(θ)
         result[i] = reshape(view(jC, :, i), p, p)
@@ -204,20 +204,20 @@ end
 """
 non inverted C matrix in vector form for gradient
 """
-function cmatvec(Xv::Vector, Zv::Vector, θ; memopt::Bool = true)
-    p     = size(Xv[1], 2)
+function cmatvec(data, θ; memopt::Bool = true)
+    p     = size(data.Xv[1], 2)
     G     = gmat(view(θ, 3:5))
-    C     = zeros(promote_type(eltype(Zv[1]), eltype(θ)), p, p)
+    C     = zeros(promote_type(eltype(data.Zv[1]), eltype(θ)), p, p)
     cache     = Dict()
-    for i = 1:length(Xv)
+    for i = 1:length(data.Xv)
         if memopt
-            V⁻¹   = minv(G, θ[1:2], Zv[i], cache)
+            V⁻¹   = minv(G, θ[1:2], data.Zv[i], cache)
         else
-            R   = rmat(θ[1:2], Zv[i])
-            V⁻¹  = invchol(vmat(G, R, Zv[i]))
+            R   = rmat(θ[1:2], data.Zv[i])
+            V⁻¹  = invchol(vmat(G, R, data.Zv[i]))
         end
         #C  += Xv[i]' * V⁻¹ * Xv[i]
-        mulαtβαinc!(C, Xv[i], V⁻¹)
+        mulαtβαinc!(C, data.Xv[i], V⁻¹)
     end
     #return C[:]
     return C
@@ -225,9 +225,9 @@ end
 """
 C matrix gradients
 """
-function cmatg(Xv::Vector, Zv::Vector, θ::Vector, C::Matrix; memopt::Bool = true)
+function cmatg(data, θ::Vector, C::Matrix; memopt::Bool = true)
     g  = Vector{Matrix}(undef, length(θ))
-    jC = cmatgf(Xv, Zv, θ; memopt = memopt)
+    jC = cmatgf(data, θ; memopt = memopt)
     for i = 1:length(θ)
         g[i] = (- C * jC[i] * C)
     end
@@ -337,17 +337,22 @@ function rholinksigmoidr(ρ, m)
 end
 
 function rholinksigmoid2(ρ, m)
-    return atan(ρ)
+    return atan(ρ)/pi*2.
 end
 function rholinksigmoid2r(ρ, m)
-    return tan(ρ)
+    return tan(ρ*pi/2.)
 end
 
 function varlinkmap(θ, r1::Union{Int, UnitRange}, r2::Union{Int, UnitRange}, f1::Function, f2::Function)
-    θl      = similar(θ)
-    θl[r1]  = f1.(θ[r1])
-    θl[r2]  = f2.(θ[r2])
-    return θl
+    #θl      = similar(θ)
+    @inbounds @simd for i in r1
+        θ[i]  = f1(θ[i])
+    end
+    #
+    @inbounds @simd for i in r2
+        θ[i]  = f2(θ[i])
+    end
+    return θ
 end
 
 @inline function lvecupd!(L::AbstractVector, fac)

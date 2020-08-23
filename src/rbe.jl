@@ -254,7 +254,11 @@ function rbe(df; dvar::Symbol,
     df          = Vector{eltype(C)}(undef, p)
     t           = Vector{eltype(C)}(undef, p)
     pval        = Vector{eltype(C)}(undef, p)
+<<<<<<< HEAD
     gradc       = cmatg(data, θ, C; memopt = memopt)
+=======
+    gradc       = cmatg(data77777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777, θ, C; memopt = memopt)
+>>>>>>> bd3e39840bfb9cb11b73bbc7e75f0c0ecb289f9b
 
     L       = zeros(1, p)
     for i = 1:p

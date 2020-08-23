@@ -22,7 +22,8 @@ Replicate bioequivalence structure.
 """
 mutable struct RBE{T <: AbstractFloat}
     model::ModelFrame               # Model frame
-    rmodel::ModelFrame              # Random effect model
+    rschema::Union{AbstractTerm, Tuple{Vararg{AbstractTerm, N} where N}}
+    #rmodel::ModelFrame              # Random effect model
     design::Design
     #factors::Vector{Symbol}        # Factor list
     θ0::Vector{T}                   # Initial variance paramethers
@@ -129,12 +130,16 @@ function rbe(df; dvar::Symbol,
 
     #Model
     Xf  = @eval(@formula($dvar ~ $sequence + $period + $formulation))
-    Zf  = @eval(@formula($dvar ~ 0 + $formulation))
     MF  = ModelFrame(Xf, df)
-    RMF = ModelFrame(Zf, df, contrasts = Dict(formulation => StatsModels.FullDummyCoding()))
     MM  = ModelMatrix(MF)
     X   = MM.m
-    Z   = ModelMatrix(RMF).m
+    rschema = apply_schema(Term(formulation), schema(df, Dict(formulation => StatsModels.FullDummyCoding())))
+    Z   = modelcols(rschema, df)
+
+    #Zf  = @eval(@formula($dvar ~ 0 + $formulation))
+    #RMF = ModelFrame(Zf, df, contrasts = Dict(formulation => StatsModels.FullDummyCoding()))
+    #Z   = ModelMatrix(RMF).m
+
     p   = rank(X)
     zxr = rank(ModelMatrix(ModelFrame(@eval(@formula($dvar ~ $sequence + $period + $subject*$formulation)), df)).m)
     y   = df[!, dvar]                                                           #Dependent variable
@@ -249,7 +254,7 @@ function rbe(df; dvar::Symbol,
     df          = Vector{eltype(C)}(undef, p)
     t           = Vector{eltype(C)}(undef, p)
     pval        = Vector{eltype(C)}(undef, p)
-    gradc       = cmatg(Xv, Zv, θ, C; memopt = memopt)
+    gradc       = cmatg(data, θ, C; memopt = memopt)
 
     L       = zeros(1, p)
     for i = 1:p
@@ -277,7 +282,7 @@ function rbe(df; dvar::Symbol,
     fn + 1,
     sbf,
     p, zxr)
-    return RBE(MF, RMF, design, varlink(θvec0, vlm), vlm, #=Tuple(θ), remlv, fixed, gmat(θ[3:5]), C, A, H,=# X, Z, data, result, #=dH, pO, O=#)
+    return RBE(MF, rschema, design, varlink(θvec0, vlm), vlm, #=Tuple(θ), remlv, fixed, gmat(θ[3:5]), C, A, H,=# X, Z, data, result, #=dH, pO, O=#)
 
 end #END OF rbe()
 """
@@ -584,7 +589,7 @@ function optstat(rbe::RBE)
 end
 #-------------------------------------------------------------------------------
 function Base.show(io::IO, rbe::RBE)
-    rcoef = coefnames(rbe.rmodel);
+    rcoef = coefnames(rbe.rschema);
     θ     = theta(rbe)
     print(io, "Bioequivalence Linear Mixed Effect Model (status:"); optstat(rbe) ? print(io,"converged") : printstyled(io, "not converged"; color = :red); println(io, ")")
     if !isposdef(Symmetric(rbe.result.H))

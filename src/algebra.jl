@@ -210,6 +210,33 @@ function invchol(M::AbstractMatrix)
     #end
     return Symmetric(v, :U)
 end
+function invchol!(M::Symmetric)
+    q  = size(M, 1)
+    if q == 1
+        M.data[1, 1] = 1 / M.data[1, 1]
+        return M
+    end
+    il = inv(cholesky(M).U)
+    fill!(M.data, zero(eltype(M.data)))
+    @simd for n = 1:q
+        for m = n:q
+            @inbounds M.data[n, n] += il[n, m]^2
+        end
+    end
+    for n = 1:(q-1)
+        for m = (n+1):q
+            @simd for i = m:q
+                @inbounds M.data[n, m] += il[n, i] * il[m, i]
+            end
+        end
+    end
+    #@simd for n = 1:q-1
+    #    @simd for m = 2:q
+    #        @inbounds v[m, n] = v[n, m] #Make Symmetric
+    #    end
+    #end
+    return M
+end
 
 function mullcl!(L, C)
 end

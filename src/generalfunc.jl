@@ -55,8 +55,10 @@ function mvmatall(G::AbstractMatrix, σ::AbstractVector, Z::AbstractMatrix, mem,
         if size(V, 1) <= 14
             V   = SHermitianCompact(SMatrix{size(V, 1),size(V, 1)}(V))
             #V⁻¹ = Matrix(inv(SMatrix{size(V, 1),size(V, 1)}(V)))
-            V⁻¹ = inv(V)
+            #V⁻¹ = inv(V)
         else
+            #V⁻¹  = inv(V)
+            #=
             try
                 V⁻¹  = invchol(V)
             catch e
@@ -66,7 +68,9 @@ function mvmatall(G::AbstractMatrix, σ::AbstractVector, Z::AbstractMatrix, mem,
                     throw(e)
                 end
             end
+            =#
         end
+        V⁻¹      = inv(V)
         log│V│   = logdet(V)
         cache[Z] = (Matrix(V⁻¹), log│V│)
         return cache[Z]
@@ -80,7 +84,8 @@ function minv(G::AbstractMatrix, σ::Vector, Z::AbstractMatrix, cache::Dict)::Ma
     else
         V    = mulαβαtc(Z, G, Diagonal(Z*σ))
         #V   = Z * G * Z' + Diagonal(Z*σ)
-        V⁻¹  = invchol(V)
+        #V⁻¹  = invchol!(V)
+        V⁻¹  = inv(V)
         cache[Z] = V⁻¹
         return V⁻¹
     end
@@ -92,7 +97,8 @@ function minv(V::T, cache::Dict) where T <: AbstractMatrix
         if size(V, 1) <= 14
             V⁻¹  = Matrix(inv(SMatrix{size(V, 1), size(V, 2)}(V)))
         else
-            V⁻¹  = invchol(V)
+            #V⁻¹  = invchol!(V)
+            V⁻¹  = inv(V)
         end
         cache[V] = V⁻¹
         return V⁻¹
@@ -122,7 +128,8 @@ function reml2(data::RBEDataStructure, θ::AbstractVector, β::Vector; memopt::B
             θ₁                    += log│V│
         else
             @inbounds V     = vmat(G, rmat(view(θ,1:2), data.Zv[i]), data.Zv[i])
-            V⁻¹             = invchol(V)
+            #V⁻¹             = invchol(V)
+            V⁻¹             = inv(V)
             θ₁             += logdet(V)
         end
         #-----------------------------------------------------------------------
@@ -162,7 +169,8 @@ function reml2b(data::RBEDataStructure, θ::AbstractVector; memopt::Bool = true)
         else
             @inbounds R        = rmat(view(θ,1:2), data.Zv[i])
             @inbounds V        = vmat(G, R, data.Zv[i])
-            @inbounds V⁻¹[i]   = invchol(V)
+            #@inbounds V⁻¹[i]   = invchol(V)
+            @inbounds V⁻¹[i]   = inv(V)
             θ₁                += logdet(V)
         end
         #-----------------------------------------------------------------------
@@ -197,7 +205,7 @@ function cmatgf(data, θ::AbstractVector; memopt::Bool = true)
     jC     = ForwardDiff.jacobian(x -> cmatvec(data, x; memopt = memopt),  SVector{length(θ), eltype(θ)}(θ))
     result = Vector{Matrix}(undef, length(θ))
     for i in 1:length(θ)
-        result[i] = reshape(view(jC, :, i), p, p)
+        result[i] = reshape(view(jC, :, i), p, p) #<Opt
     end
     return result
 end
@@ -214,7 +222,10 @@ function cmatvec(data, θ; memopt::Bool = true)
             V⁻¹   = minv(G, θ[1:2], data.Zv[i], cache)
         else
             R   = rmat(θ[1:2], data.Zv[i])
-            V⁻¹  = invchol(vmat(G, R, data.Zv[i]))
+            V⁻¹  = inv(mulαβαtc(data.Zv[i], G, R))
+            #V⁻¹  = invchol(vmat(G, R, data.Zv[i]))
+            #V⁻¹  = invchol!(mulαβαtc(data.Zv[i], G, R))
+
         end
         #C  += Xv[i]' * V⁻¹ * Xv[i]
         mulαtβαinc!(C, data.Xv[i], V⁻¹)

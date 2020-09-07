@@ -11,15 +11,6 @@ struct RBEDataStructure
     mem::MemCache
 end
 
-function rebuildcache(data, type)
-        if !(eltype(data.mem.svec[1]) <: type)
-            data.mem.svec[1] = zeros(type, data.maxobs)
-            for i = 1:data.maxobs
-                data.mem.mvec[i] = zeros(type, i, i)
-            end
-        end
-end
-
 struct RBEResults{T <: AbstractFloat}
     reml::T                         # logREML
     β::Vector{T}                    # β Vector

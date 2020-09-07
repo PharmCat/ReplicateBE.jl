@@ -2,6 +2,7 @@
     * Optimizations
     * Cosmetics
     * PDMats exclude
+    * Optim 1.0
     * Fix experimental sigmoid function
 
 - v1.0.10

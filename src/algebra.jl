@@ -5,7 +5,7 @@ function mulαtβαinc!(θ, A::AbstractMatrix, B::AbstractMatrix, c)
     q = size(B, 1)
     p = size(A, 2)
     for i = 1:p
-        c .= 0
+        fill!(c, zero(eltype(c)))
         @inbounds for n = 1:q, m = 1:q
             c[n] += B[m, n] * A[m, i]
         end
@@ -23,7 +23,7 @@ function mulαtβαinc!(θ, A::AbstractMatrix, B::AbstractMatrix)
     p = size(A, 2)
     c = zeros(eltype(B), q)
     for i = 1:p
-        c .= 0
+        fill!(c, zero(eltype(c)))
         @inbounds for n = 1:q, m = 1:q
             c[n] += B[m, n] * A[m, i]
         end
@@ -42,7 +42,7 @@ function mulθβinc!(θ, β, A::AbstractMatrix, B::AbstractMatrix, C::AbstractVe
     q = size(B, 1)
     p = size(A, 2)
     for i = 1:p
-        c .= 0
+        fill!(c, zero(eltype(c)))
         @simd for n = 1:q
             @simd for m = 1:q
                 @inbounds c[n] += B[m, n] * A[m, i]
@@ -65,7 +65,7 @@ function mulθ₃(y::AbstractVector, X::AbstractMatrix, β::AbstractVector, V::A
     q = size(V, 1)
     p = size(X, 2)
     θ = 0
-    c .= 0
+    fill!(c, zero(eltype(c)))
     @simd for n = 1:q
         @simd for m = 1:p
             @inbounds c[n] += X[n, m] * β[m]
@@ -88,19 +88,21 @@ function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix)
     c  = zeros(eltype(B), q)
     mx = zeros(eltype(B), p, p)
     for i = 1:p
-        c .= 0
+        fill!(c, zero(eltype(c)))
         @simd for n = 1:q
             @simd for m = 1:q
                 @inbounds c[n] +=  A[i, m] * B[n, m]
             end
         end
-        @simd for n = 1:p
+        @simd for n = i:p
             @simd for m = 1:q
                  @inbounds mx[i, n] += A[n, m] * c[m]
             end
+            @inbounds mx[i, n] += C[i, n]
         end
     end
-    mx .+= C
+    #mx .+= C
+    Symmetric(mx)
 end
 """
 A * B * A' + C (cache)
@@ -111,19 +113,21 @@ function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, c:
     #c  = mem.svec[p]
     mx = zeros(eltype(B), p, p)
     for i = 1:p
-        c .= 0
+        fill!(c, zero(eltype(c)))
         @simd for n = 1:q
             @simd for m = 1:q
                 @inbounds c[n] +=  A[i, m] * B[n, m]
             end
         end
-        @simd for n = 1:p
+        @simd for n = i:p
             @simd for m = 1:q
                  @inbounds mx[i, n] += A[n, m] * c[m]
             end
+            @inbounds mx[i, n] += C[i, n]
         end
     end
-    mx .+= C
+    #mx .+= C
+    Symmetric(mx)
 end
 """
 A * B * A' + Diagonal(A*C) (cache)
@@ -131,16 +135,15 @@ A * B * A' + Diagonal(A*C) (cache)
 function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractVector, c::AbstractVector)
     q  = size(B, 1)
     p  = size(A, 1)
-    #c  = mem.svec[p]
     mx = zeros(eltype(B), p, p)
     for i = 1:p
-        c .= 0
+        fill!(c, zero(eltype(c)))
         @simd for n = 1:q
             @simd for m = 1:q
                 @inbounds c[n] +=  A[i, m] * B[n, m]
             end
         end
-        @simd for n = 1:p
+        @simd for n = i:p
             @simd for m = 1:q
                  @inbounds mx[i, n] += A[n, m] * c[m]
             end
@@ -149,7 +152,8 @@ function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractVector, c:
              @inbounds mx[i, i] += A[i, m] * C[m]
         end
     end
-    mx
+    #mx
+    Symmetric(mx)
 end
 """
 mx <- A * B * A' + Diagonal(A*C) (cache)
@@ -157,9 +161,9 @@ mx <- A * B * A' + Diagonal(A*C) (cache)
 function mulαβαtcupd!(mx::AbstractMatrix, A::AbstractMatrix, B::AbstractMatrix, C::AbstractVector, c::AbstractVector)
     q  = size(B, 1)
     p  = size(A, 1)
-    mx .= 0
+    fill!(mx.data, zero(eltype(mx.data)))
     for i = 1:p
-        c .= 0
+        fill!(c, zero(eltype(c)))
         @simd for n = 1:q
             @simd for m = 1:q
                 @inbounds c[n] +=  A[i, m] * B[n, m]
@@ -167,11 +171,11 @@ function mulαβαtcupd!(mx::AbstractMatrix, A::AbstractMatrix, B::AbstractMatri
         end
         @simd for n = 1:p
             @simd for m = 1:q
-                 @inbounds mx[i, n] += A[n, m] * c[m]
+                 @inbounds mx.data[i, n] += A[n, m] * c[m]
             end
         end
         @simd for m = 1:length(C)
-             @inbounds mx[i, i] += A[i, m] * C[m]
+             @inbounds mx.data[i, i] += A[i, m] * C[m]
         end
     end
     mx

@@ -158,10 +158,11 @@ end
 """
 mx <- A * B * A' + Diagonal(A*C) (cache)
 """
-function mulαβαtcupd!(mx::AbstractMatrix, A::AbstractMatrix, B::AbstractMatrix, C::AbstractVector, c::AbstractVector)
+function mulαβαtcupd!(mxs::AbstractMatrix, A::AbstractMatrix, B::AbstractMatrix, C::AbstractVector, c::AbstractVector)
     q  = size(B, 1)
     p  = size(A, 1)
-    fill!(mx.data, zero(eltype(mx.data)))
+    mx = view(mxs, 1:p, 1:p)
+    fill!(mx, zero(eltype(mx)))
     for i = 1:p
         fill!(c, zero(eltype(c)))
         @simd for n = 1:q
@@ -169,16 +170,16 @@ function mulαβαtcupd!(mx::AbstractMatrix, A::AbstractMatrix, B::AbstractMatri
                 @inbounds c[n] +=  A[i, m] * B[n, m]
             end
         end
-        @simd for n = 1:p
+        @simd for n = i:p
             @simd for m = 1:q
-                 @inbounds mx.data[i, n] += A[n, m] * c[m]
+                 @inbounds mx[i, n] += A[n, m] * c[m]
             end
         end
         @simd for m = 1:length(C)
-             @inbounds mx.data[i, i] += A[i, m] * C[m]
+             @inbounds mx[i, i] += A[i, m] * C[m]
         end
     end
-    mx
+    Symmetric(mx)
 end
 """
     Cholesky inverse

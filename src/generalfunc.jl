@@ -49,7 +49,7 @@ function mvmatall(G::AbstractMatrix, σ::AbstractVector, Z::AbstractMatrix, mem,
     if Z in keys(cache)
         return cache[Z]
     else
-        V = mulαβαtcupd!(mem.mvec[size(Z, 1)], Z, G, σ, first(mem.svec))
+        V = mulαβαtcupd!(first(mem.mvec), Z, G, σ, first(mem.svec))
         #V   = mulαβαtc(Z, G, σ, first(mem.svec))
         #V   = Z * G * Z' + Diagonal(Z*σ)
         if size(V, 1) <= 14

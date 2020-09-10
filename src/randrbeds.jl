@@ -180,38 +180,55 @@ function randrbeds(n::Int, sequence::Vector,
     end
 
     #subjds  = DataFrame(subject = Int[], formulation = String[], period = Int[], sequence = String[], var = Float64[])
-    subjdsm = Array{Any, 2}(undef, 0, 5)
-    subj    = 1
-    subjmx  = Array{Any, 2}(undef, pnum, 5)
+    subjmx1 = Array{Int, 1}(undef, n*pnum)
+    subjmx2 = Array{String, 1}(undef, n*pnum)
+    subjmx3 = Array{Int, 1}(undef, n*pnum)
+    subjmx4 = Array{String, 1}(undef, n*pnum)
+    subjmx5 = Array{Float64, 1}(undef, n*pnum)
+    subj    = 0
+    #subjmx  = Array{Any, 2}(undef, pnum, 5)
     for i = 1:sqnum
         for sis = 1:sn[i]
-            subjmx[:, 1] .= subj
-            subjmx[:, 2]  = design[i,:]
-            subjmx[:, 3]  = collect(1:pnum)
-            subjmx[:, 4] .= sqname[i]
-            #subjmx[:, 5]  = rand(rng, MvNormal(PDMat(Vv[i]))) + Mv[i]
-            subjmx[:, 5]  = rand(rng, MvNormal(Vv[i])) + Mv[i]
             subj += 1
-            subjdsm = vcat(subjdsm, subjmx)
+            s = 1 + (subj - 1)*pnum
+            e = pnum + (subj - 1)*pnum
+            subjmx1[s:e] .= subj
+            subjmx2[s:e]  = design[i,:]
+            subjmx3[s:e]  = collect(1:pnum)
+            subjmx4[s:e] .= sqname[i]
+            #subjmx[:, 5]  = rand(rng, MvNormal(PDMat(Vv[i]))) + Mv[i]
+            subjmx5[s:e]  = rand(rng, MvNormal(Vv[i])) + Mv[i]
+
+            #subjdsm = vcat(subjdsm, subjmx)
             #for c = 1:pnum
             #    push!(subjds, subjmx[c, :])
             #end
         end
     end
-    subjds  = DataFrame(subject = Int.(subjdsm[:,1]),
-    formulation = string.(subjdsm[:,2]),
-    period = Int.(subjdsm[:,3]),
-    sequence = string.(subjdsm[:,4]),
-    var = Float64.(subjdsm[:,5]))
+    #subjds  = DataFrame(subject = Int.(subjdsm[:,1]),
+    #formulation = string.(subjdsm[:,2]),
+    #period = Int.(subjdsm[:,3]),
+    #sequence = string.(subjdsm[:,4]),
+    #var = Float64.(subjdsm[:,5]))
 
-    if dropobs > 0 && dropobs < size(subjds, 1)
-        dellist = sample(rng, 1:size(subjds, 1), dropobs, replace = false)
-        deleterows!(subjds, sort!(dellist))
+    if dropobs > 0 && dropobs < subj
+        dellist = sort!(sample(rng, 1:subj, dropobs, replace = false))
+        deleteat!(subjmx1, dellist)
+        deleteat!(subjmx2, dellist)
+        deleteat!(subjmx3, dellist)
+        deleteat!(subjmx4, dellist)
+        deleteat!(subjmx5, dellist)
+        #deleterows!(subjds, sort!(dellist))
     end
-    categorical!(subjds, :subject);
-    categorical!(subjds, :formulation);
-    categorical!(subjds, :period);
-    categorical!(subjds, :sequence);
+    subjds  = DataFrame(subject = subjmx1,
+    formulation = subjmx2,
+    period = subjmx3,
+    sequence = subjmx4,
+    var = subjmx5)
+    #categorical!(subjds, :subject);
+    #categorical!(subjds, :formulation);
+    #categorical!(subjds, :period);
+    #categorical!(subjds, :sequence);
     return subjds
 end
 """
@@ -301,7 +318,7 @@ function simulation(task::RandRBEDS; io = stdout, verbose = false, num = 100, l 
         rds       = randrbeds(task)
         try
 
-            be        = rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+            be        = rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
             #q         = quantile(TDist(be.fixed.df[end]), 1.0 - alpha)
             #ll        = be.fixed.est[end] - q*be.fixed.se[end]
             #ul        = be.fixed.est[end] + q*be.fixed.se[end]
@@ -396,7 +413,7 @@ function simulation!(task::RandRBEDS, out, simfunc!::Function; io = stdout, verb
         task.seed = seeds[i]
         rds       = randrbeds(task)
         try
-            be        = rbe(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
+            be        = rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
             simfunc!(out, be)
             if n > 1000
                 println(io, "Iteration: $i")

@@ -11,6 +11,22 @@ struct RBEDataStructure
     mem::MemCache
 end
 
+function Base.show(io::IO, rbeds::RBEDataStructure)
+    print(io,"""
+    .factors: $(rbeds.factors)
+    .Xv: length = $(length(rbeds.Xv))
+    .Zv: length = $(length(rbeds.Zv))
+    .yv: length = $(length(rbeds.yv))
+    .yv: length = $(length(rbeds.yv))
+    .p = $(rbeds.p)
+    .N = $(rbeds.N)
+    .n = $(rbeds.n)
+    .remlc = $(rbeds.remlc)
+    .maxobs = $(rbeds.maxobs)
+    .mem: MemCache
+    """)
+end
+
 struct RBEResults{T <: AbstractFloat}
     reml::T                         # logREML
     β::Vector{T}                    # β Vector
@@ -23,6 +39,22 @@ struct RBEResults{T <: AbstractFloat}
     gradc::Vector{Matrix}
     preoptim::Union{Optim.MultivariateOptimizationResults, Nothing}             # Pre-optimization result object
     optim::Optim.MultivariateOptimizationResults                                # Optimization result object
+end
+
+function Base.show(io::IO, rbeds::RBEResults)
+    print(io,"""
+    .reml
+    .β
+    .theta
+    .fixed
+    .G
+    .H
+    .A
+    .C
+    .gradc
+    .preoptim
+    .optim
+    """)
 end
 
 #Design structure

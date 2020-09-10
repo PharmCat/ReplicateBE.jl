@@ -164,13 +164,17 @@ function rbe(df; dvar::Symbol,
     data = RBEDataStructure([sequence, period, formulation], Xv, Zv, yv, p, N, n, (N - p) * LOG2PI, maxobs, MemCache(maxobs))
 
     #Calculate initial variance
+    iv = initvar2(df, X, yv, dvar, subject)
     if length(init) == 5
         θvec0 = init
     else
+        #=
         intra = sum(replace!(var.(yv) .* (length.(yv) .- 1), NaN => 0))/(sum(length.(yv))-1)
         iv = initvar(df, dvar, formulation)
         iv = iv .+ eps()
         θvec0 = [intra, intra, iv[1], iv[2], 0.5]
+        =#
+        θvec0 = [iv[2], iv[2], iv[1], iv[1], 0.5]
     end
 
     #Variance link function
@@ -191,6 +195,7 @@ function rbe(df; dvar::Symbol,
     #Optimization
     pO      = nothing
     td      = TwiceDifferentiable(x -> reml2bfd(data, varlink(x, vlm); memopt = memopt), θvec0; autodiff = :forward)
+    #td      = TwiceDifferentiable(x -> reml2(data, varlink(x, vlm), iv[3]; memopt = memopt), θvec0; autodiff = :forward)
     opttry  = true
     optnum  = 0
     rng     = MersenneTwister(hash(θvec0))

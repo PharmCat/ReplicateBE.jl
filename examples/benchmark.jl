@@ -104,3 +104,19 @@ BenchmarkTools.Trial:
   samples:          200
   evals/sample:     5
 =#
+
+#initvar2
+#=
+julia> @benchmark be = ReplicateBE.rbe!($df6, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10) seconds = 25 samples = 200 evals = 5
+BenchmarkTools.Trial:
+  memory estimate:  4.97 MiB
+  allocs estimate:  48656
+  --------------
+  minimum time:     18.353 ms (0.00% GC)
+  median time:      21.240 ms (0.00% GC)
+  mean time:        22.810 ms (2.87% GC)
+  maximum time:     43.109 ms (10.80% GC)
+  --------------
+  samples:          200
+  evals/sample:     5
+=#

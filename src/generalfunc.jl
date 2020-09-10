@@ -124,10 +124,10 @@ function reml2(data::RBEDataStructure, θ::AbstractVector, β::Vector; memopt::B
     #V⁻¹       = nothing
     @simd for i = 1:data.n
         if MEMOPT && memopt
-            V⁻¹, log│V│         = mvmatall(G, view(θ,1:2), data.Zv[i], data.mem, cache)
+            V⁻¹, log│V│         = mvmatall(G, view(θ, 1:2), data.Zv[i], data.mem, cache)
             θ₁                    += log│V│
         else
-            @inbounds V     = vmat(G, rmat(view(θ,1:2), data.Zv[i]), data.Zv[i])
+            @inbounds V     = vmat(G, rmat(view(θ, 1:2), data.Zv[i]), data.Zv[i])
             #V⁻¹             = invchol(V)
             V⁻¹             = inv(V)
             θ₁             += logdet(V)
@@ -141,7 +141,6 @@ function reml2(data::RBEDataStructure, θ::AbstractVector, β::Vector; memopt::B
         @inbounds θ₃  += mulθ₃(data.yv[i], data.Xv[i], β, V⁻¹, first(data.mem.svec))
     end
     return   θ₁ + logdet(θ₂) + θ₃ + data.remlc
-
 end
 """
     -2 REML estimation with β recalculation for ForwardDiff
@@ -314,12 +313,33 @@ end
     Initial variance computation
 """
 function initvar(df::DataFrame, dv::Symbol, fac::Symbol)::Vector
-    f  = unique(df[:, fac])
-    fv = Array{eltype(df[!, dv]), 1}(undef, 0)
-    for i in f
-        push!(fv, var(df[df[!, fac] .== i, dv]))
+    f  = unique(df[!, fac])
+    fv = Array{eltype(df[!, dv]), 1}(undef, length(f))
+    for i = 1:length(f)
+        fv[i] = var(df[df[!, fac] .== f[i], dv])
     end
     return fv
+end
+
+function initvar2(df::DataFrame, X::Matrix, yv, dv::Symbol, fac::Symbol)
+    qrx  = qr(X)
+    b    = inv(qrx.R) * qrx.Q' * df[!, dv]
+    r    = df[!, dv] - X * b
+    res  = (r'*r)/(length(r) - size(X, 2))
+    var1 = 0
+    for i = 1:length(yv)
+        if length(yv[i]) > 1
+            var1 += var(yv[i])
+        end
+    end
+    var2 = var1/length(yv)
+    if res - var2 > 0 && var2 > 0
+        return res-var2, var2, b
+    elseif var2 == 0
+        return res/2, res/2, b
+    else
+        return (res+var2)/2, (res+var2)/2, b
+    end
 end
 #-------------------------------------------------------------------------------
 function optimcallback(x)

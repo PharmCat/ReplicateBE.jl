@@ -2,8 +2,9 @@
     * Optimizations
     * Cosmetics
     * PDMats exclude
-    * Optim 1.0
+    * Optim 1.0, 1.1
     * Fix experimental sigmoid function
+    * Changes in initial variance estimate (OLS via QR decomposition)
 
 - v1.0.10
     * Cosmetics

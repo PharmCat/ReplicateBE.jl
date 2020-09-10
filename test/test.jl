@@ -68,8 +68,6 @@ println("Go!")
     be  = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, rholink = :arctgsigmoid, singlim = 1e-4)
     ci2 = confint(be)[end]
 
-
-
 end
 
 @testset "  #1 Patterson and Jones 2017 E 4.3              " begin

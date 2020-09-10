@@ -2,7 +2,9 @@
     * Optimizations
     * Cosmetics
     * PDMats exclude
-    * Optim 1.0, 1.1
+    * Optim 1.0, 1.1 - Removed
+    * DataFrame 0.21
+    * CSV -> CSVFiles
     * Fix experimental sigmoid function
     * Changes in initial variance estimate (OLS via QR decomposition)
 

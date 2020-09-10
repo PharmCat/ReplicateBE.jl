@@ -4,5 +4,4 @@
 # Licence: GNU General Public License v3.0
 
 using ReplicateBE
-
 include("test.jl")

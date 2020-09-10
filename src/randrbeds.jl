@@ -179,9 +179,10 @@ function randrbeds(n::Int, sequence::Vector,
         Mv[i] = zeros(pnum) .+ intercept .+ seqcoef[i] + periodcoef + Zv[i]*formcoef
     end
 
-    subjds = DataFrame(subject = Int[], formulation = String[], period = Int[], sequence = String[], var = Float64[])
-    subj = 1
-    subjmx = Array{Any, 2}(undef, pnum, 5)
+    #subjds  = DataFrame(subject = Int[], formulation = String[], period = Int[], sequence = String[], var = Float64[])
+    subjdsm = Array{Any, 2}(undef, 0, 5)
+    subj    = 1
+    subjmx  = Array{Any, 2}(undef, pnum, 5)
     for i = 1:sqnum
         for sis = 1:sn[i]
             subjmx[:, 1] .= subj
@@ -191,11 +192,18 @@ function randrbeds(n::Int, sequence::Vector,
             #subjmx[:, 5]  = rand(rng, MvNormal(PDMat(Vv[i]))) + Mv[i]
             subjmx[:, 5]  = rand(rng, MvNormal(Vv[i])) + Mv[i]
             subj += 1
-            for c = 1:pnum
-                push!(subjds, subjmx[c, :])
-            end
+            subjdsm = vcat(subjdsm, subjmx)
+            #for c = 1:pnum
+            #    push!(subjds, subjmx[c, :])
+            #end
         end
     end
+    subjds  = DataFrame(subject = Int.(subjdsm[:,1]),
+    formulation = string.(subjdsm[:,2]),
+    period = Int.(subjdsm[:,3]),
+    sequence = string.(subjdsm[:,4]),
+    var = Float64.(subjdsm[:,5]))
+
     if dropobs > 0 && dropobs < size(subjds, 1)
         dellist = sample(rng, 1:size(subjds, 1), dropobs, replace = false)
         deleterows!(subjds, sort!(dellist))

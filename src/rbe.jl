@@ -111,7 +111,14 @@ function rbe(df; dvar::Symbol,
     singlim = 1e-10)
 
     #Check
-    if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
+    #if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
+
+    dfn = names(df)
+    if eltype(dfn) <: String dfn = Symbol.(dfn) end
+    if any(x -> x ∉ dfn, [subject, formulation, period, sequence])
+        throw(ArgumentError("Names not found in DataFrame! \n Names: $([subject, formulation, period, sequence]) \n DF names: $(names(df))"))
+    end
+    
     if !(eltype(df[!,dvar]) <: AbstractFloat)
         @warn "Responce variable ∉ AbstractFloat!"
     end

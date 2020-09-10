@@ -308,8 +308,9 @@ function rbe!(df; dvar::Symbol,
     rholink = :psigmoid,
     singlim = 1e-6)
 
-
-    if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
+    if any(x -> x ∉ names(df), [subject, formulation, period, sequence])
+        throw(ArgumentError("Names not found in DataFrame! \n Names: $([subject, formulation, period, sequence]) \n DF names: $(names(df))")) 
+    end
     if !(eltype(df[!,dvar]) <: AbstractFloat)
         @warn "Responce variable ∉ AbstractFloat!"
         df[!,dvar] = float.(df[!,dvar])

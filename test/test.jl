@@ -3,7 +3,7 @@
 # Copyright © 2019 Vladimir Arnautov aka PharmCat <mail@pharmcat.net>
 # Licence: GNU General Public License v3.0
 println("Start tests...")
-using Test, CSVFiles, DataFrames, StatsBase
+using Test, CSV, DataFrames, StatsBase
 
 path    = dirname(@__FILE__)
 println("Load data...")
@@ -333,7 +333,7 @@ end
     #12
     #TRTR/RTRT
     #SPSS DF 42.3382785451983
-    rds = load(path*"/csv/rds12.csv") |> DataFrame
+    rds = CSV.file(path*"/csv/rds12.csv") |> DataFrame
     #rds = ReplicateBE.randrbeds(;n=48, sequence=[1,2], design = ["T" "R" "T" "R"; "R" "T" "R" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], dropobs = 20, seed = 10012)
     be = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
     @test ReplicateBE.reml2(be)             ≈ 329.76454300481595    atol=1E-5
@@ -344,7 +344,7 @@ end
     print(".")
     #13
     #TRRT/RTTR
-    rds = load(path*"/csv/rds13.csv") |> DataFrame
+    rds = CSV.file(path*"/csv/rds13.csv") |> DataFrame
     #rds = ReplicateBE.randrbeds(;n=48, sequence=[1,2], design = ["T" "R" "R" "T"; "R" "T" "T" "R"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], dropobs = 20, seed = 100013)
     be = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
     @test ReplicateBE.reml2(be)             ≈ 305.21958862123165    atol=1E-5
@@ -355,7 +355,7 @@ end
     print(".")
     #14
     #TTRR/RRTT
-    rds = load(path*"/csv/rds14.csv") |> DataFrame
+    rds = CSV.file(path*"/csv/rds14.csv") |> DataFrame
     #rds = ReplicateBE.randrbeds(;n=48, sequence=[1,2], design = ["T" "T" "R" "R"; "R" "R" "T" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], dropobs = 20, seed = 100014)
     be = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
     @test ReplicateBE.reml2(be)             ≈ 277.976236251267      atol=1E-5
@@ -366,7 +366,7 @@ end
     print(".")
     #15
     #TRTR/RTRT/TRRT/RTTR
-    rds = load(path*"/csv/rds15.csv") |> DataFrame
+    rds = CSV.file(path*"/csv/rds15.csv") |> DataFrame
     #rds = ReplicateBE.randrbeds(;n=48, sequence=[1,2,3,4], design = ["T" "R" "T" "R"; "R" "T" "R" "T" ; "T" "R" "R" "T"; "R" "T" "T" "R"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], dropobs = 20, seed = 10015)
     be = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
     @test ReplicateBE.reml2(be)             ≈ 331.77741574 atol=1E-5
@@ -377,7 +377,7 @@ end
     print(".")
     #16
     #TRRT/RTTR/TTRR/RRTT
-    rds = load(path*"/csv/rds16.csv") |> DataFrame
+    rds = CSV.file(path*"/csv/rds16.csv") |> DataFrame
     #rds = ReplicateBE.randrbeds(;n=48, sequence=[1,2,3,4], design = ["T" "R" "R" "T"; "R" "T" "T" "R" ; "T" "T" "R" "R"; "R" "R" "T" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], dropobs = 20, seed = 10016)
     be = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
     @test ReplicateBE.reml2(be)             ≈ 285.69277340 atol=1E-5
@@ -388,7 +388,7 @@ end
     print(".")
     #17
     #TRTR/RTRT/TTRR/RRTT
-    rds = load(path*"/csv/rds17.csv") |> DataFrame
+    rds = CSV.file(path*"/csv/rds17.csv") |> DataFrame
     #rds = ReplicateBE.randrbeds(;n=48, sequence=[1,2,3,4], design = ["T" "R" "T" "R"; "R" "T" "R" "T" ; "T" "T" "R" "R"; "R" "R" "T" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], dropobs = 20, seed = 10017)
     be = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
     @test ReplicateBE.reml2(be)             ≈ 292.49505051 atol=1E-5
@@ -400,7 +400,7 @@ end
     print(".")
     #18
     #TRT/RTR
-    rds = load(path*"/csv/rds18.csv") |> DataFrame
+    rds = CSV.file(path*"/csv/rds18.csv") |> DataFrame
     #rds = ReplicateBE.randrbeds(;n=48, sequence=[1,2], design = ["T" "R" "T"; "R" "T" "R"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 0.0], dropobs = 20, seed = 10018)
     be = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
     @test ReplicateBE.reml2(be)             ≈ 237.09185442 atol=1E-5
@@ -412,7 +412,7 @@ end
     print(".")
     #19
     #TRR/RTT
-    rds = load(path*"/csv/rds19.csv") |> DataFrame
+    rds = CSV.file(path*"/csv/rds19.csv") |> DataFrame
     #rds = ReplicateBE.randrbeds(;n=48, sequence=[1,2], design = ["T" "R" "R"; "R" "T" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 0.0], dropobs = 20, seed = 10019)
     be = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
     @test ReplicateBE.reml2(be)             ≈ 255.99536281 atol=1E-5
@@ -426,7 +426,7 @@ end
     #SPSS REML 151.783195849874
     #SPSS SE 0.214518365508227
     #SPSS DF 10.0167597858775
-    rds = load(path*"/csv/rds20.csv") |> DataFrame
+    rds = CSV.file(path*"/csv/rds20.csv") |> DataFrame
     #rds = ReplicateBE.randrbeds(;n=48, sequence=[1,2,3,4], design = ["T" "R"; "R" "T"; "T" "T"; "R" "R"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0, 0.0], periodcoef = [0.0, 0.0], formcoef = [0.0, 0.0], dropobs = 20, seed = 10020)
     be = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
     @test ReplicateBE.reml2(be)             ≈ 151.78319585 atol=1E-5
@@ -438,7 +438,7 @@ end
     print(".")
     #21
     #TRR/RTR/RRT
-    rds = load(path*"/csv/rds21.csv") |> DataFrame
+    rds = CSV.file(path*"/csv/rds21.csv") |> DataFrame
     #rds = ReplicateBE.randrbeds(;n=48, sequence=[1,2,3], design = ["T" "R" "R"; "R" "T" "R"; "R" "R" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 0.0], dropobs = 20, seed = 10021)
     be = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
     #SPSS REML 237.076723026247
@@ -457,7 +457,7 @@ end
     print(".")
     #22
     #TRR/RTR
-    rds = load(path*"/csv/rds22.csv") |> DataFrame
+    rds = CSV.file(path*"/csv/rds22.csv") |> DataFrame
     #rds = ReplicateBE.randrbeds(;n=48, sequence=[1,2], design = ["T" "R" "R"; "R" "T" "R"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 0.0], dropobs = 20, seed = 10022)
     be = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
     #SPSS REML  234.103074
@@ -477,7 +477,7 @@ end
     # Unbalanced by sequences
     #23
     #TRTR/RTRT
-    rds = load(path*"/csv/rds23.csv") |> DataFrame
+    rds = CSV.file(path*"/csv/rds23.csv") |> DataFrame
     #rds = ReplicateBE.randrbeds(;n=36, sequence=[1,2], design = ["T" "R" "T" "R"; "R" "T" "R" "T"], inter=[0.5, 0.4, 0.1], intra=[0.1, 0.15], intercept = 1.0, seqcoef = [1.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10023)
     be = ReplicateBE.rbe!(rds, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence)
     ci = confint(be, 0.1, expci = true)

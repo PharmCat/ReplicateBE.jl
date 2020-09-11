@@ -1,11 +1,11 @@
 """
 A' * B * A -> + θ (cache)
 """
-function mulαtβαinc!(θ, A::AbstractMatrix, B::Matrix, c)
+function mulαtβαinc!(θ, A::AbstractMatrix, B, c)
     q = size(B, 1)
     p = size(A, 2)
     for i = 1:p
-        c .= 0
+        fill!(c, zero(eltype(θ)))
         for n = 1:q
             for m = 1:q
                 @inbounds c[n] += B[m, n] * A[m, i]
@@ -25,9 +25,9 @@ A' * B * A -> + θ
 function mulαtβαinc!(θ, A::AbstractMatrix, B::AbstractMatrix)
     q = size(B, 1)
     p = size(A, 2)
-    c = zeros(eltype(B), q)
+    c = zeros(eltype(θ), q)
     for i = 1:p
-        c .= 0
+        fill!(c, zero(eltype(θ)))
         for n = 1:q
             for m = 1:q
                 @inbounds c[n] += B[m, n] * A[m, i]
@@ -50,7 +50,7 @@ function mulθβinc!(θ, β, A::AbstractMatrix, B::AbstractMatrix, C::AbstractVe
     q = size(B, 1)
     p = size(A, 2)
     for i = 1:p
-        c .= 0
+        fill!(c, zero(eltype(θ)))
         for n = 1:q
             for m = 1:q
                 @inbounds c[n] += B[m, n] * A[m, i]
@@ -69,11 +69,12 @@ end
 """
 (y - X * β)' * V * (y - X * β) (cache)
 """
-function mulθ₃(y::Vector, X::AbstractMatrix, β::Vector, V::AbstractMatrix, c)
+function mulθ₃(y, X, β, V, c)
     q = size(V, 1)
     p = size(X, 2)
-    θ = 0
-    c .= 0
+    θ = zero(eltype(β))
+    #c .= 0
+    fill!(c, zero(eltype(β)))
     for n = 1:q
         for m = 1:p
             @inbounds c[n] += X[n, m] * β[m]
@@ -90,27 +91,27 @@ end
 """
 A * B * A' + C
 """
-function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix)
+function mulαβαtc(A, B, C)::Symmetric
     q  = size(B, 1)
     p  = size(A, 1)
     c  = zeros(eltype(B), q)
     mx = zeros(eltype(B), p, p)
     for i = 1:p
-        c .= 0
-        for n = 1:q
-            for m = 1:q
+        fill!(c, zero(eltype(c)))
+        @simd for n = 1:q
+            @simd for m = 1:q
                 @inbounds c[n] +=  A[i, m] * B[n, m]
             end
         end
-        for n = 1:p
-            for m = 1:q
+        @simd for n = i:p
+            @simd for m = 1:q
                  @inbounds mx[i, n] += A[n, m] * c[m]
             end
+            @inbounds mx[i, n] += C[i, n]
         end
     end
-    mx .+= C
-    #Symmetric(mx)
-    #SMatrix{p,p}(mx)
+    #mx .+= C
+    Symmetric(mx)
 end
 """
 A * B * A' + C (cache)
@@ -118,26 +119,50 @@ A * B * A' + C (cache)
 function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, c::AbstractVector)
     q  = size(B, 1)
     p  = size(A, 1)
-    #c  = mem.svec[p]
     mx = zeros(eltype(B), p, p)
     for i = 1:p
-        c .= 0
-        for n = 1:q
-            for m = 1:q
+        fill!(c, zero(eltype(c)))
+        @simd for n = 1:q
+            @simd for m = 1:q
                 @inbounds c[n] +=  A[i, m] * B[n, m]
             end
         end
-        for n = 1:p
-            for m = 1:q
+        @simd for n = i:p
+            @simd for m = 1:q
+                 @inbounds mx[i, n] += A[n, m] * c[m]
+            end
+            @inbounds mx[i, n] += C[i, n]
+        end
+    end
+    #mx .+= C
+    Symmetric(mx)
+end
+"""
+A * B * A' + Diagonal(A*C) (cache)
+"""
+function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractVector, c::AbstractVector)::Symmetric
+    q  = size(B, 1)
+    p  = size(A, 1)
+    mx = zeros(eltype(B), p, p)
+    for i = 1:p
+        fill!(c, zero(eltype(c)))
+        @simd for n = 1:q
+            @simd for m = 1:q
+                @inbounds c[n] +=  A[i, m] * B[n, m]
+            end
+        end
+        @simd for n = i:p
+            @simd for m = 1:q
                  @inbounds mx[i, n] += A[n, m] * c[m]
             end
         end
+        @simd for m = 1:length(C)
+             @inbounds mx[i, i] += A[i, m] * C[m]
+        end
     end
-    mx .+= C
-    #SMatrix{p,p,eltype(mx)}(mx)
-
+    #mx
+    Symmetric(mx)
 end
-
 function invchol(M)
     q  = size(M, 1)
     v  = zeros(eltype(M), q, q)

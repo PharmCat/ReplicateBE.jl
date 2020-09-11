@@ -190,10 +190,10 @@ function rbe(df; dvar::Symbol,
     optnum  = 0
     rng     = MersenneTwister(hash(θvec0))
     while opttry
-        try
+        #try
             O       = optimize(td, θvec0, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace, callback = optimcallback)
             opttry  = false
-        #try
+        try
         catch
             θvec0 = rvarlink(abs.(varlink(θvec0, vlm) .+ (rand(rng)-0.5)/20 .* varlink(θvec0, vlm) .+ eps()), vlm)[1:4]
             push!(θvec0, rand(rng))
@@ -225,7 +225,7 @@ function rbe(df; dvar::Symbol,
     #H           = Calculus.hessian(x -> reml2(data, x, β), θ)
     # If no varlink using can be obtained from optim results
     #H           = O.trace[end].metadata["h(x)"]
-
+    #print(H)
     A = nothing
     #If rho is near to 1.0 it leads to singular hessian matrix, and rho should be removed from variance-covariance matrix
     #It can be done another way: using varlink everywhere, but it leads to problems of calling varlink after RBE object creation with other methods
@@ -249,7 +249,7 @@ function rbe(df; dvar::Symbol,
     df          = Vector{eltype(C)}(undef, p)
     t           = Vector{eltype(C)}(undef, p)
     pval        = Vector{eltype(C)}(undef, p)
-    gradc       = cmatg(Xv, Zv, θ, C; memopt = memopt)
+    gradc       = cmatg(data, θ, C; memopt = memopt)
 
 
     for i = 1:p

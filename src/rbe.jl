@@ -22,7 +22,8 @@ Replicate bioequivalence structure.
 """
 mutable struct RBE{T <: AbstractFloat}
     model::ModelFrame               # Model frame
-    rmodel::ModelFrame              # Random effect model
+    rschema::Union{AbstractTerm, Tuple{Vararg{AbstractTerm, N} where N}}
+    #rmodel::ModelFrame              # Random effect model
     design::Design
     #factors::Vector{Symbol}        # Factor list
     θ0::Vector{T}                   # Initial variance paramethers
@@ -110,7 +111,14 @@ function rbe(df; dvar::Symbol,
     singlim = 1e-10)
 
     #Check
-    if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
+    #if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
+
+    dfn = names(df)
+    if eltype(dfn) <: String dfn = Symbol.(dfn) end
+    if any(x -> x ∉ dfn, [subject, formulation, period, sequence])
+        throw(ArgumentError("Names not found in DataFrame! \n Names: $([subject, formulation, period, sequence]) \n DF names: $(names(df))"))
+    end
+
     if !(eltype(df[!,dvar]) <: AbstractFloat)
         @warn "Responce variable ∉ AbstractFloat!"
     end
@@ -126,18 +134,22 @@ function rbe(df; dvar::Symbol,
     if !(typeof(df[!,sequence]) <: CategoricalArray)
         @warn "Sequence variable not Categorical, use rbe!()!"
     end
-
+    #println("1")
     #Model
     Xf  = @eval(@formula($dvar ~ $sequence + $period + $formulation))
-    Zf  = @eval(@formula($dvar ~ 0 + $formulation))
     MF  = ModelFrame(Xf, df)
-    RMF = ModelFrame(Zf, df, contrasts = Dict(formulation => StatsModels.FullDummyCoding()))
     MM  = ModelMatrix(MF)
     X   = MM.m
-    Z   = ModelMatrix(RMF).m
+    rschema = apply_schema(Term(formulation), schema(df, Dict(formulation => StatsModels.FullDummyCoding())))
+    Z   = modelcols(rschema, df)
+
+    #Zf  = @eval(@formula($dvar ~ 0 + $formulation))
+    #RMF = ModelFrame(Zf, df, contrasts = Dict(formulation => StatsModels.FullDummyCoding()))
+    #Z   = ModelMatrix(RMF).m
+
     p   = rank(X)
     zxr = rank(ModelMatrix(ModelFrame(@eval(@formula($dvar ~ $sequence + $period + $subject*$formulation)), df)).m)
-    y   = df[:, dvar]                                                           #Dependent variable
+    y   = df[!, dvar]                                                           #Dependent variable
     #Make pre located arrays with matrices for each subject
     Xv, Zv, yv = sortsubjects(df, subject, X, Z, y)
     n  = length(Xv)
@@ -151,23 +163,27 @@ function rbe(df; dvar::Symbol,
     for i = 1:length(fl)
         push!(sbf, sbjnbyf(df, subject, formulation, fl[i]))
     end
-
+    #println("2")
     #Check data
     checkdata(X, Z, Xv, Zv, y)
     maxobs = maximum(length.(yv))
     #
-    data = RBEDataStructure([sequence, period, formulation], Xv, Zv, yv, p, N, n, (N - p) * LOG2PI, maxobs, MemCache(maxobs))
-
+    data = RBEDataStructure([sequence, period, formulation], Xv, Zv, yv, p, N, n, (N - p) * LOG2PI, maxobs)
+    #println("3")
     #Calculate initial variance
+    iv = initvar2(df, X, yv, dvar, subject)
     if length(init) == 5
         θvec0 = init
     else
+        #=
         intra = sum(replace!(var.(yv) .* (length.(yv) .- 1), NaN => 0))/(sum(length.(yv))-1)
         iv = initvar(df, dvar, formulation)
         iv = iv .+ eps()
         θvec0 = [intra, intra, iv[1], iv[2], 0.5]
+        =#
+        θvec0 = [iv[2], iv[2], iv[1], iv[1], 0.5]
     end
-
+    #println("3.1")
     #Variance link function
     if rholink == :psigmoid
         varlink  = (x, y) ->  varlinkmap(x, 1:4, 5,  vlink,  z -> rholinkpsigmoid(z, y))
@@ -182,13 +198,15 @@ function rbe(df; dvar::Symbol,
         throw(ArgumentError("Unknown link function! Check rholink!"))
     end
     θvec0   = rvarlink(θvec0, vlm)
-
+    #println("3.2")
     #Optimization
     pO      = nothing
     td      = TwiceDifferentiable(x -> reml2bfd(data, varlink(x, vlm); memopt = memopt), θvec0; autodiff = :forward)
+    #td      = TwiceDifferentiable(x -> reml2(data, varlink(x, vlm), iv[3]; memopt = memopt), θvec0; autodiff = :forward)
     opttry  = true
     optnum  = 0
     rng     = MersenneTwister(hash(θvec0))
+    #println("3.3")
     while opttry
         try
             O       = optimize(td, θvec0, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace, callback = optimcallback)
@@ -205,7 +223,6 @@ function rbe(df; dvar::Symbol,
         end
     end
     θ          = Optim.minimizer(O)
-
     #Post optimization
     if postopt
         pO     = O
@@ -214,6 +231,7 @@ function rbe(df; dvar::Symbol,
         O      = optimize(od, [-Inf, -Inf, -Inf, -Inf, -Inf], [Inf, Inf, Inf, Inf, Inf], θ,  Fminbox(method), Optim.Options(g_tol=g_tol, x_tol=x_tol, f_tol=f_tol))
         θ      = Optim.minimizer(O)
     end
+    #println("4")
     θ = varlink(θ, vlm)
     #Get reml, β and inverted variance covariance matrix of β
     remlv, β, iC = reml2b(data, θ; memopt = memopt)
@@ -235,7 +253,7 @@ function rbe(df; dvar::Symbol,
         H[5,:] .= 0
     end
     #dH          = det(H)
-
+    #println("5")
     #Secondary parameters calculation
     # if inv(H) incorrect pinv(H) used
     if abs(minimum(svdvals(H))) > singlim
@@ -249,11 +267,11 @@ function rbe(df; dvar::Symbol,
     df          = Vector{eltype(C)}(undef, p)
     t           = Vector{eltype(C)}(undef, p)
     pval        = Vector{eltype(C)}(undef, p)
-    gradc       = cmatg(Xv, Zv, θ, C; memopt = memopt)
-
-
+    gradc       = cmatg(data, θ, C; memopt = memopt)
+    L       = zeros(1, p)
+    #println("6")
     for i = 1:p
-        L       = zeros(1, p)
+        L       .= 0
         L[i]    = 1
         Lt      = L'
         lcl     = L*C*Lt                                                        #lcl     = L*C*L'
@@ -267,17 +285,16 @@ function rbe(df; dvar::Symbol,
         t[i]    = ((L*β)/se[i])[1]
         pval[i] = ccdf(TDist(df[i]), abs(t[i]))*2
     end
+    #println("7")
     fixed       = EffectTable(coefnames(MF), β, se, F, df, t, pval)
-
     result      = RBEResults(-remlv/2,  β, θ, fixed, gmat(θ[3:5]), H, A, C, gradc, pO, O)
-
     design      = Design(N, n,
     sn + 1,
     pn + 1,
     fn + 1,
     sbf,
     p, zxr)
-    return RBE(MF, RMF, design, varlink(θvec0, vlm), vlm, #=Tuple(θ), remlv, fixed, gmat(θ[3:5]), C, A, H,=# X, Z, data, result, #=dH, pO, O=#)
+    return RBE(MF, rschema, design, varlink(θvec0, vlm), vlm, #=Tuple(θ), remlv, fixed, gmat(θ[3:5]), C, A, H,=# X, Z, data, result, #=dH, pO, O=#)
 
 end #END OF rbe()
 """
@@ -298,9 +315,11 @@ function rbe!(df; dvar::Symbol,
     postopt = false, vlm = 1.0, maxopttry = 50, rhoadjstep = 0.15,
     rholink = :psigmoid,
     singlim = 1e-6)
-
-
-    if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
+    dfn = names(df)
+    if eltype(dfn) <: String dfn = Symbol.(dfn) end
+    if any(x -> x ∉ dfn, [subject, formulation, period, sequence])
+        throw(ArgumentError("Names not found in DataFrame! \n Names: $([subject, formulation, period, sequence]) \n DF names: $(names(df))"))
+    end
     if !(eltype(df[!,dvar]) <: AbstractFloat)
         @warn "Responce variable ∉ AbstractFloat!"
         df[!,dvar] = float.(df[!,dvar])
@@ -363,8 +382,8 @@ end
 
 Returm -2logREML for rbe model with θ variance vector.
 """
-function reml2(rbe::RBE, θ::Vector{T}) where T <: AbstractFloat
-    return reml2(rbe.data, θ, coef(rbe))
+function reml2(rbe::RBE, θ::Vector{T}; memopt::Bool = true) where T <: AbstractFloat
+    return reml2(rbe.data, θ, coef(rbe); memopt = memopt)
 end
 """
     reml2(rbe::RBE)
@@ -498,6 +517,28 @@ function calcci(x::T, se::T, df::T, alpha::T, expci::Bool) where T <: AbstractFl
         return exp(x-q*se), exp(x+q*se)
     end
 end
+"""
+    StatsBase.coeftable(rbe::RBE; level::Real=0.95, expci = false, inv = false)
+"""
+function StatsBase.coeftable(rbe::RBE; level::Real=0.95, expci = false, inv = false)
+    name  = coefnames(rbe.model)
+    est   = collect(rbe.result.fixed.est)
+    se    = collect(rbe.result.fixed.se)
+    df    = collect(rbe.result.fixed.df)
+    t     = collect(rbe.result.fixed.t)
+    p     = collect(rbe.result.fixed.p)
+    ci    = confint(rbe, 1.0 - level, expci = expci, inv = inv)
+    ll    = collect(map(x -> x[1], ci))
+    ul    = collect(map(x -> x[2], ci))
+    alpha = 1.0 - level
+    EstimateTable(name, est, se, df, t, p, ll, ul, alpha)
+end
+"""
+    StatsBase.vcov(rbe::RBE)
+"""
+function StatsBase.vcov(rbe::RBE)
+    return rbe.result.C
+end
 #-------------------------------------------------------------------------------
 """
     theta(rbe::RBE)
@@ -562,7 +603,7 @@ function optstat(rbe::RBE)
 end
 #-------------------------------------------------------------------------------
 function Base.show(io::IO, rbe::RBE)
-    rcoef = coefnames(rbe.rmodel);
+    rcoef = coefnames(rbe.rschema);
     θ     = theta(rbe)
     print(io, "Bioequivalence Linear Mixed Effect Model (status:"); optstat(rbe) ? print(io,"converged") : printstyled(io, "not converged"; color = :red); println(io, ")")
     if !isposdef(Symmetric(rbe.result.H))

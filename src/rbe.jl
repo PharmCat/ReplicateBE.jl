@@ -118,11 +118,7 @@ function rbe(df; dvar::Symbol,
     if any(x -> x ∉ dfn, [subject, formulation, period, sequence])
         throw(ArgumentError("Names not found in DataFrame! \n Names: $([subject, formulation, period, sequence]) \n DF names: $(names(df))"))
     end
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> 891996a132783ac52ac2996a5b5092f166adff31
     if !(eltype(df[!,dvar]) <: AbstractFloat)
         @warn "Responce variable ∉ AbstractFloat!"
     end
@@ -273,10 +269,6 @@ function rbe(df; dvar::Symbol,
     pval        = Vector{eltype(C)}(undef, p)
     gradc       = cmatg(data, θ, C; memopt = memopt)
     L       = zeros(1, p)
-<<<<<<< HEAD
-    #println("6")
-=======
->>>>>>> 891996a132783ac52ac2996a5b5092f166adff31
     for i = 1:p
         L       .= 0
         L[i]    = 1

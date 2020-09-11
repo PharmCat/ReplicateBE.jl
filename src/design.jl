@@ -22,10 +22,7 @@ function Base.show(io::IO, rbeds::RBEDataStructure)
     .n = $(rbeds.n)
     .remlc = $(rbeds.remlc)
     .maxobs = $(rbeds.maxobs)
-<<<<<<< HEAD
-=======
     .mem: MemCache
->>>>>>> 891996a132783ac52ac2996a5b5092f166adff31
     """)
 end
 

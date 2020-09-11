@@ -1,7 +1,7 @@
 """
 A' * B * A -> + θ (cache)
 """
-@inline function mulαtβαinc!(θ, A::AbstractMatrix, B::AbstractMatrix, c::Vector)
+function mulαtβαinc!(θ, A::AbstractMatrix, B::AbstractMatrix, c)
     q = size(B, 1)
     p = size(A, 2)
     for i = 1:p
@@ -13,7 +13,7 @@ A' * B * A -> + θ (cache)
             θ[i, n] += A[m, n] * c[m]
         end
     end
-    nothing
+    #θ
 end
 """
 A' * B * A -> + θ
@@ -61,10 +61,10 @@ end
 """
 (y - X * β)' * V * (y - X * β) (cache)
 """
-function mulθ₃(y::T, X::AbstractMatrix, β::AbstractVector, V::AbstractMatrix, c) where T <: AbstractVector
+function mulθ₃(y::AbstractVector, X::AbstractMatrix, β::AbstractVector, V::AbstractMatrix, c)
     q = size(V, 1)
     p = size(X, 2)
-    θ = zero(first(β))
+    θ = 0
     fill!(c, zero(eltype(c)))
     @simd for n = 1:q
         @simd for m = 1:p
@@ -82,7 +82,7 @@ end
 """
 A * B * A' + C
 """
-function mulαβαtc(A, B, C)::Symmetric
+function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix)
     q  = size(B, 1)
     p  = size(A, 1)
     c  = zeros(eltype(B), q)
@@ -107,7 +107,7 @@ end
 """
 A * B * A' + C (cache)
 """
-function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, c::AbstractVector)::Symmetric
+function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractMatrix, c::AbstractVector)
     q  = size(B, 1)
     p  = size(A, 1)
     #c  = mem.svec[p]
@@ -132,7 +132,7 @@ end
 """
 A * B * A' + Diagonal(A*C) (cache)
 """
-function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractVector, c::AbstractVector)::Symmetric
+function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractVector, c::AbstractVector)
     q  = size(B, 1)
     p  = size(A, 1)
     mx = zeros(eltype(B), p, p)
@@ -158,7 +158,7 @@ end
 """
 mx <- A * B * A' + Diagonal(A*C) (cache)
 """
-function mulαβαtcupd!(mxs::AbstractMatrix, A::AbstractMatrix, B::AbstractMatrix, C::AbstractVector, c::AbstractVector)::Symmetric
+function mulαβαtcupd!(mxs::AbstractMatrix, A::AbstractMatrix, B::AbstractMatrix, C::AbstractVector, c::AbstractVector)
     q  = size(B, 1)
     p  = size(A, 1)
     mx = view(mxs, 1:p, 1:p)

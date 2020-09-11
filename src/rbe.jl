@@ -168,7 +168,7 @@ function rbe(df; dvar::Symbol,
     checkdata(X, Z, Xv, Zv, y)
     maxobs = maximum(length.(yv))
     #
-    data = RBEDataStructure([sequence, period, formulation], Xv, Zv, yv, p, N, n, (N - p) * LOG2PI, maxobs)
+    data = RBEDataStructure([sequence, period, formulation], Xv, Zv, yv, p, N, n, (N - p) * LOG2PI, maxobs, MemCache(maxobs))
     #println("3")
     #Calculate initial variance
     iv = initvar2(df, X, yv, dvar, subject)

@@ -25,7 +25,9 @@ after_success:
 
 jobs:
   allow_failures:
-    - julia: 1.4
+    - julia:
+        - 1.4
+        - 1.5
   include:
     - stage: "Documentation"
       julia: 1.0
@@ -35,3 +37,7 @@ jobs:
                                                Pkg.instantiate()'
         - julia --project=docs/ docs/make.jl
       after_success: skip
+
+script:
+  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
+  - travis_wait 20 julia --project -e 'using Pkg; Pkg.build(); Pkg.test(; coverage=true)'

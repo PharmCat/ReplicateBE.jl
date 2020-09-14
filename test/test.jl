@@ -198,6 +198,7 @@ end
 end
 
 @testset "  #  Validation with generated datasets          " begin
+    using CSV
     path    = dirname(@__FILE__)
     println("File path: " , path)
     println("File rds12.csv ($(path*"/csv/rds12.csv")) exist: ", isfile(path*"/csv/rds12.csv"))

@@ -5,10 +5,10 @@
 
 using Test, CSV, DataFrames, StatsBase
 
-path    = dirname(@__FILE__)
-
+global path    = dirname(@__FILE__)
+println(Load data...)
 include("testdata.jl")
-
+println(Start test...)
 @testset "  Basic mixed model test                         " begin
     be = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     e1 = ReplicateBE.fixed(be).est[6]

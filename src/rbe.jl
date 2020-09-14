@@ -110,7 +110,12 @@ function rbe(df; dvar::Symbol,
     singlim = 1e-10)
 
     #Check
-    if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
+    dfn = names(df)
+    if eltype(dfn) <: String dfn = Symbol.(dfn) end
+    if any(x -> x ∉ dfn, [subject, formulation, period, sequence])
+        throw(ArgumentError("Names not found in DataFrame! \n Names: $([subject, formulation, period, sequence]) \n DF names: $(names(df))"))
+    end
+
     if !(eltype(df[!,dvar]) <: AbstractFloat)
         @warn "Responce variable ∉ AbstractFloat!"
     end
@@ -159,13 +164,17 @@ function rbe(df; dvar::Symbol,
     data = RBEDataStructure([sequence, period, formulation], Xv, Zv, yv, p, N, n, (N - p) * LOG2PI, maxobs, MemCache(maxobs))
 
     #Calculate initial variance
+    #iv = initvar2(df, X, yv, dvar, subject)
     if length(init) == 5
         θvec0 = init
     else
+
         intra = sum(replace!(var.(yv) .* (length.(yv) .- 1), NaN => 0))/(sum(length.(yv))-1)
         iv = initvar(df, dvar, formulation)
         iv = iv .+ eps()
         θvec0 = [intra, intra, iv[1], iv[2], 0.5]
+
+        #θvec0 = [iv[2], iv[2], iv[1], iv[1], 0.5]
     end
 
     #Variance link function
@@ -190,10 +199,10 @@ function rbe(df; dvar::Symbol,
     optnum  = 0
     rng     = MersenneTwister(hash(θvec0))
     while opttry
-        #try
+        try
             O       = optimize(td, θvec0, method=Newton(),  g_tol=g_tol, x_tol=x_tol, f_tol=f_tol, allow_f_increases = true, store_trace = store_trace, extended_trace = extended_trace, show_trace = show_trace, callback = optimcallback)
             opttry  = false
-        try
+        #try
         catch
             θvec0 = rvarlink(abs.(varlink(θvec0, vlm) .+ (rand(rng)-0.5)/20 .* varlink(θvec0, vlm) .+ eps()), vlm)[1:4]
             push!(θvec0, rand(rng))
@@ -239,9 +248,9 @@ function rbe(df; dvar::Symbol,
     #Secondary parameters calculation
     # if inv(H) incorrect pinv(H) used
     if abs(minimum(svdvals(H))) > singlim
-        A       = 2 * inv(H)
+        A       = 2.0 * inv(H)
     else
-        A       = 2 * pinv(H)
+        A       = 2.0 * pinv(H)
     end
     C           = pinv(iC)
     se          = Vector{eltype(C)}(undef, p)
@@ -300,7 +309,12 @@ function rbe!(df; dvar::Symbol,
     singlim = 1e-6)
 
 
-    if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
+    dfn = names(df)
+    if eltype(dfn) <: String dfn = Symbol.(dfn) end
+    if any(x -> x ∉ dfn, [subject, formulation, period, sequence])
+        throw(ArgumentError("Names not found in DataFrame! \n Names: $([subject, formulation, period, sequence]) \n DF names: $(names(df))"))
+    end
+
     if !(eltype(df[!,dvar]) <: AbstractFloat)
         @warn "Responce variable ∉ AbstractFloat!"
         df[!,dvar] = float.(df[!,dvar])

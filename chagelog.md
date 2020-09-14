@@ -3,7 +3,7 @@
     * Cosmetics
     * PDMats exclude
     * Fix experimental sigmoid function
-    * Changes in initial variance estimate (OLS via QR decomposition)
+    * Add in initial variance estimate (OLS via QR decomposition) function 
 
 - v1.0.10
     * Cosmetics

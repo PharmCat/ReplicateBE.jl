@@ -354,6 +354,34 @@ function initvar(df::DataFrame, dv::Symbol, fac::Symbol)::Vector
     end
     return fv
 end
+#=
+function sumsq(v)
+    c = zero(eltype(v))
+    for i in v
+        c += v*v
+    end
+end
+=#
+function initvar2(df::DataFrame, X::Matrix, yv::Vector, dv::Symbol, fac::Symbol)
+    qrx  = qr(X)
+    b    = inv(qrx.R) * qrx.Q' * df[!, dv]
+    r    = df[!, dv] - X * b
+    res  = sum(x -> x*x, r)/(length(r) - size(X, 2))
+    var1 = zero(eltype(first(yv)))
+    for i = 1:length(yv)
+        if length(yv[i]) > 1
+            var1 += var(yv[i])
+        end
+    end
+    var2 = var1/length(yv)
+    if res - var2 > 0.0 && var2 > 0.0
+        return res-var2, var2, b
+    elseif var2 < 1.0e-6
+        return res/2.0, res/2.0, b
+    else
+        return (res+var2)/2.0, (res+var2)/2.0, b
+    end
+end
 #-------------------------------------------------------------------------------
 function optimcallback(x)
     false

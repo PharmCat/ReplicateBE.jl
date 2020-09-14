@@ -5,7 +5,7 @@
 
 using Test, CSV, DataFrames, StatsBase
 
-global path    = dirname(@__FILE__)
+path    = dirname(@__FILE__)
 println("Load data...")
 include("testdata.jl")
 println("Start test...")
@@ -198,6 +198,8 @@ end
 end
 
 @testset "  #  Validation with generated datasets          " begin
+    path    = dirname(@__FILE__)
+    println("File path: ", path)
     #1
     #TRTR/RTRT
     rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10001)

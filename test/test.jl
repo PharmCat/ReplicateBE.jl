@@ -199,7 +199,8 @@ end
 
 @testset "  #  Validation with generated datasets          " begin
     path    = dirname(@__FILE__)
-    println("File path: ", path)
+    println("File path: " , path)
+    println("File rds12.csv ($(path*"/csv/rds12.csv")) exist: ", isfile(path*"/csv/rds12.csv"))
     #1
     #TRTR/RTRT
     rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10001)

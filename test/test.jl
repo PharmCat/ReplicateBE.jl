@@ -6,9 +6,9 @@
 using Test, CSV, DataFrames, StatsBase
 
 global path    = dirname(@__FILE__)
-println(Load data...)
+println("Load data...")
 include("testdata.jl")
-println(Start test...)
+println("Start test...")
 @testset "  Basic mixed model test                         " begin
     be = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     e1 = ReplicateBE.fixed(be).est[6]

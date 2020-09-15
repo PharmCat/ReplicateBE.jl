@@ -6,9 +6,9 @@
 using Test, CSV, DataFrames, StatsBase
 
 path    = dirname(@__FILE__)
-
+println("Load data...")
 include("testdata.jl")
-
+println("Start test...")
 @testset "  Basic mixed model test                         " begin
     be = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, g_tol = 1e-10);
     e1 = ReplicateBE.fixed(be).est[6]
@@ -65,8 +65,6 @@ include("testdata.jl")
     #Experimental
     be  = ReplicateBE.rbe!(df0, dvar = :var, subject = :subject, formulation = :formulation, period = :period, sequence = :sequence, rholink = :arctgsigmoid, singlim = 1e-4)
     ci2 = confint(be)[end]
-
-
 
 end
 
@@ -200,6 +198,10 @@ end
 end
 
 @testset "  #  Validation with generated datasets          " begin
+    using CSV
+    path    = dirname(@__FILE__)
+    #println("File path: " , path)
+    #println("File rds12.csv ($(path*"/csv/rds12.csv")) exist: ", isfile(path*"/csv/rds12.csv"))
     #1
     #TRTR/RTRT
     rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10001)
@@ -209,6 +211,7 @@ end
     ci = confint(be, 0.1, expci = true)
     @test ci[end][1]                        ≈  0.800182 atol=1E-5
     @test ci[end][2]                        ≈  1.208955 atol=1E-5
+    print("[.")
     #DF contain 46
     #DF contain form 44
     #2
@@ -220,7 +223,7 @@ end
     ci = confint(be, 0.1, expci = true)
     @test ci[end][1]                        ≈ 0.877858             atol=1E-5
     @test ci[end][2]                        ≈ 1.266491             atol=1E-5
-
+    print(".")
     #3
     #TTRR/RRTT
     rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "T" "R" "R"; "R" "R" "T" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10003)
@@ -230,6 +233,7 @@ end
     ci = confint(be, 0.1, expci = true)
     @test ci[end][1]                        ≈ 0.838738             atol=1E-5
     @test ci[end][2]                        ≈ 1.132936             atol=1E-5
+    print(".")
     #4
     #TRTR/RTRT/TRRT/RTTR
     rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1,1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T" ; "T" "R" "R" "T"; "R" "T" "T" "R"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10004)
@@ -237,10 +241,9 @@ end
     @test ReplicateBE.reml2(be)             ≈ 178.85707596709256   atol=1E-5
     @test ReplicateBE.stderror(be)[end]     ≈ 0.1126566088472447   atol=1E-5
     ci = confint(be, 0.1, expci = true)
-
     @test ci[end][1]                        ≈ 0.901150701434849    atol=1E-5  #SPSS 0.900982
     @test ci[end][2]                        ≈ 1.3260902090001896   atol=1E-5  #     1.326338
-
+    print(".")
     #5
     #TRRT/RTTR/TTRR/RRTT
     rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1,1,1], design = ["T" "R" "R" "T"; "R" "T" "T" "R" ; "T" "T" "R" "R"; "R" "R" "T" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10005)
@@ -250,6 +253,7 @@ end
     ci = confint(be, 0.1, expci = true)
     @test ci[end][1]                        ≈ 0.8697647630450958    atol=1E-4
     @test ci[end][2]                        ≈ 1.3438521036812334    atol=1E-4
+    print(".")
     #6
     #TRTR/RTRT/TTRR/RRTT
     rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1,1,1], design = ["T" "R" "T" "R"; "R" "T" "R" "T" ; "T" "T" "R" "R"; "R" "R" "T" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0, 0.0], periodcoef = [0.0, 0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10006)
@@ -259,6 +263,7 @@ end
     ci = confint(be, 0.1, expci = true)
     @test ci[end][1]                        ≈ 0.7280915876704905    atol=1E-5
     @test ci[end][2]                        ≈ 1.0609077632653205   atol=1E-5
+    print(".")
     #7
     #TRT/RTR
     rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "R" "T"; "R" "T" "R"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10007)
@@ -270,6 +275,7 @@ end
     @test ci[end][2]                        ≈ 1.269283             atol=1E-5
     #DF contain 23
     #DF contain form 44
+    print(".")
     #8
     #TRR/RTT
     rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "R" "R"; "R" "T" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10008)
@@ -279,6 +285,7 @@ end
     ci = confint(be, 0.1, expci = true)
     @test ci[end][1]                        ≈ 0.8957103074455708             atol=1E-5
     @test ci[end][2]                        ≈ 1.2534507598650542             atol=1E-5
+    print(".")
     #9
     #TR/RT/TT/RR
     rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1,1,1], design = ["T" "R"; "R" "T"; "T" "T"; "R" "R"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0, 0.0], periodcoef = [0.0, 0.0], formcoef = [0.0, 0.0], seed = 10009)
@@ -288,6 +295,7 @@ end
     ci = confint(be, 0.1, expci = true)
     @test ci[end][1]                        ≈ 0.5581809471131624  atol=1E-5
     @test ci[end][2]                        ≈ 1.1201862625078982  atol=1E-5
+    print(".")
     #10
     #TRR/RTR/RRT
     rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1,1], design = ["T" "R" "R"; "R" "T" "R"; "R" "R" "T"], inter=[0.5, 0.4, 0.9], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10010)
@@ -297,6 +305,7 @@ end
     ci = confint(be, 0.1, expci = true)
     @test ci[end][1]                        ≈ 0.8192235933294734  atol=1E-5
     @test ci[end][2]                        ≈ 1.1698775266746582  atol=1E-5
+    print(".")
     #11
     #TRR/RTR
     #SPSS REML 129.655513635398
@@ -305,17 +314,23 @@ end
     @test ReplicateBE.reml2(be)             ≈ 129.06198795781413   atol=1E-5
     @test ReplicateBE.stderror(be)[end]     ≈ 0.1096846988112254   atol=1E-5
     ci = confint(be, 0.1, expci = true)
+
     #1.0.4
-    @test ci[end][1]                        ≈ 0.8719537380504332   atol=1E-5
-    @test ci[end][2]                        ≈ 1.2621358539962937   atol=1E-5
+    #@test ci[end][1]                        ≈ 0.8719537380504332   atol=1E-5
+    #@test ci[end][2]                        ≈ 1.2621358539962937   atol=1E-5
     #1.0.5
     #@test ci[end][1]                        ≈ 0.8719023753585434   atol=1E-3
     #@test ci[end][2]                        ≈ 1.2622102048603623   atol=1E-3
-
+    #1.0.11
+    #@test ci[end][1]                        ≈ 0.8719313261195931   atol=1E-5
+    #@test ci[end][2]                        ≈ 1.2621682956584102   atol=1E-5
+    #J1.4.0
+    @test ci[end][1]                        ≈ 0.8719537380504332   atol=1E-4
+    @test ci[end][2]                        ≈ 1.2621358539962937   atol=1E-4
 
     #DF contain 74
     #DF contain form 92
-
+    print(".")
     #Unbalanced + dropouts
     #12
     #TRTR/RTRT
@@ -328,6 +343,7 @@ end
     ci = confint(be, 0.1, expci = true)
     @test ci[end][1]                        ≈ 0.9223372675334348   atol=1E-5
     @test ci[end][2]                        ≈ 1.183433775497828   atol=1E-5
+    print(".")
     #13
     #TRRT/RTTR
     rds = CSV.File(path*"/csv/rds13.csv") |> DataFrame
@@ -338,6 +354,7 @@ end
     ci = confint(be, 0.1, expci = true)
     @test ci[end][1]                        ≈ 0.9109673193677009   atol=1E-5
     @test ci[end][2]                        ≈ 1.1871890135539473   atol=1E-5
+    print(".")
     #14
     #TTRR/RRTT
     rds = CSV.File(path*"/csv/rds14.csv") |> DataFrame
@@ -348,6 +365,7 @@ end
     ci = confint(be, 0.1, expci = true)
     @test ci[end][1]                        ≈ 0.9372828683843416   atol=1E-5
     @test ci[end][2]                        ≈ 1.2057922163897947   atol=1E-5
+    print(".")
     #15
     #TRTR/RTRT/TRRT/RTTR
     rds = CSV.File(path*"/csv/rds15.csv") |> DataFrame
@@ -358,6 +376,7 @@ end
     ci = confint(be, 0.1, expci = true)
     @test ci[end][1]                        ≈ 0.9431875747076479   atol=1E-5
     @test ci[end][2]                        ≈ 1.2478691227393788   atol=1E-5
+    print(".")
     #16
     #TRRT/RTTR/TTRR/RRTT
     rds = CSV.File(path*"/csv/rds16.csv") |> DataFrame
@@ -368,6 +387,7 @@ end
     ci = confint(be, 0.1, expci = true)
     @test ci[end][1]                        ≈ 0.9088567332123243   atol=1E-5
     @test ci[end][2]                        ≈ 1.1476219506765315   atol=1E-5
+    print(".")
     #17
     #TRTR/RTRT/TTRR/RRTT
     rds = CSV.File(path*"/csv/rds17.csv") |> DataFrame
@@ -379,6 +399,7 @@ end
     ci = confint(be, 0.1, expci = true)
     @test ci[end][1]                        ≈ 0.92723952053598   atol=1E-5
     @test ci[end][2]                        ≈ 1.1951418270978003   atol=1E-5
+    print(".")
     #18
     #TRT/RTR
     rds = CSV.File(path*"/csv/rds18.csv") |> DataFrame
@@ -390,6 +411,7 @@ end
     @test ci[end][1]                        ≈ 0.878355738329916   atol=1E-5
     @test ci[end][2]                        ≈ 1.1975977027952331   atol=1E-5
     #DF contain 34
+    print(".")
     #19
     #TRR/RTT
     rds = CSV.File(path*"/csv/rds19.csv") |> DataFrame
@@ -400,6 +422,7 @@ end
     ci = confint(be, 0.1, expci = true)
     @test ci[end][1]                        ≈ 0.7755005422832147             atol=1E-5
     @test ci[end][2]                        ≈ 1.0916738532751222             atol=1E-5
+    print(".")
     #20
     #TR/RT/TT/RR
     #SPSS REML 151.783195849874
@@ -414,6 +437,7 @@ end
     @test ci[end][1]                        ≈ 0.7865283528654503             atol=1E-5
     @test ci[end][2]                        ≈ 1.6924035882963178             atol=1E-5
     #DF contain 20
+    print(".")
     #21
     #TRR/RTR/RRT
     rds = CSV.File(path*"/csv/rds21.csv") |> DataFrame
@@ -429,9 +453,10 @@ end
     #v1.0.5
     #@test ci[end][1]                        ≈ 0.8293880338983111             atol=1E-3
     #@test ci[end][2]                        ≈ 1.1480342197874598             atol=1E-3
-
+    #1.4.0
 
     #DF contain 35
+    print(".")
     #22
     #TRR/RTR
     rds = CSV.File(path*"/csv/rds22.csv") |> DataFrame
@@ -447,9 +472,10 @@ end
     #v1.0.5
     #@test ci[end][1]                        ≈ 0.9064394831113237             atol=1E-3
     #@test ci[end][2]                        ≈ 1.3055658048846954             atol=1E-3
+    #1.4.0
 
     #DF contain 32
-
+    print(".")
     # Unbalanced by sequences
     #23
     #TRTR/RTRT
@@ -460,6 +486,7 @@ end
     @test ReplicateBE.reml2(be)             ≈ 252.0449059441563    atol=1E-5
     @test ci[end][1]                        ≈ 0.638039             atol=1E-5
     @test ci[end][2]                        ≈ 1.135006             atol=1E-5
+    print(".")
     #24
     #TRT/RTR
     rds = ReplicateBE.randrbeds(;n=36, sequence=[1,2], design = ["T" "R" "T"; "R" "T" "R"], inter=[0.4, 0.3, 0.2], intra=[0.05, 0.02], intercept = 1.0, seqcoef = [0.1, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.1, 0.0], seed = 10024)
@@ -468,7 +495,7 @@ end
     @test ReplicateBE.reml2(be)             ≈ 140.10714908682417    atol=1E-5
     @test ci[end][1]                        ≈ 0.854985             atol=1E-5
     @test ci[end][2]                        ≈ 1.293459             atol=1E-5
-
+    print(".")
     #25
     #TRR/RTT
     rds = ReplicateBE.randrbeds(;n=24, sequence=[1,1], design = ["T" "R" "R"; "R" "T" "T"], inter=[0.5, 0.4, 0.5], intra=[0.1, 0.2], intercept = 1.0, seqcoef = [0.0, 0.0], periodcoef = [0.0, 0.0, 0.0], formcoef = [0.0, 0.0], seed = 10008)
@@ -477,7 +504,7 @@ end
     @test ReplicateBE.reml2(be)             ≈ 140.37671499958694    atol=1E-5
     @test ci[end][1]                        ≈ 0.8208303872086634    atol=1E-5
     @test ci[end][2]                        ≈ 1.3228068920153602    atol=1E-5
-
+    print(".")
     # Unbalanced by sequences
     #26
     #TRTR/RTRT
@@ -487,6 +514,7 @@ end
     @test ReplicateBE.reml2(be)             ≈ 899.044671814185    atol=1E-5
     @test ci[end][1]                        ≈ 0.6189149073430663    atol=1E-5
     @test ci[end][2]                        ≈ 0.7726263704382558    atol=1E-5
+    print(".")
     #27
     #TRT/RTR
     rds = ReplicateBE.randrbeds(;n=128, sequence=[1,2], design = ["T" "R" "T"; "R" "T" "R"], inter=[0.4, 0.3, 0.7], intra=[0.05, 0.2], intercept = 1.0, seqcoef = [1.1, 0.0], periodcoef = [0.0, 1.0, 0.0], formcoef = [0.2, 0.0], seed = 10027)
@@ -495,8 +523,9 @@ end
     @test ReplicateBE.reml2(be)             ≈ 614.3407387528628    atol=1E-5
     @test ci[end][1]                        ≈ 1.18696161597237    atol=1E-5
     @test ci[end][2]                        ≈ 1.43349025480276    atol=1E-5
-
+    print(".")
     # Unbalanced by sequences
+
     #28
     #TRTR/RTRT
     rds = ReplicateBE.randrbeds(;n=512, sequence=[1,2], design = ["T" "R" "T" "R"; "R" "T" "R" "T"], inter=[0.5, 0.4, 0.7], intra=[0.1, 0.15], intercept = 1.0, seqcoef = [1.0, 0.0], periodcoef = [0.0, 1.0, 0.0, 0.0], formcoef = [0.0, 0.3], seed = 10028)
@@ -505,6 +534,7 @@ end
     @test ReplicateBE.reml2(be)             ≈ 3495.580039200916    atol=1E-5
     @test ci[end][1]                        ≈ 0.6975351860484861    atol=1E-5
     @test ci[end][2]                        ≈ 0.7698493312540238    atol=1E-5
+    print(".")
     #29
     #TRT/RTR
     rds = ReplicateBE.randrbeds(;n=512, sequence=[1,2], design = ["T" "R" "T"; "R" "T" "R"], inter=[0.4, 0.3, 0.7], intra=[0.05, 0.2], intercept = 1.0, seqcoef = [1.1, 0.0], periodcoef = [0.0, 0.0, 1.0], formcoef = [0.4, 0.0], seed = 10029)
@@ -514,7 +544,7 @@ end
     @test ci[end][1]                        ≈ 1.361487533935354    atol=1E-5
     @test ci[end][2]                        ≈ 1.498934137926506    atol=1E-5
 
-
+    println(".]")
 end
 
 @testset "  #  Simulation                                  " begin
@@ -536,6 +566,9 @@ end
     )
     pow = ReplicateBE.simulation(task; io = io, num = 1007, seed = 1234, verbose = true)
     @test pow.result ≈ 0.06 atol=1E-2
+
+    pow = ReplicateBE.simulation(task; io = io, num = 100, seed = 1234, verbose = true, rsabe = true)
+    #@test pow.result ≈ 0.06 atol=1E-2
 
     #Custom simulation
 

@@ -110,7 +110,12 @@ function rbe(df; dvar::Symbol,
     singlim = 1e-10)
 
     #Check
-    if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
+    dfn = names(df)
+    if eltype(dfn) <: String dfn = Symbol.(dfn) end
+    if any(x -> x ∉ dfn, [subject, formulation, period, sequence])
+        throw(ArgumentError("Names not found in DataFrame! \n Names: $([subject, formulation, period, sequence]) \n DF names: $(names(df))"))
+    end
+
     if !(eltype(df[!,dvar]) <: AbstractFloat)
         @warn "Responce variable ∉ AbstractFloat!"
     end
@@ -159,13 +164,17 @@ function rbe(df; dvar::Symbol,
     data = RBEDataStructure([sequence, period, formulation], Xv, Zv, yv, p, N, n, (N - p) * LOG2PI, maxobs, MemCache(maxobs))
 
     #Calculate initial variance
+    #iv = initvar2(df, X, yv, dvar, subject)
     if length(init) == 5
         θvec0 = init
     else
+
         intra = sum(replace!(var.(yv) .* (length.(yv) .- 1), NaN => 0))/(sum(length.(yv))-1)
         iv = initvar(df, dvar, formulation)
         iv = iv .+ eps()
         θvec0 = [intra, intra, iv[1], iv[2], 0.5]
+
+        #θvec0 = [iv[2], iv[2], iv[1], iv[1], 0.5]
     end
 
     #Variance link function
@@ -225,7 +234,7 @@ function rbe(df; dvar::Symbol,
     #H           = Calculus.hessian(x -> reml2(data, x, β), θ)
     # If no varlink using can be obtained from optim results
     #H           = O.trace[end].metadata["h(x)"]
-
+    #print(H)
     A = nothing
     #If rho is near to 1.0 it leads to singular hessian matrix, and rho should be removed from variance-covariance matrix
     #It can be done another way: using varlink everywhere, but it leads to problems of calling varlink after RBE object creation with other methods
@@ -239,9 +248,9 @@ function rbe(df; dvar::Symbol,
     #Secondary parameters calculation
     # if inv(H) incorrect pinv(H) used
     if abs(minimum(svdvals(H))) > singlim
-        A       = 2 * inv(H)
+        A       = 2.0 * inv(H)
     else
-        A       = 2 * pinv(H)
+        A       = 2.0 * pinv(H)
     end
     C           = pinv(iC)
     se          = Vector{eltype(C)}(undef, p)
@@ -249,7 +258,7 @@ function rbe(df; dvar::Symbol,
     df          = Vector{eltype(C)}(undef, p)
     t           = Vector{eltype(C)}(undef, p)
     pval        = Vector{eltype(C)}(undef, p)
-    gradc       = cmatg(Xv, Zv, θ, C; memopt = memopt)
+    gradc       = cmatg(data, θ, C; memopt = memopt)
 
 
     for i = 1:p
@@ -300,7 +309,12 @@ function rbe!(df; dvar::Symbol,
     singlim = 1e-6)
 
 
-    if any(x -> x ∉ names(df), [subject, formulation, period, sequence]) throw(ArgumentError("Names not found in DataFrame!")) end
+    dfn = names(df)
+    if eltype(dfn) <: String dfn = Symbol.(dfn) end
+    if any(x -> x ∉ dfn, [subject, formulation, period, sequence])
+        throw(ArgumentError("Names not found in DataFrame! \n Names: $([subject, formulation, period, sequence]) \n DF names: $(names(df))"))
+    end
+
     if !(eltype(df[!,dvar]) <: AbstractFloat)
         @warn "Responce variable ∉ AbstractFloat!"
         df[!,dvar] = float.(df[!,dvar])

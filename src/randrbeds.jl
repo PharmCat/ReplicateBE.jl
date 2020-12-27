@@ -220,15 +220,11 @@ function randrbeds(n::Int, sequence::Vector,
         deleteat!(subjmx5, dellist)
         #deleterows!(subjds, sort!(dellist))
     end
-    subjds  = DataFrame(subject = subjmx1,
-    formulation = subjmx2,
-    period = subjmx3,
-    sequence = subjmx4,
+    subjds  = DataFrame(subject = categorical(subjmx1),
+    formulation = categorical(subjmx2),
+    period = categorical(subjmx3),
+    sequence = categorical(subjmx4),
     var = subjmx5)
-    categorical!(subjds, :subject);
-    categorical!(subjds, :formulation);
-    categorical!(subjds, :period);
-    categorical!(subjds, :sequence);
     return subjds
 end
 """

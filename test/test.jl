@@ -448,8 +448,8 @@ end
     @test ReplicateBE.stderror(be)[end]     ≈ 0.09665    atol=1E-5
     ci = confint(be, 0.1, expci = true)
     #v1.0.4
-    @test ci[end][1]                        ≈ 0.8296448401676422             atol=1E-5
-    @test ci[end][2]                        ≈ 1.14767886003498             atol=1E-5
+    @test ci[end][1]                        ≈ 0.8296448401676422           atol=1E-4
+    @test ci[end][2]                        ≈ 1.14767886003498             atol=1E-4
     #v1.0.5
     #@test ci[end][1]                        ≈ 0.8293880338983111             atol=1E-3
     #@test ci[end][2]                        ≈ 1.1480342197874598             atol=1E-3

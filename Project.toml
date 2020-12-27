@@ -23,7 +23,7 @@ StatsModels = "3eaba693-59b7-5ba5-a881-562e759f1c8d"
 [compat]
 CategoricalArrays = "0.7, 0.8, 0.9"
 DataFrames = "0.19, 0.20, 0.21"
-Distributions = "0.20, 0.21, 0.22, 0.23"
+Distributions = "0.20, 0.21, 0.22, 0.23, 0.24"
 ForwardDiff = "0.10"
 LineSearches = "7.0"
 Optim = "0.19, 0.20, 0.21, 0.22, 1.0, 1.1, 1.2"

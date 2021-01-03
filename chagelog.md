@@ -1,9 +1,13 @@
+- v1.0.12
+    * bump dependencies
+    * remove categorical!
+
 - v1.0.11
     * Optimizations
     * Cosmetics
     * PDMats exclude
     * Fix experimental sigmoid function
-    * Add in initial variance estimate (OLS via QR decomposition) function 
+    * Add in initial variance estimate (OLS via QR decomposition) function
 
 - v1.0.10
     * Cosmetics

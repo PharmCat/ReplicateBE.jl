@@ -317,19 +317,21 @@ function rbe!(df; dvar::Symbol,
 
     if !(eltype(df[!,dvar]) <: AbstractFloat)
         @warn "Responce variable ∉ AbstractFloat!"
-        df[!,dvar] = float.(df[!,dvar])
+        df[!, dvar] = float.(df[!,dvar])
     end
     if !(typeof(df[!,subject]) <: CategoricalArray)
-        categorical!(df, subject);
+        df[!, subject] = categorical(df[!, subject]);
     end
     if !(typeof(df[!,formulation]) <: CategoricalArray)
-        categorical!(df, formulation);
+        df[!, formulation] = categorical(df[!, formulation]);
     end
     if !(typeof(df[!,period]) <: CategoricalArray)
-        categorical!(df, period);
+        df[!, period] = categorical(df[!, period]);
+        #categorical!(df, period);
     end
     if !(typeof(df[!,sequence]) <: CategoricalArray)
-        categorical!(df, sequence);
+        df[!, sequence] = categorical(df[!, sequence]);
+        #categorical!(df, sequence);
     end
     sort!(df, [subject, formulation, period])
     return rbe(df, dvar = dvar, subject = subject, formulation = formulation, period = period, sequence = sequence,

@@ -1,3 +1,6 @@
+- v1.0.13
+    * DataFrames 1
+
 - v1.0.12
     * bump dependencies
     * remove categorical!

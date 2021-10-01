@@ -163,6 +163,8 @@ end
     @test estt.df[1]                                     ≈ 62.0                atol=1E-5
     @test estt.ul[1]                                     ≈ 0.14736661447650518 atol=1E-5
 
+    @test ReplicateBE.contrast(be, [0 0 1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 1 0]).df[1] ≈ 144.97812496691395 atol=1E-4
+
     #=
     lsmean = ReplicateBE.lsm(be, [0 0 0 0 0 1])
     @test lsmean[1][1] ≈ 0.0643403 atol=1E-5

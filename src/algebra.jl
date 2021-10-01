@@ -1,4 +1,20 @@
 """
+a' * B * a
+"""
+function mulαtβα(v::AbstractVector, m::AbstractMatrix)
+    if length(v) != size(m, 2)  || size(m, 2) != size(m, 1) error("Dimention error") end
+    c = 0
+    for i = 1:size(m, 1)
+        ct = 0
+        for i2 = 1:size(m, 2)
+            @inbounds  ct += m[i, i2]*v[i2]
+        end
+        @inbounds c += ct*v[i]
+    end
+    c
+end
+
+"""
 A' * B * A -> + θ (cache)
 """
 function mulαtβαinc!(θ, A::AbstractMatrix, B, c)

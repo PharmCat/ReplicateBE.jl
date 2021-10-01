@@ -111,7 +111,8 @@ function estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = tr
     end
     t       = ((est)/se)
     pval    = ccdf(TDist(df), abs(t))*2
-    return EstimateTable([name], [est], [se], [df], [t], [pval], [est - se*quantile(TDist(df), 1-alpha/2)], [est + se*quantile(TDist(df), 1-alpha/2)], alpha)
+    d = se*quantile(TDist(df), 1-alpha/2)
+    return EstimateTable([name], [est], [se], [df], [t], [pval], [est - d], [est + d], alpha)
 end
 
 # L Matrix for TYPE III

@@ -1,3 +1,7 @@
+- v1.0.14
+  * DF satter eigen multidim
+  * Minor changes
+
 - v1.0.13
     * DataFrames 1
 

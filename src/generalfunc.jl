@@ -306,16 +306,24 @@ function estimatevec(data, res, L)
     t       = ((est)/se)
     return est, se, t
 end
-function sattdf(data, gradc, A, C, L, lcl)
+function sattdf(data, gradc, A, C::AbstractMatrix{T}, L, lcl) where T
     lclr    = rank(lcl)
     if lclr ≥ 2
-        vm  = Vector{eltype(C)}(undef, lclr)
-        # Spectral decomposition ?
-        #ev  = eigen(lcl)
-        #pl  = eigvecs(ev)
-        #dm  = eigvals(ev)
-        #ei  = pl * L
+        vm  = Vector{T}(undef, lclr)
+        # Spectral decomposition
+        lcle  = eigen(lcl)
+        pl    = lcle.vectors'*L
+        em    = 0
+        g     = Vector{T}(undef, length(gradc))
         for i = 1:lclr
+            plm = pl[i,:]
+            for i2 = 1:length(gradc)
+                g[i2] = mulαtβα(plm, gradc[i2])
+            end
+            d = g' * A * g
+            vm[i] = 2*lcle.values[i]^2 / d
+            if vm[i] > 2.0 em += vm[i] / (vm[i] - 2.0) end
+            #=
             g         = lclg(gradc, L[i:i,:])
             #g         = lclg(res.gradc, ei[i:i, :])
             dfi       = 2*((L[i:i,:]*C*L[i:i,:]')[1])^2/(g'*A*g)
@@ -325,18 +333,22 @@ function sattdf(data, gradc, A, C, L, lcl)
             else
                 vm[i] = 0
             end
+            =#
         end
+        df = 2em/(em - lclr)
+        #=
         E   = sum(vm)
         if E > lclr
             dfi = 2 * E / (E - lclr)
         else
             dfi = 0
         end
+        =#
     else
         g   = lclg(gradc, L)
-        dfi = 2*((lcl)[1])^2/(g'*A*g)
+        df = 2*((lcl)[1])^2/(g'*A*g)
     end
-    return max(1, dfi)
+    return max(1, df)
 end
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------

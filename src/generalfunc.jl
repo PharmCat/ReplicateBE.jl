@@ -5,7 +5,7 @@
 """
     Make X, Z matrices and vector y for each subject;
 """
-function sortsubjects(df::DataFrame, sbj::Symbol, X::Matrix{T}, Z::Matrix{T}, y::Vector{T}) where T
+function sortsubjects(df, sbj::Symbol, X::AbstractMatrix{T}, Z::AbstractMatrix{T}, y::AbstractVector{T}) where T
     u = unique(df[!, sbj])
     Xa = Vector{SubArray{T}}(undef, length(u))
     Za = Vector{SubArray{T}}(undef, length(u))
@@ -21,14 +21,14 @@ end
 """
     G matrix
 """
-@inline function gmat(σ::AbstractVector)::AbstractMatrix
-    cov = sqrt(σ[1] * σ[2]) * σ[3]
+@inline function gmat(σ::AbstractVector)
+    @inbounds cov = sqrt(σ[1] * σ[2]) * σ[3]
     return Symmetric([σ[1] cov; cov σ[2]])
 end
 """
     G matrix  (memory pre-allocation)
 """
-@inline function gmat!(G::Matrix{T}, σ::Vector) where T <: AbstractFloat
+Base.@propagate_inbounds function gmat!(G::AbstractMatrix, σ::AbstractVector)
     G[1, 1] = σ[1]
     G[2, 2] = σ[2]
     G[1, 2] = G[2, 1] = sqrt(σ[1] * σ[2]) * σ[3]
@@ -38,13 +38,13 @@ end
 """
     R matrix (ForwardDiff+)
 """
-@inline function rmat(σ::AbstractVector, Z::AbstractMatrix)::Matrix
+@inline function rmat(σ::AbstractVector, Z::AbstractMatrix)
     return Diagonal(Z*σ)
 end
 """
     R matrix  (memory pre-allocation)
 """
-@inline function rmat!(R::AbstractMatrix{T}, σ::Vector{T}, Z::AbstractMatrix{T}) where T <: AbstractFloat
+@inline function rmat!(R::AbstractMatrix, σ::AbstractVector, Z::AbstractMatrix)
     copyto!(R, Diagonal(Z*σ))
     return
 end
@@ -53,17 +53,17 @@ end
 """
     Return variance-covariance matrix V
 """
-@inline function vmat(G::AbstractMatrix, R::AbstractMatrix, Z::AbstractMatrix)::AbstractMatrix
-    return  mulαβαtc(Z, G, R)
+@inline function vmat(G::AbstractMatrix, R::AbstractMatrix, Z::AbstractMatrix)
+    return mulαβαtc(Z, G, R)
 end
-@inline function vmat!(V::Matrix{T}, G::AbstractMatrix{T}, R::AbstractMatrix{T}, Z::AbstractMatrix{T}, memc) where T <: AbstractFloat
+@inline function vmat!(V::Matrix, G::AbstractMatrix, R::AbstractMatrix, Z::AbstractMatrix, memc)
     #copyto!(V, Z*G*Z')
     mul!(memc[size(Z)[1]], Z, G)
     mul!(V, memc[size(Z)[1]], Z')
     V .+= R
     return
 end
-function mvmat(G::AbstractMatrix, σ::Vector, Z::AbstractMatrix, cache)::Matrix
+function mvmat(G::AbstractMatrix, σ::AbstractVector, Z::AbstractMatrix, cache)
     #h = hash(tuple(σ, Z))
     if Z in keys(cache)
         return cache[Z]
@@ -74,7 +74,7 @@ function mvmat(G::AbstractMatrix, σ::Vector, Z::AbstractMatrix, cache)::Matrix
         return V
     end
 end
-function mvmat(G::AbstractMatrix, σ::Vector, Z::AbstractMatrix, mem, cache)::Matrix
+function mvmat(G::AbstractMatrix, σ::AbstractVector, Z::AbstractMatrix, mem, cache)
     #h = hash(tuple(σ, Z))
     if Z in keys(cache)
         return cache[Z]
@@ -110,7 +110,7 @@ function mvmatall(G::AbstractMatrix, σ::AbstractVector{T}, Z::AbstractMatrix, m
     end
 end
 
-function minv(G::AbstractMatrix, σ::Vector, Z::AbstractMatrix, cache::Dict)
+function minv(G::AbstractMatrix, σ::AbstractVector, Z::AbstractMatrix, cache::Dict)
     #h = hash(M)
     if Z in keys(cache)
         #return cache[h]
@@ -127,7 +127,7 @@ function minv(G::AbstractMatrix, σ::Vector, Z::AbstractMatrix, cache::Dict)
     end
 end
 
-function mlogdet(M::Matrix, cache::Dict)
+function mlogdet(M::AbstractMatrix, cache::Dict)
     #h = hash(M)
     if M in keys(cache)
         return cache[M]
@@ -269,10 +269,10 @@ end
 """
 C matrix gradients
 """
-function cmatg(data, θ::Vector, C::Matrix; memopt::Bool = true)
+function cmatg(data, θ::AbstractVector, C::AbstractMatrix; memopt::Bool = true)
     g  = Vector{Matrix}(undef, length(θ))
     jC = cmatgf(data, θ; memopt = memopt)
-    for i = 1:length(θ)
+    @inbounds for i = 1:length(θ)
         g[i] = (- C * jC[i] * C)
     end
     return g
@@ -282,7 +282,7 @@ L * C * L' for all C gradient marices
 """
 function lclg(gradc, L)
     g  = Vector{eltype(gradc[1])}(undef, length(gradc))
-    for i = 1:length(gradc)
+    @inbounds for i = 1:length(gradc)
         g[i] = (L * gradc[i] * L')[1]
     end
     return g
@@ -358,7 +358,7 @@ end
 """
     Initial variance computation
 """
-function initvar(df::DataFrame, dv::Symbol, fac::Symbol)::Vector
+function initvar(df, dv::Symbol, fac::Symbol)
     f  = unique(df[:, fac])
     fv = Array{eltype(df[!, dv]), 1}(undef, 0)
     for i in f
@@ -374,7 +374,7 @@ function sumsq(v)
     end
 end
 =#
-function initvar2(df::DataFrame, X::Matrix, yv::Vector, dv::Symbol, fac::Symbol)
+function initvar2(df, X::AbstractMatrix, yv::AbstractVector, dv::Symbol, fac::Symbol)
     qrx  = qr(X)
     b    = inv(qrx.R) * qrx.Q' * df[!, dv]
     r    = df[!, dv] - X * b
@@ -399,35 +399,35 @@ function optimcallback(x)
     false
 end
 #-------------------------------------------------------------------------------
-function vlink(σ::T) where T <: Real
+function vlink(σ)
     exp(σ)
 end
-function vlinkr(σ::T) where T <: Real
+function vlinkr(σ)
     log(σ)
 end
 
-function rholinkpsigmoid(ρ::T, m) where T <: Real
+function rholinkpsigmoid(ρ, m)
     return 1.0/(1.0 + exp(ρ * m))
 end
-function rholinkpsigmoidr(ρ::T, m) where T <: Real
+function rholinkpsigmoidr(ρ, m)
     return log(1.0/ρ - 1.0)/m
 end
 
-function rholinksigmoid(ρ::T, m) where T <: Real
+function rholinksigmoid(ρ, m)
     return ρ/sqrt(1.0 + ρ^2)
 end
-function rholinksigmoidr(ρ::T, m) where T <: Real
+function rholinksigmoidr(ρ, m)
     return sign(ρ)*sqrt(ρ^2/(1.0 - ρ^2))
 end
 
-function rholinksigmoid2(ρ::T, m) where T <: Real
+function rholinksigmoid2(ρ, m)
     return atan(ρ)/pi*2.0
 end
-function rholinksigmoid2r(ρ::T, m) where T <: Real
+function rholinksigmoid2r(ρ, m)
     return tan(ρ*pi/2.0)
 end
 
-function varlinkmap(θ, r1::Union{Int, UnitRange}, r2::Union{Int, UnitRange}, f1::Function, f2::Function)
+function varlinkmap(θ, r1, r2, f1, f2)
     #θl      = similar(θ)
     @inbounds @simd for i in r1
         θ[i]  = f1(θ[i])

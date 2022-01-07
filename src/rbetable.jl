@@ -22,16 +22,16 @@ end
 ```
 """
 struct EffectTable <: RBETable
-    name::Tuple{Vararg}
-    est::Tuple{Vararg}
-    se::Tuple{Vararg}
-    f::Tuple{Vararg}
-    df::Tuple{Vararg}
-    t::Tuple{Vararg}
-    p::Tuple{Vararg}
+    name::Vector{String}
+    est::Vector{Float64}
+    se::Vector{Float64}
+    f::Vector{Float64}
+    df::Vector{Float64}
+    t::Vector{Float64}
+    p::Vector{Float64}
     function EffectTable(name, est, se, f, df, t, p)
         if !(length(name)==length(est)==length(se)==length(f)==length(df)==length(t)==length(p)) throw(ArgumentError("Unequal vectors size!")) end
-        new(Tuple(name), Tuple(est), Tuple(se), Tuple(f), Tuple(df), Tuple(t), Tuple(p))
+        new(name, est, se, f, df, t, p)
     end
 end
 """
@@ -47,10 +47,10 @@ end
 """
 struct ContrastTable <: RBETable
     name::Vector
-    f::Vector
-    ndf::Vector
-    df::Vector
-    p::Vector
+    f::Vector{Float64}
+    ndf::Vector{Float64}
+    df::Vector{Float64}
+    p::Vector{Float64}
     function ContrastTable(name, f, ndf, df, p)
         new(name, f, ndf, df, p)
     end
@@ -71,15 +71,15 @@ end
 ```
 """
 struct EstimateTable <: RBETable
-    name::Vector
-    est::Vector
-    se::Vector
-    df::Vector
-    t::Vector
-    p::Vector
-    ll::Vector
-    ul::Vector
-    alpha::Real
+    name::Vector{String}
+    est::Vector{Float64}
+    se::Vector{Float64}
+    df::Vector{Float64}
+    t::Vector{Float64}
+    p::Vector{Float64}
+    ll::Vector{Float64}
+    ul::Vector{Float64}
+    alpha::Float64
     function EstimateTable(name, est, se, df, t, p, ll, ul, alpha)
         new(name, est, se, df, t, p, ll, ul, alpha)
     end

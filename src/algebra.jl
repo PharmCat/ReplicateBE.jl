@@ -107,7 +107,7 @@ end
 """
 A * B * A' + C
 """
-function mulαβαtc(A, B, C)::Symmetric
+function mulαβαtc(A, B, C)
     q  = size(B, 1)
     p  = size(A, 1)
     c  = zeros(eltype(B), q)
@@ -156,7 +156,7 @@ end
 """
 A * B * A' + Diagonal(A*C) (cache)
 """
-function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractVector, c::AbstractVector)::Symmetric
+function mulαβαtc(A::AbstractMatrix, B::AbstractMatrix, C::AbstractVector, c::AbstractVector)
     q  = size(B, 1)
     p  = size(A, 1)
     mx = zeros(eltype(B), p, p)

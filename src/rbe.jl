@@ -24,23 +24,13 @@ mutable struct RBE{T <: AbstractFloat}
     model::ModelFrame               # Model frame
     rmodel::ModelFrame              # Random effect model
     design::Design
-    #factors::Vector{Symbol}        # Factor list
     θ0::Vector{T}                   # Initial variance paramethers
     vlm::T
-    #θ::Tuple{Vararg{T}}             # Final variance paramethers
-    #reml::T                         # -2REML
-    #fixed::EffectTable
-    #G::AbstractMatrix{T}            # G matrix
-    #C::Matrix{T}                    # C var(β) p×p variance-covariance matrix
-    #A::Matrix{T}                    # asymptotic variance-covariance matrix ofb θ
-    #H::Matrix{T}                    # Hessian matrix
     X::Matrix{T}                    # Matrix for fixed effects
     Z::Matrix{T}                    # Matrix for random effects
     data::RBEDataStructure          # Data for model fitting
     result::RBEResults
-    #detH::T                         # Hessian determinant
-    #preoptim::Union{Optim.MultivariateOptimizationResults, Nothing}             # Pre-optimization result object
-    #optim::Optim.MultivariateOptimizationResults                                # Optimization result object
+
 end
 
 

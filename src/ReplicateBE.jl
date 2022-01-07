@@ -11,7 +11,6 @@ using DataFrames, Distributions, StatsModels, StatsBase, ForwardDiff, LinearAlge
     import Base.show
     import StatsBase.confint, StatsBase.coef, StatsBase.nobs, StatsBase.dof, StatsBase.stderror, StatsBase.coeftable, StatsBase.vcov
     import Statistics.var
-    #import StatsBase.loglikelihood
 
 const LOG2PI = log(2π)
 const MEMOPT = true

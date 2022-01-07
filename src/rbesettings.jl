@@ -1,7 +1,7 @@
 struct RBESettings{T}
-    g_tol::Real
-    x_tol::Real
-    f_tol::Real
+    g_tol::Float64
+    x_tol::Float64
+    f_tol::Float64
     iterations::Int
     store_trace::Bool
     extended_trace::Bool
@@ -9,11 +9,11 @@ struct RBESettings{T}
     memopt::Bool
     init::Vector{T}
     postopt::Bool
-    vlm::Real
+    vlm::Float64
     maxopttry::Int
     rholink::Symbol
-    singlim::Real
-    function RBESettings(;g_tol::Real = 1e-12, x_tol::Real = 0.0, f_tol::Real = 0.0, iterations::Int = 100,
+    singlim::Float64
+    function RBESettings(;g_tol = 1e-12, x_tol = 0.0, f_toll = 0.0, iterations = 100,
         store_trace = false, extended_trace = false, show_trace = false,
         memopt = true,
         init = zeros(0),

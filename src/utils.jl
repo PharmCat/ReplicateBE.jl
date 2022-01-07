@@ -36,7 +36,7 @@ p value calculated with:
 pval    = ccdf(FDist(numdf, df), F)
 ```
 """
-function contrast(rbe::RBE, L::Matrix;  name = "Contrast", memopt = true)::ContrastTable
+function contrast(rbe::RBE, L::AbstractMatrix;  name = "Contrast", memopt = true)
     F, ndf, df, pval = contrastvec(rbe.data, rbe.result, L)
     return ContrastTable([name], [F], [ndf], [df], [pval])
 
@@ -100,7 +100,7 @@ Example of L matrix if length of fixed effect vector is 6, estimate for 4-th val
 L = [0 0 0 1 0 0]
 ```
 """
-function estimate(rbe::RBE, L::Matrix; df = :sat, name = "Estimate", memopt = true, alpha = 0.05)::EstimateTable
+function estimate(rbe::RBE, L::AbstractMatrix; df = :sat, name = "Estimate", memopt = true, alpha = 0.05)::EstimateTable
     est, se, t = estimatevec(rbe.data, rbe.result, L)
     if df == :sat
         df      = sattdf(rbe.data, rbe.result.gradc, rbe.result.A, rbe.result.C, L, L*rbe.result.C*L')
@@ -150,7 +150,7 @@ function lmatrix(mf::ModelFrame, f::Union{Symbol, AbstractTerm})
     return lm
 end
 #Find by Symbol
-function findterm(MF::ModelFrame, f::Union{Symbol, AbstractTerm})::Int
+function findterm(MF::ModelFrame, f::Union{Symbol, AbstractTerm})
     l = length(MF.f.rhs.terms)
     for i = 1:l
         if isa(MF.f.rhs.terms[i], InterceptTerm)
@@ -161,7 +161,7 @@ function findterm(MF::ModelFrame, f::Union{Symbol, AbstractTerm})::Int
     return 0
 end
 #Return term fixed effect length by symbol
-function termmodellen(MF::ModelFrame, symbol::Symbol)::Int
+function termmodellen(MF::ModelFrame, symbol::Symbol)
     id = findterm(MF, symbol)
     return length(MF.f.rhs.terms[id].contrasts.termnames)
 end
@@ -176,7 +176,7 @@ function checkdata(X::Matrix, Z::Matrix, Xv::Vector, Zv::Vector, y::Vector)
 end
 #-------------------------------------------------------------------------------
 #show EffectTable
-function addspace(s::String, n::Int; first = false)::String
+function addspace(s::String, n::Int; first = false)
     if n > 0
         for i = 1:n
             if first s = Char(' ') * s else s = s * Char(' ') end
@@ -185,7 +185,7 @@ function addspace(s::String, n::Int; first = false)::String
     return s
 end
 
-function printmatrix(io::IO, m::Matrix)
+function printmatrix(io::IO, m::AbstractMatrix)
     sm = string.(m)
     lv = maximum(length.(sm), dims = 1)
     for r = 1:size(sm, 1)

@@ -1,14 +1,17 @@
-struct RBEDataStructure
-    factors::Vector
-    Xv::Vector
-    Zv::Vector
-    yv::Vector
+struct RBEDataStructure{T1, T2, T3}
+    factors::Vector{Symbol}
+    Xv::Vector{T1}
+    Zv::Vector{T2}
+    yv::Vector{T3}
     p::Int
     N::Int
     n::Int
-    remlc::AbstractFloat
+    remlc::Float64
     maxobs::Int
     mem::MemCache
+    function RBEDataStructure(factors::Vector{Symbol}, Xv::Vector{T1}, Zv::Vector{T2}, yv::Vector{T3}, p::Int, N::Int, n::Int, remlc::Float64, maxobs::Int, mem::MemCache) where T1 where T2 where T3
+        new{T1, T2, T3}(factors, Xv, Zv, yv, p, N, n, remlc, maxobs, mem)
+    end
 end
 
 struct RBEResults{T <: AbstractFloat}
